@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="py-3 mb-4">
+    <span class="text-muted fw-light">Registro Financeiro /</span> Criar
+  </h4>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                      {% for field in form %}
+                        <div class="{% if field.name == 'description' %}col-12{% else %}col-md-6{% endif %}">
+                          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                          {{ field }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  
+                    <div class="mt-4">
+                      <button type="submit" class="btn btn-primary">Salvar</button>
+                      <a href="{% url 'financial:financial_record_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                  </form>
+                  
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}{% endblock extra_scripts %}

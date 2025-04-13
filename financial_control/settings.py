@@ -33,7 +33,9 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',    'django.contrib.auth',
+    'django.contrib.admin',
+    'django_select2',
+    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -70,6 +72,8 @@ TEMPLATES = [
         },
     },
 ]
+
+USE_THOUSAND_SEPARATOR = True
 
 WSGI_APPLICATION = 'financial_control.wsgi.application'
 

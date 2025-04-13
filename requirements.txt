@@ -1,4 +1,6 @@
 asgiref==3.8.1
 Django==5.1.7
+django-appconf==1.1.0
+django-select2==8.4.0
 python-dotenv==1.1.0
 sqlparse==0.5.3

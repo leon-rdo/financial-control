@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4"><span class="text-muted fw-light">Registro Financeiro /</span> Lista</h4>
+
+    <div class="card mb-4">
+        <div class="card-widget-separator-wrapper">
+            <div class="card-body card-widget-separator">
+                <div class="row gy-4 gy-sm-1">
+                    <div class="col-sm-6 col-lg-3">
+                      <div class="d-flex justify-content-between align-items-start card-widget-2 border-end pb-3 pb-sm-0">
+                        <div>
+                          <h3 class="mb-1">{{ count }}</h3>
+                          <p class="mb-0">Registros</p>
+                        </div>
+                        <div class="avatar me-lg-4">
+                          <span class="avatar-initial rounded bg-label-primary">
+                            <i class="bx bx-list-ul bx-sm"></i>
+                          </span>
+                        </div>
+                      </div>
+                      <hr class="d-none d-sm-block d-lg-none" />
+                    </div>
+                  
+                    <div class="col-sm-6 col-lg-3">
+                      <div class="d-flex justify-content-between align-items-start card-widget-1 border-end pb-3 pb-sm-0">
+                        <div>
+                          <h3 class="mb-1">R$ {{ total_balance|floatformat:2 }}</h3>
+                          <p class="mb-0">Balanço</p>
+                        </div>
+                        <div class="avatar me-sm-4">
+                          <span class="avatar-initial rounded bg-label-info">
+                            <i class="bx bx-bar-chart-alt-2 bx-sm"></i>
+                          </span>
+                        </div>
+                      </div>
+                      <hr class="d-none d-sm-block d-lg-none me-4" />
+                    </div>
+                  
+                    <div class="col-sm-6 col-lg-3">
+                      <div class="d-flex justify-content-between align-items-start border-end pb-3 pb-sm-0 card-widget-3">
+                        <div>
+                          <h3 class="mb-1">R$ {{ total_incomes|floatformat:"2" }}</h3>
+                          <p class="mb-0">Entradas</p>
+                        </div>
+                        <div class="avatar me-sm-4">
+                          <span class="avatar-initial rounded bg-label-success">
+                            <i class="bx bx-up-arrow-circle bx-sm"></i>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  
+                    <div class="col-sm-6 col-lg-3">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h3 class="mb-1">R$ {{ total_expenses|floatformat:"2" }}</h3>
+                          <p class="mb-0">Despesas</p>
+                        </div>
+                        <div class="avatar">
+                          <span class="avatar-initial rounded bg-label-danger">
+                            <i class="bx bx-down-arrow-circle bx-sm"></i>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Record List Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <a href="{% url 'financial:financial_record_create' %}" class="btn btn-primary">Adicionar Registro</a>
+            <a href="#" class="btn btn-primary">Filtros</a>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="invoice-list-table table border-top mb-3">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Entidade</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                        <th>Data</th>
+                        <th class="cell-fit">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in object_list %}
+                    <tr>
+                        <td class="dt-select"><input aria-label="Select row" class="form-check-input" type="checkbox" />
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-start align-items-center">
+                                <div class="avatar-wrapper">
+                                    <div class="avatar avatar-sm me-3">
+                                        <span class="avatar-initial rounded-circle bg-label-primary">
+                                            {{ record.entity.name|slice:":2"|upper }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-heading text-truncate fw-medium">{{ record.entity.name }}</span>
+                                    <small class="text-truncate">{{ record.entity.document }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center"
+                                title="{{ record.is_income|yesno:'Receita,Despesa' }}">
+                                <span class="d-inline-block me-2">
+                                    <span
+                                        class="badge p-1_5 rounded-pill {{ record.is_income|yesno:'bg-label-success,bg-label-danger' }}">
+                                        <i
+                                            class="icon-base icon-16px {{ record.is_income|yesno:'bx bx-up-arrow-alt,bx bx-down-arrow-alt' }}"></i>
+                                    </span>
+                                </span>
+                                {{ record.category.name }}
+                            </div>
+                        </td>
+                        <td class="dt-type-numeric">
+                            <span class="d-none">{{ record.amount|floatformat:"2" }}</span>R$ {{ record.amount|floatformat:"2" }}
+                        </td>
+                        <td>
+                            <span class="d-none">{{ record.date|date:"Ymd" }}</span>
+                            {{ record.date|date:"d/m/Y" }}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <a href="#" class="btn btn-icon" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    aria-label="Ver" title="Ver">
+                                    <i class="icon-base bx bx-show icon-md"></i>
+                                </a>
+                                <a href="#" class="btn btn-icon" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    aria-label="Editar" title="Editar">
+                                    <i class="icon-base bx bx-edit icon-md"></i>
+                                </a>
+                                <a href="#" class="btn btn-icon delete-record" data-bs-toggle="tooltip"
+                                    data-bs-placement="top" aria-label="Excluir" title="Excluir">
+                                    <i class="icon-base bx bx-trash icon-md"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center">Nenhum registro encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="row mx-3 justify-content-between">
+                <div
+                    class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0">
+                    <div class="dt-info" aria-live="polite" role="status">
+                        Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+                    </div>
+                </div>
+                <div
+                    class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
+                    <div class="dt-paging">
+                        <nav aria-label="pagination">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link previous" href="?page={{ page_obj.previous_page_number }}"
+                                        aria-label="Anterior">
+                                        <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item disabled">
+                                    <span class="page-link previous" aria-disabled="true">
+                                        <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                                    </span>
+                                </li>
+                                {% endif %}
+
+                                {% for num in paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="dt-paging-button page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link next" href="?page={{ page_obj.next_page_number }}"
+                                        aria-label="Próximo">
+                                        <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item disabled">
+                                    <span class="page-link next" aria-disabled="true">
+                                        <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                                    </span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}{% endblock extra_scripts %}

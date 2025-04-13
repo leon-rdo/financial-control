@@ -2,6 +2,25 @@ from django.urls import reverse
 
 urls_data = [
     {
+        "name": "Registros",
+        "icon": "bx bx-money-withdraw",
+        "permissions": ["view_record"],
+        "sub_urls": [
+            {
+                "name": "Lista",
+                "url": "financial:financial_record_list",
+                "icon": "bx bx-list-ul",
+                "permissions": ["financial.view_record"],
+            },
+            {
+                "name": "Adicionar",
+                "url": "financial:financial_record_create",
+                "icon": "bx bx-list-plus",
+                "permissions": ["financial.add_record"],
+            },
+        ],
+    },
+    {
         "name": "Administração",
         "url": "admin:index",
         "icon": "bx bx-cog",
