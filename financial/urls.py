@@ -7,4 +7,5 @@ urlpatterns = [
     path("registros/criar/", FinancialRecordCreateView.as_view(), name="financial_record_create"),
     # path("registros/<int:pk>/", FinancialRecordDetailView.as_view(), name="financial_record_detail"),
     # path("registros/<int:pk>/editar/", FinancialRecordUpdateView.as_view(), name="financial_record_update"),
+    path("categorias/", CategoryListView.as_view(), name="category_list")
 ]

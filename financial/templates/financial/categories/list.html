@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4"><span class="text-muted fw-light">Categoria /</span> Lista</h4>
+
+    <!-- Category List Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategory">Adicionar Categoria</button>
+            <a href="#" class="btn btn-primary">Filtros</a>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="invoice-list-table table border-top mb-3">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Categoria</th>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                        <th>Registros</th>
+                        <th class="cell-fit">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in category_list %}
+                    <tr>
+                        <td class="dt-select"><input aria-label="Select row" class="form-check-input" type="checkbox" />
+                        </td>
+                        <td>
+                            <span class="text-heading fw-medium">{{ category.name }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center"
+                                title="{{ category.is_income|yesno:'Receita,Despesa' }}">
+                                <span class="d-inline-block me-2">
+                                    <span
+                                        class="badge p-1_5 rounded-pill {{ category.is_income|yesno:'bg-label-success,bg-label-danger' }}">
+                                        <i
+                                            class="icon-base icon-16px {{ category.is_income|yesno:'bx bx-up-arrow-alt,bx bx-down-arrow-alt' }}"></i>
+                                    </span>
+                                </span>
+                                {{ category.is_income|yesno:"Receita,Despesa" }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-truncate">{{ category.description|default:"-"|truncatechars:40 }}</span>
+                        </td>
+                        <td class="dt-type-numeric">
+                            <span class="fw-medium">{{ category.financial_records.count }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#editModal"
+                                    data-category-id="{{ category.id }}"
+                                    data-category-name="{{ category.name }}"
+                                    data-category-description="{{ category.description|default:'' }}"
+                                    data-category-is-income="{{ category.is_income|yesno:'true,false' }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Editar" title="Editar">
+                                    <i class="icon-base bx bx-edit icon-md"></i>
+                                </a>
+                                <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-category-id="{{ category.id }}"
+                                    data-financial-records-count="{{ category.financial_records.count }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir"
+                                    title="Excluir">
+                                    <i class="icon-base bx bx-trash icon-md"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhuma categoria encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="row mx-3 justify-content-between">
+                <div
+                    class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0">
+                    <div class="dt-info" aria-live="polite" role="status">
+                        Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} categorias
+                    </div>
+                </div>
+                <div
+                    class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
+                    <div class="dt-paging">
+                        <nav aria-label="pagination">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link previous" href="?page={{ page_obj.previous_page_number }}"
+                                        aria-label="Anterior">
+                                        <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item disabled">
+                                    <span class="page-link previous" aria-disabled="true">
+                                        <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                                    </span>
+                                </li>
+                                {% endif %}
+
+                                {% for num in paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="dt-paging-button page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link next" href="?page={{ page_obj.next_page_number }}"
+                                        aria-label="Próximo">
+                                        <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item disabled">
+                                    <span class="page-link next" aria-disabled="true">
+                                        <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                                    </span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCategory" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-edit-user">
+        <div class="modal-content p-3 p-md-5">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-4">
+                    <h3>Adicionar categoria</h3>
+                    <p>Adicione uma categoria para usá-la ao criar registros financeiros.</p>
+                </div>
+                <form id="addCategoryForm" class="row g-3" method="post">
+                    {% csrf_token %}
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="categoryName">Nome</label>
+                        <input type="text" id="categoryName" name="name" class="form-control"
+                            placeholder="Nome da Categoria" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="categoryDescription">Descrição</label>
+                        <textarea id="categoryDescription" name="description" class="form-control" rows="3"
+                            placeholder="Descrição breve da categoria"></textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label d-block">Tipo</label>
+                        <div class="btn-group" role="group" aria-label="Tipo de Categoria">
+                            <input type="radio" class="btn-check" name="is_income" id="entrada" value="true"
+                                autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="entrada">Entrada</label>
+                            <input type="radio" class="btn-check" name="is_income" id="saida" value="false"
+                                autocomplete="off">
+                            <label class="btn btn-outline-primary" for="saida">Saída</label>
+                        </div>
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-primary me-sm-3 me-1">Criar</button>
+                        <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="modal" aria-label="Close">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar deleção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir esta categoria?</p>
+                    <p class="text-danger">Essa ação não pode ser desfeita.</p>
+                    <p id="categoryFinancialRecordsDeleteWarning">Essa categoria possui <span class="badge bg-danger"
+                            id="categoryFinancialRecordsDeleteCount"></span> registros financeiros associados.</p>
+                    <input type="hidden" name="delete_id" id="delete_id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-edit-user">
+        <div class="modal-content p-3 p-md-5">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-4">
+                    <h3>Editar Categoria</h3>
+                    <p>Atualize os dados da categoria.</p>
+                </div>
+                <form id="editCategoryForm" class="row g-3" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="edit_id" id="edit_id" value="">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="editCategoryName">Nome</label>
+                        <input type="text" id="editCategoryName" name="name" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="editCategoryDescription">Descrição</label>
+                        <textarea id="editCategoryDescription" name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label d-block">Tipo</label>
+                        <div class="btn-group" role="group" aria-label="Tipo de Categoria">
+                            <input type="radio" class="btn-check" name="is_income" id="editEntrada" value="true">
+                            <label class="btn btn-outline-primary" for="editEntrada">Entrada</label>
+                            <input type="radio" class="btn-check" name="is_income" id="editSaida" value="false">
+                            <label class="btn btn-outline-primary" for="editSaida">Saída</label>
+                        </div>
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-primary me-sm-3 me-1">Salvar</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const categoryId = button.getAttribute('data-category-id');
+        const deleteIdInput = document.getElementById('delete_id');
+        deleteIdInput.value = categoryId;
+        const financialRecordsCount = button.getAttribute('data-financial-records-count');
+        if (financialRecordsCount == 0) {
+            categoryFinancialRecordsDeleteWarning = document.getElementById('categoryFinancialRecordsDeleteWarning').hidden = true;
+        } else {
+            const categoryFinancialRecordsDeleteCount = document.getElementById('categoryFinancialRecordsDeleteCount');
+            categoryFinancialRecordsDeleteCount.textContent = financialRecordsCount;
+            categoryFinancialRecordsDeleteWarning = document.getElementById('categoryFinancialRecordsDeleteWarning').hidden = false;
+        }
+    });
+    deleteModal.addEventListener('hidden.bs.modal', function (event) {
+        const deleteIdInput = document.getElementById('delete_id');
+        deleteIdInput.value = '';
+    });
+
+    const addCategoryModal = document.getElementById('addCategory');
+    addCategoryModal.addEventListener('hidden.bs.modal', function (event) {
+        const addCategoryForm = document.getElementById('addCategoryForm');
+        addCategoryForm.reset();
+    });
+    const editModal = document.getElementById('editModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        document.getElementById('edit_id').value = button.getAttribute('data-category-id');
+        document.getElementById('editCategoryName').value = button.getAttribute('data-category-name');
+        document.getElementById('editCategoryDescription').value = button.getAttribute('data-category-description');
+
+        // Definir radio button correto
+        const isIncome = button.getAttribute('data-category-is-income');
+        if (isIncome === 'true') {
+            document.getElementById('editEntrada').checked = true;
+        } else {
+            document.getElementById('editSaida').checked = true;
+        }
+    });
+</script>
+{% endblock extra_scripts %}
