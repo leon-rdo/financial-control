@@ -1,3 +1,4 @@
+from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView
 from django.db.models import Sum
 
@@ -14,7 +15,7 @@ class FinancialRecordCreateView(CreateView):
         "title": "Criar Registro Financeiro",
         "description": "Formulário para criar um novo registro financeiro",
     }
-    success_url = "financial:financial_record_list"
+    success_url = reverse_lazy("financial:financial_record_list")
 
 
 class FinancialRecordListView(ListView):
