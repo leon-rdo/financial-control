@@ -19,6 +19,11 @@
                         <div class="{% if field.name == 'description' %}col-12{% else %}col-md-6{% endif %}">
                           <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
                           {{ field }}
+                          {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                              {{ field.errors }}
+                            </div>
+                          {% endif %}
                         </div>
                       {% endfor %}
                     </div>
