@@ -33,6 +33,20 @@ class PaymentMethod(models.Model):
         related_name="payment_methods",
         verbose_name="Proprietário",
     )
+    payment_type = models.CharField(
+        "Tipo de Pagamento",
+        max_length=1,
+        choices=[
+            ("C", "Cartão"),
+            ("B", "Boleto"),
+            ("D", "Débito"),
+            ("P", "Pix"),
+            ("T", "Transferência"),
+            ("O", "Outros")
+        ],
+        default="C",
+    )
+    description = models.TextField("Descrição", blank=True, null=True)
 
     def __str__(self):
         return f"{self.fin_institution} - {self.owner.name}"
