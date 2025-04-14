@@ -24,7 +24,26 @@ urls_data = [
         "name": "Categorias",
         "url": "financial:category_list",
         "icon": "bx bx-category",
-        "permissions": ["financial.view_category"],
+        "permissions": ["financial.view_category"]
+    },
+    {
+        "name": "Formas de Pagamento",
+        "icon": "bx bx-credit-card",
+        "permissions": ["accounts.view_paymentmethod"],
+        "sub_urls": [
+            {
+                "name": "Lista",
+                "url": "accounts:payment_method_list",
+                "icon": "bx bx-list-ul",
+                "permissions": ["accounts.view_paymentmethod"],
+            },
+            {
+                "name": "Adicionar",
+                "url": "accounts:payment_method_create",
+                "icon": "bx bx-list-plus",
+                "permissions": ["accounts.add_paymentmethod"],
+            },
+        ],
     },
     {
         "name": "Administração",
