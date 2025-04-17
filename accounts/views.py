@@ -3,7 +3,44 @@ from django.views.generic import ListView, CreateView
 from django.urls import reverse_lazy
 
 from accounts.forms import PaymentMethodForm
-from .models import PaymentMethod
+from .models import Entity, PaymentMethod
+
+
+class EntityListView(ListView):
+    template_name = "accounts/entities/list.html"
+    model = Entity
+    paginate_by = 40
+    extra_context = {"title": "Entidades", "description": "Lista de entidades"}
+
+    def post(self, request, *args, **kwargs):
+        name = request.POST.get("name")
+        delete_id = request.POST.get("delete_id")
+        edit_id = request.POST.get("edit_id")
+
+        # Editar
+        if edit_id:
+            entity = Entity.objects.get(id=edit_id)
+            entity.name = request.POST.get("name")
+            entity.description = request.POST.get("description")
+            entity.person_type = request.POST.get("person_type")
+            entity.document = request.POST.get("document")
+            entity.save()
+            return redirect(request.path)
+
+        # Criar
+        if name and not delete_id:
+            Entity.objects.create(
+                name=name,
+                description=request.POST.get("description", ""),
+                person_type=request.POST.get("person_type"),
+                document=request.POST.get("document"),
+            )
+
+        # Deletar
+        if delete_id:
+            Entity.objects.filter(id=delete_id).delete()
+
+        return redirect(request.path)
 
 
 class PaymentMethodListView(ListView):

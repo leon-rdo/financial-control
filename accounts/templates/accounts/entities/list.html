@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4"><span class="text-muted fw-light">Entidades /</span> Lista</h4>
+
+    <!-- Entity List Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntity">Adicionar
+                Entidade</button>
+            <a href="#" class="btn btn-primary">Filtros</a>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="invoice-list-table table border-top mb-3">
+                <thead>
+                    <tr class="text-nowrap">
+                        <th></th>
+                        <th>Nome</th>
+                        <th>Tipo de Pessoa</th>
+                        <th>Descrição</th>
+                        <th>Documento</th>
+                        <th>Registros</th>
+                        <th class="cell-fit">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entity in object_list %}
+                    <tr>
+                        <td class="dt-select"><input aria-label="Select row" class="form-check-input" type="checkbox" />
+                        </td>
+                        <td>
+                            <span class="text-heading fw-medium">{{ entity.name }}</span>
+                        </td>
+                        <td>{{ entity.get_person_type_display }}</td>
+                        <td>{{ entity.description|truncatewords:7 }}</td>
+                        <td class="dt-type-numeric">
+                            <span class="fw-medium">{{ entity.document }}</span>
+                        </td>
+                        <td>{{ entity.financial_records.count }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#editModal"
+                                    data-entity-id="{{ entity.id }}" data-entity-name="{{ entity.name }}"
+                                    data-entity-description="{{ entity.description|default:'' }}"
+                                    data-entity-person-type="{{ entity.person_type }}" data-entity-document="{{ entity.document }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Editar" title="Editar">
+                                    <i class="icon-base bx bx-edit icon-md"></i>
+                                </a>
+                                <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-entity-id="{{ entity.id }}"
+                                    data-financial-records-count="{{ entity.financial_records.count }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir"
+                                    title="Excluir">
+                                    <i class="icon-base bx bx-trash icon-md"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhuma entidade encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="row mx-3 justify-content-between">
+                <div
+                    class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0">
+                    <div class="dt-info" aria-live="polite" role="status">
+                        Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} entidades
+                    </div>
+                </div>
+                <div
+                    class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
+                    <div class="dt-paging">
+                        <nav aria-label="pagination">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link previous" href="?page={{ page_obj.previous_page_number }}"
+                                        aria-label="Anterior">
+                                        <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item disabled">
+                                    <span class="page-link previous" aria-disabled="true">
+                                        <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                                    </span>
+                                </li>
+                                {% endif %}
+
+                                {% for num in paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="dt-paging-button page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="dt-paging-button page-item">
+                                    <a class="page-link next" href="?page={{ page_obj.next_page_number }}"
+                                        aria-label="Próximo">
+                                        <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="dt-paging-button page-item disabled">
+                                    <span class="page-link next" aria-disabled="true">
+                                        <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                                    </span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addEntity" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-edit-user">
+        <div class="modal-content p-3 p-md-5">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-4">
+                    <h3>Adicionar entidade</h3>
+                    <p>Adicione uma entidade para usá-la ao criar registros financeiros ou formas de pagamento.</p>
+                </div>
+                <form id="addEntityForm" class="row align-items-center g-3" method="post">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <label class="form-label" for="entityName">Nome</label>
+                        <input type="text" id="entityName" name="name" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="entityDescription">Descrição</label>
+                        <textarea id="entityDescription" name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label d-block">Tipo de Pessoa</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="person_type" id="pessoaFisica" value="F"
+                                required>
+                            <label class="form-check-label" for="pessoaFisica">Pessoa Física</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="person_type" id="pessoaJuridica"
+                                value="J">
+                            <label class="form-check-label" for="pessoaJuridica">Pessoa Jurídica</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="entityDocument">Documento</label>
+                        <input type="text" id="entityDocument" name="document" class="form-control"
+                            pattern="\d{11}|\d{14}" title="CPF (11 dígitos) ou CNPJ (14 dígitos)" required>
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-primary me-sm-3 me-1">Criar</button>
+                        <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="modal"
+                            aria-label="Close">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar deleção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir esta entidade?</p>
+                    <p class="text-danger">Essa ação não pode ser desfeita.</p>
+                    <p id="entityFinancialRecordsDeleteWarning">Essa entidade possui <span class="badge bg-danger"
+                            id="entityFinancialRecordsDeleteCount"></span> registros financeiros associados.</p>
+                    <input type="hidden" name="delete_id" id="delete_id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-simple modal-edit-user">
+        <div class="modal-content p-3 p-md-5">
+            <div class="modal-body">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="text-center mb-4">
+                    <h3>Editar Entidade</h3>
+                    <p>Atualize os dados da entidade.</p>
+                </div>
+                <form id="editEntityForm" class="row align-items-center g-3" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="edit_id" id="edit_id" value="">
+                    <div class="col-12">
+                        <label class="form-label" for="editEntityName">Nome</label>
+                        <input type="text" id="editEntityName" name="name" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="editEntityDescription">Descrição</label>
+                        <textarea id="editEntityDescription" name="description" class="form-control"
+                            rows="3"></textarea>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label d-block">Tipo de Pessoa</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="person_type" id="editPessoaFisica"
+                                value="F" required>
+                            <label class="form-check-label" for="editPessoaFisica">Pessoa Física</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="person_type" id="editPessoaJuridica"
+                                value="J">
+                            <label class="form-check-label" for="editPessoaJuridica">Pessoa Jurídica</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="editEntityDocument">Documento</label>
+                        <input type="text" id="editEntityDocument" name="document" class="form-control" required
+                            pattern="\d{11}|\d{14}" title="CPF (11 dígitos) ou CNPJ (14 dígitos)">
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-primary me-sm-3 me-1">Salvar</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const entityId = button.getAttribute('data-entity-id');
+        const deleteIdInput = document.getElementById('delete_id');
+        deleteIdInput.value = entityId;
+        const financialRecordsCount = button.getAttribute('data-financial-records-count');
+        if (financialRecordsCount == 0) {
+            entityFinancialRecordsDeleteWarning = document.getElementById('entityFinancialRecordsDeleteWarning').hidden = true;
+        } else {
+            const entityFinancialRecordsDeleteCount = document.getElementById('entityFinancialRecordsDeleteCount');
+            entityFinancialRecordsDeleteCount.textContent = financialRecordsCount;
+            entityFinancialRecordsDeleteWarning = document.getElementById('entityFinancialRecordsDeleteWarning').hidden = false;
+        }
+    });
+    deleteModal.addEventListener('hidden.bs.modal', function (event) {
+        const deleteIdInput = document.getElementById('delete_id');
+        deleteIdInput.value = '';
+    });
+
+    const addEntityModal = document.getElementById('addEntity');
+    addEntityModal.addEventListener('hidden.bs.modal', function (event) {
+        const addEntityForm = document.getElementById('addEntityForm');
+        addEntityForm.reset();
+    });
+    const editModal = document.getElementById('editModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        document.getElementById('edit_id').value = button.getAttribute('data-entity-id');
+        document.getElementById('editEntityName').value = button.getAttribute('data-entity-name');
+        document.getElementById('editEntityDescription').value = button.getAttribute('data-entity-description');
+        if (button.getAttribute('data-entity-person-type') === 'F') {
+            document.getElementById('editPessoaFisica').checked = true;
+        } else {
+            document.getElementById('editPessoaJuridica').checked = true;
+        }
+        document.getElementById('editEntityDocument').value = button.getAttribute('data-entity-document').replace(/\D/g, '');
+    });
+    const entityDocument = document.getElementById('entityDocument')
+    entityDocument.addEventListener('input', function (event) {
+        const value = event.target.value.replace(/\D/g, '');
+        if (value.length > 11) {
+            event.target.value = value.slice(0, 14);
+        } else {
+            event.target.value = value;
+        }
+    });
+    const entityEditDocument = document.getElementById('editEntityDocument')
+    entityEditDocument.addEventListener('input', function (event) {
+        const value = event.target.value.replace(/\D/g, '');
+        if (value.length > 11) {
+            event.target.value = value.slice(0, 14);
+        } else {
+            event.target.value = value;
+        }
+    });
+    entityDocument.addEventListener('change', function (event) {
+        if (event.target.value.length === 14) {
+            fetch(`https://open.cnpja.com/office/${event.target.value}`)
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Erro ao buscar dados do CNPJ');
+                    }
+                })
+                .then(data => {
+                    document.getElementById('entityName').value = data.company.name;
+                    document.getElementById('entityDescription').value = data.mainActivity.text;
+                    document.getElementById('pessoaJuridica').checked = true;
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                });
+        }
+    });
+</script>
+{% endblock extra_scripts %}

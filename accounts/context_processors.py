@@ -46,6 +46,12 @@ urls_data = [
         ],
     },
     {
+        "name": "Entidades",
+        "url": "accounts:entity_list",
+        "icon": "bx bx-user",
+        "permissions": ["accounts.view_entity"]
+    },
+    {
         "name": "Administração",
         "url": "admin:index",
         "icon": "bx bx-cog",
