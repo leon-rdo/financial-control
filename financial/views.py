@@ -1,8 +1,8 @@
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, ListView
+from django.views.generic import CreateView
 from django.db.models import Sum
 
-from financial.filters import FinancialRecordFilter
+from .filters import CategoryFilter, FinancialRecordFilter
 from financial.forms import FinancialRecordForm
 from .models import Category, FinancialRecord
 from django.shortcuts import redirect
@@ -34,9 +34,10 @@ class FinancialRecordListView(FilterView):
     }
 
 
-class CategoryListView(ListView):
+class CategoryListView(FilterView):
     template_name = "financial/categories/list.html"
     model = Category
+    filterset_class = CategoryFilter
     paginate_by = 40
     extra_context = {"title": "Categorias", "description": "Lista de categorias"}
 
