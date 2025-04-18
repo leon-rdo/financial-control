@@ -1,0 +1,15 @@
+<form method="GET">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="filtersOffcanvas" aria-labelledby="filtersOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 id="filtersOffcanvasLabel" class="offcanvas-title">Filtros</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            {{ filter.form.as_p }}
+        </div>
+        <div class="offcanvas-footer d-flex justify-content-between align-items-center px-4 py-2">
+            <button type="submit" class="btn btn-primary" data-bs-dismiss="offcanvas">Aplicar Filtros</button>
+            <a href="{% url 'financial:financial_record_list' %}" class="btn btn-danger">Limpar Filtros</a>
+        </div>
+    </div>
+</form>
