@@ -1,5 +1,5 @@
-from django_select2.forms import ModelSelect2MultipleWidget
-from django_filters import ModelMultipleChoiceFilter
+from django_select2.forms import ModelSelect2MultipleWidget, Select2MultipleWidget
+from django_filters import ModelMultipleChoiceFilter, MultipleChoiceFilter
 
 
 def create_model_select2_filter(model, search_fields=None):
@@ -21,4 +21,21 @@ def create_model_select2_filter(model, search_fields=None):
             },
             search_fields=search_fields if search_fields else [],
         ),
+    )
+
+
+def create_select2_multiple_filter(choices, **kwargs):
+    """
+    Função genérica para criar um filtro Select2 com opções múltiplas para campos baseados em choices.
+    Aceita kwargs para personalizar o filtro, como label, etc.
+    """
+    return MultipleChoiceFilter(
+        choices=choices,
+        widget=Select2MultipleWidget(
+            attrs={
+                "data-dropdown-parent": "#filtersOffcanvas",
+                "data-placeholder": "Selecione um ou mais itens..."
+            }
+        ),
+        **kwargs
     )
