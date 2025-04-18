@@ -48,8 +48,9 @@
     <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
     <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
     <script src="{% static 'assets/js/config.js' %}"></script>
-    {% if form %}
+    {% if form or filter %}
         <link rel="stylesheet" href="{% static 'assets/vendor/libs/select2/select2.css' %}" />
+        {{ filter.form.media.css }}
         {{ form.media.css }}
     {% endif %}
   </head>
@@ -232,8 +233,9 @@
 
     <!-- Main JS -->
     <script src="{% static 'assets/js/main.js' %}"></script>
-    {% if form %}
+    {% if form or filter %}
         {{ form.media.js }}
+        {{ filter.form.media.js }}
     {% endif %}
     {% block extra_scripts %}{% endblock extra_scripts %}
   </body>
