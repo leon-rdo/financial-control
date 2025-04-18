@@ -7,9 +7,8 @@
     <!-- Entity List Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntity">Adicionar
-                Entidade</button>
-            <a href="#" class="btn btn-primary">Filtros</a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEntity">Adicionar Entidade</button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#filtersOffcanvas">Filtros</button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="invoice-list-table table border-top mb-3">
@@ -124,6 +123,7 @@
             </div>
         </div>
     </div>
+    {% include 'snippets/filtersOffcanvas.html' %}
 </div>
 
 <div class="modal fade" id="addEntity" tabindex="-1" aria-hidden="true">

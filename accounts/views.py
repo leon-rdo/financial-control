@@ -1,15 +1,18 @@
 from django.shortcuts import redirect
-from django.views.generic import ListView, CreateView
+from django.views.generic import CreateView
 from django.urls import reverse_lazy
+from django_filters.views import FilterView
 
+from accounts.filters import EntityFilter, PaymentMethodFilter
 from accounts.forms import PaymentMethodForm
 from .models import Entity, PaymentMethod
 
 
-class EntityListView(ListView):
+class EntityListView(FilterView):
     template_name = "accounts/entities/list.html"
     model = Entity
     paginate_by = 40
+    filterset_class = EntityFilter
     extra_context = {"title": "Entidades", "description": "Lista de entidades"}
 
     def post(self, request, *args, **kwargs):
@@ -43,10 +46,11 @@ class EntityListView(ListView):
         return redirect(request.path)
 
 
-class PaymentMethodListView(ListView):
+class PaymentMethodListView(FilterView):
     template_name = "accounts/payment_methods/list.html"
     model = PaymentMethod
     paginate_by = 40
+    filterset_class = PaymentMethodFilter
     extra_context = {
         "title": "Formas de Pagamento",
         "description": "Lista de formas de pagamento",

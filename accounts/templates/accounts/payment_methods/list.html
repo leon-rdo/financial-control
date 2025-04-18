@@ -7,9 +7,8 @@
     <!-- Payment_method List Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <a href="{% url 'accounts:payment_method_create' %}" class="btn btn-primary">Adicionar Forma de
-                Pagamento</a>
-            <a href="#" class="btn btn-primary">Filtros</a>
+            <a href="{% url 'accounts:payment_method_create' %}" class="btn btn-primary">Adicionar Forma de Pagamento</a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#filtersOffcanvas">Filtros</button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="invoice-list-table table border-top mb-3">
@@ -120,6 +119,7 @@
             </div>
         </div>
     </div>
+    {% include 'snippets/filtersOffcanvas.html' %}
 </div>
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
