@@ -1,5 +1,5 @@
 from .models import Category, FinancialRecord
-from .widgets import create_model_select2_filter
+from utils.widgets import create_model_select2_filter
 import django_filters
 from django import forms
 
