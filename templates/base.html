@@ -236,6 +236,13 @@
     {% if form or filter %}
         {{ form.media.js }}
         {{ filter.form.media.js }}
+        <script>
+          document.getElementById("resetFilters").addEventListener("click", function (e) {
+            e.preventDefault();
+            const url = window.location.origin + window.location.pathname;
+            window.location.href = url;
+          });
+        </script>        
     {% endif %}
     {% block extra_scripts %}{% endblock extra_scripts %}
   </body>
