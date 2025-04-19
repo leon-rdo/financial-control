@@ -1,31 +1,75 @@
 import requests
 from .models import Entity, PaymentMethod
 from utils.widgets import create_model_select2_filter, create_select2_multiple_filter
-import django_filters
+from django_filters import FilterSet, CharFilter, MultipleChoiceFilter, ChoiceFilter
 from django import forms
 from django_select2.forms import Select2Widget
+from django.contrib.auth import get_user_model
 
 
-class EntityFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(
+class UserFilter(FilterSet):
+    username = CharFilter(
+        field_name="username",
+        lookup_expr="icontains",
+        label="Usuário contém",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    first_name = CharFilter(
+        field_name="first_name",
+        lookup_expr="icontains",
+        label="Nome contém",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    last_name = CharFilter(
+        field_name="last_name",
+        lookup_expr="icontains",
+        label="Sobrenome contém",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    email = CharFilter(
+        field_name="email",
+        lookup_expr="icontains",
+        label="E-mail contém",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    is_active = MultipleChoiceFilter(
+        field_name="is_active",
+        label="Ativo",
+        choices=[(True, "Sim"), (False, "Não")],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check d-flex justify-content-between align-items-center"}),
+    )
+    is_staff = MultipleChoiceFilter(
+        field_name="is_staff",
+        label="Administrador",
+        choices=[(True, "Sim"), (False, "Não")],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check d-flex justify-content-between align-items-center"}),
+    )
+
+    class Meta:
+        model = get_user_model()
+        fields = ["username", "first_name", "last_name", "email", "is_active", "is_staff"]
+
+
+class EntityFilter(FilterSet):
+    name = CharFilter(
         field_name="name",
         lookup_expr="icontains",
         label="Nome contém",
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
-    description = django_filters.CharFilter(
+    description = CharFilter(
         field_name="description",
         lookup_expr="icontains",
         label="Descrição contém",
         widget=forms.TextInput(attrs={"class": "form-control"}),
     )
-    person_type = django_filters.MultipleChoiceFilter(
+    person_type = MultipleChoiceFilter(
         field_name="person_type",
         label="Tipo de Pessoa",
         choices=[("F", "Pessoa Física"), ("J", "Pessoa Jurídica")],
         widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check d-flex justify-content-between align-items-center"}),
     )
-    document = django_filters.CharFilter(
+    document = CharFilter(
         field_name="document",
         lookup_expr="icontains",
         label="CPF/CNPJ contém",
@@ -37,8 +81,8 @@ class EntityFilter(django_filters.FilterSet):
         fields = ["name", "description", "person_type", "document"]
 
 
-class PaymentMethodFilter(django_filters.FilterSet):
-    fin_institution = django_filters.ChoiceFilter(
+class PaymentMethodFilter(FilterSet):
+    fin_institution = ChoiceFilter(
         widget=Select2Widget(
             attrs={
                 "class": "form-select",
@@ -58,7 +102,7 @@ class PaymentMethodFilter(django_filters.FilterSet):
         PaymentMethod._meta.get_field("payment_type").choices
     )
 
-    description = django_filters.CharFilter(
+    description = CharFilter(
         field_name="description",
         lookup_expr="icontains",
         label="Descrição contém",

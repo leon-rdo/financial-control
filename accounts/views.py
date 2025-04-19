@@ -2,10 +2,21 @@ from django.shortcuts import redirect
 from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
+from django.contrib.auth import get_user_model
 
-from accounts.filters import EntityFilter, PaymentMethodFilter
+from accounts.filters import EntityFilter, PaymentMethodFilter, UserFilter
 from accounts.forms import PaymentMethodForm
 from .models import Entity, PaymentMethod
+
+class UserListView(FilterView):
+    template_name = "accounts/users/list.html"
+    model = get_user_model()
+    paginate_by = 10
+    filterset_class = UserFilter
+    extra_context = {
+        "title": "Usuários",
+        "description": "Lista de usuários",
+    }
 
 
 class EntityListView(FilterView):

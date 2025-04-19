@@ -48,8 +48,14 @@ urls_data = [
     {
         "name": "Entidades",
         "url": "accounts:entity_list",
-        "icon": "bx bx-user",
+        "icon": "bx bx-sitemap",
         "permissions": ["accounts.view_entity"]
+    },
+    {
+        "name": "Usuários",
+        "url": "accounts:user_list",
+        "icon": "bx bxs-user-account",
+        "permissions": ["accounts.view_user"],
     },
     {
         "name": "Administração",

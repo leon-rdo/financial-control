@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="py-3 mb-4"><span class="text-muted fw-light">Usuário /</span> Lista</h4>
+
+  <!-- User List Table -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <a href="{% url 'admin:auth_user_add' %}" class="btn btn-primary">Adicionar Usuário</a>
+      <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas"
+        data-bs-target="#filtersOffcanvas">Filtros</button>
+    </div>
+    <div class="card-datatable table-responsive">
+      <table class="invoice-list-table table border-top mb-3 text-center">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Usuário</th>
+            <th>Ativo?</th>
+            <th>Administrador?</th>
+            <th>Superusuário?</th>
+            <th>Data de Registro</th>
+            <th>Último Acesso</th>
+            <th class="cell-fit">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in object_list %}
+          <tr>
+            <td class="dt-select"><input aria-label="Select row" class="form-check-input" type="checkbox" />
+            </td>
+            <td>
+              <div class="d-flex justify-content-start align-items-center user-name text-start">
+                <div class="avatar-wrapper">
+                  <div class="avatar avatar-sm me-3">
+                    {% if user.profile_picture %}
+                      <img src="{{ user.profile_picture.url }}" alt="Avatar"
+                        class="rounded-circle">
+                    {% else %}
+                      <span class="badge bg-secondary d-flex justify-content-center align-items-center rounded-circle h-100 w-100">{{ user.username|slice:1 }}</span>
+                    {% endif %}
+                    </div>
+                </div>
+                <div class="d-flex flex-column"><a href="app-user-view-account.html"
+                    class="text-body text-truncate"><span class="fw-medium">{{ user.get_full_name }}</span></a><small
+                    class="text-muted">{{ user.email }}</small></div>
+              </div>
+            </td>
+            <td><i class='bx bxs-{{ user.is_active|yesno:'check-circle text-success,x-circle text-danger' }}'></i></td>
+            <td><i class='bx bxs-{{ user.is_staff|yesno:'check-circle text-success,x-circle text-danger' }}'></i></td>
+            <td><i class='bx bxs-{{ user.is_superuser|yesno:'check-circle text-success,x-circle text-danger' }}'></i></td>
+            <td title="{{ user.date_joined|date:'l, j \d\e F \d\e Y à\s H:i:s' }}">{{ user.date_joined|date:'d/m/Y H:i:s' }}</td>
+            <td title="{{ user.last_login|date:'l, j \d\e F \d\e Y à\s H:i:s' }}">{{ user.last_login|date:'d/m/Y H:i:s' }}</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <a href="{% url 'admin:auth_user_change' user.id %}" class="btn btn-icon" aria-label="Editar" title="Editar">
+                  <i class="icon-base bx bx-edit icon-md"></i>
+                </a>
+                <a href="{% url 'admin:auth_user_delete' user.id %}" class="btn btn-icon" aria-label="Excluir" title="Excluir">
+                  <i class="icon-base bx bx-trash icon-md"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center">Nenhuma Usuário encontrada.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="row mx-3 justify-content-between">
+        <div
+          class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0">
+          <div class="dt-info" aria-live="polite" role="status">
+            Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} usuários
+          </div>
+        </div>
+        <div
+          class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
+          <div class="dt-paging">
+            <nav aria-label="pagination">
+              <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="dt-paging-button page-item">
+                  <a class="page-link previous" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+                    <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                  </a>
+                </li>
+                {% else %}
+                <li class="dt-paging-button page-item disabled">
+                  <span class="page-link previous" aria-disabled="true">
+                    <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
+                  </span>
+                </li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="dt-paging-button page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+                {% else %}
+                <li class="dt-paging-button page-item">
+                  <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="dt-paging-button page-item">
+                  <a class="page-link next" href="?page={{ page_obj.next_page_number }}" aria-label="Próximo">
+                    <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                  </a>
+                </li>
+                {% else %}
+                <li class="dt-paging-button page-item disabled">
+                  <span class="page-link next" aria-disabled="true">
+                    <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
+                  </span>
+                </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include 'snippets/filtersOffcanvas.html' %}
+</div>
+{% endblock content %}
