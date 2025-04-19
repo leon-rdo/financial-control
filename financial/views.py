@@ -41,7 +41,10 @@ class InstallmentListView(FilterView):
     paginate_by = 20
     extra_context = {
         "title": "Parcelas",
-        "description": "Lista de parcelas"
+        "description": "Lista de parcelas",
+        "total_amount": Installment.objects.aggregate(Sum("amount"))["amount__sum"] or 0,
+        "total_paid": Installment.objects.filter(is_paid=True).aggregate(Sum("amount"))["amount__sum"] or 0,
+        "total_unpaid": abs(Installment.objects.filter(is_paid=False).aggregate(Sum("amount"))["amount__sum"] or 0),
     }
 
 
