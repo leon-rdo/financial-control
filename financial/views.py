@@ -2,9 +2,9 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.db.models import Sum
 
-from .filters import CategoryFilter, FinancialRecordFilter
+from .filters import CategoryFilter, FinancialRecordFilter, InstallmentFilter
 from financial.forms import FinancialRecordForm
-from .models import Category, FinancialRecord
+from .models import Category, FinancialRecord, Installment
 from django.shortcuts import redirect
 from django_filters.views import FilterView
 
@@ -31,6 +31,17 @@ class FinancialRecordListView(FilterView):
         "total_incomes": FinancialRecord.objects.filter(amount__gte=0).aggregate(Sum("amount"))["amount__sum"],
         "total_expenses": abs(FinancialRecord.objects.filter(amount__lt=0).aggregate(Sum("amount"))["amount__sum"] or 0),
         "total_balance": FinancialRecord.objects.aggregate(Sum("amount"))["amount__sum"]
+    }
+
+
+class InstallmentListView(FilterView):
+    template_name = "financial/installments/list.html"
+    model = Installment
+    filterset_class = InstallmentFilter
+    paginate_by = 20
+    extra_context = {
+        "title": "Parcelas",
+        "description": "Lista de parcelas"
     }
 
 

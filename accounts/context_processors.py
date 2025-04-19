@@ -21,14 +21,20 @@ urls_data = [
         ],
     },
     {
+        "name": "Parcelas",
+        "url": "financial:installment_list",
+        "icon": "bx bx-credit-card",
+        "permissions": ["financial.view_installment"],
+    },
+    {
         "name": "Categorias",
         "url": "financial:category_list",
         "icon": "bx bx-category",
-        "permissions": ["financial.view_category"]
+        "permissions": ["financial.view_category"],
     },
     {
         "name": "Formas de Pagamento",
-        "icon": "bx bx-credit-card",
+        "icon": "bx bx-wallet",
         "permissions": ["accounts.view_paymentmethod"],
         "sub_urls": [
             {
@@ -49,7 +55,7 @@ urls_data = [
         "name": "Entidades",
         "url": "accounts:entity_list",
         "icon": "bx bx-sitemap",
-        "permissions": ["accounts.view_entity"]
+        "permissions": ["accounts.view_entity"],
     },
     {
         "name": "Usuários",

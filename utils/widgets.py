@@ -24,6 +24,12 @@ def create_model_select2_filter(model, search_fields=None):
     )
 
 
+def create_nested_select2_filter(field_name, model, search_fields=None):
+    f = create_model_select2_filter(model, search_fields)
+    f.field_name = field_name
+    return f
+
+
 def create_select2_multiple_filter(choices, **kwargs):
     """
     Função genérica para criar um filtro Select2 com opções múltiplas para campos baseados em choices.
@@ -34,7 +40,7 @@ def create_select2_multiple_filter(choices, **kwargs):
         widget=Select2MultipleWidget(
             attrs={
                 "data-dropdown-parent": "#filtersOffcanvas",
-                "data-placeholder": "Selecione um ou mais itens..."
+                "data-placeholder": "Selecione um ou mais itens...",
             }
         ),
         **kwargs
