@@ -85,6 +85,7 @@
                         <th>Entidade</th>
                         <th>Categoria</th>
                         <th>Valor</th>
+                        <th>Parcelas</th>
                         <th>Data</th>
                         <th class="cell-fit">Ações</th>
                     </tr>
@@ -123,10 +124,12 @@
                             </div>
                         </td>
                         <td class="dt-type-numeric">
-                            <span class="d-none">{{ record.amount|floatformat:"2" }}</span>R$ {{ record.amount|floatformat:"2" }}
+                            R$ {{ record.amount|floatformat:"2" }}
                         </td>
                         <td>
-                            <span class="d-none">{{ record.date|date:"Ymd" }}</span>
+                            {{ record.installments.count }}x
+                        </td>
+                        <td>
                             {{ record.date|date:"d/m/Y" }}
                         </td>
                         <td>
