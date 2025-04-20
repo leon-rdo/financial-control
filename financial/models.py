@@ -42,6 +42,10 @@ class FinancialRecord(models.Model):
     @property
     def is_income(self):
         return self.amount > 0
+    
+    @property
+    def is_paid(self):
+        return self.installments.filter(is_paid=True).count() == self.installments.count()
 
     def clean(self):
         if self.category:
