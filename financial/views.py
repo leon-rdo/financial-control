@@ -30,10 +30,17 @@ class FinancialRecordListView(FilterView):
     extra_context = {
         "title": "Registros Financeiros",
         "description": "Lista de registros financeiros",
-        "total_incomes": FinancialRecord.objects.filter(amount__gte=0).aggregate(Sum("amount"))["amount__sum"],
-        "total_expenses": abs(FinancialRecord.objects.filter(amount__lt=0).aggregate(Sum("amount"))["amount__sum"] or 0),
-        "total_balance": FinancialRecord.objects.aggregate(Sum("amount"))["amount__sum"]
     }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        total_incomes = FinancialRecord.objects.filter(amount__gte=0).aggregate(Sum("amount"))["amount__sum"] or 0
+        total_expenses = abs(FinancialRecord.objects.filter(amount__lt=0).aggregate(Sum("amount"))["amount__sum"] or 0)
+        total_balance = FinancialRecord.objects.aggregate(Sum("amount"))["amount__sum"] or 0
+        context["total_incomes"] = total_incomes
+        context["total_expenses"] = total_expenses
+        context["total_balance"] = total_balance
+        return context
 
 
 class FinancialRecordDetailView(DetailView):
