@@ -18,7 +18,7 @@
                         <th>Instituição financeira</th>
                         <th>Dono</th>
                         <th>Tipo</th>
-                        <th>Descrição</th>
+                        <th>Registros Fin.</th>
                         <th class="cell-fit">Ações</th>
                     </tr>
                 </thead>
@@ -32,7 +32,7 @@
                         </td>
                         <td>{{ payment_method.owner.name }}</td>
                         <td>{{ payment_method.get_payment_type_display }}</td>
-                        <td>{{ payment_method.description|default_if_none:'-'|truncatewords:7 }}</td>
+                        <td>{{ payment_method.financial_records.count }}</td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <a href="{% url 'accounts:payment_method_update' payment_method.pk %}" class="btn btn-icon" aria-label="Editar" title="Editar">
