@@ -135,15 +135,15 @@
           <button class="btn btn-primary d-grid w-100 mb-3" data-bs-toggle="offcanvas"
             data-bs-target="#sendInvoiceOffcanvas">
             <span class="d-flex align-items-center justify-content-center text-nowrap">
-              <i class="bx bx-paper-plane bx-xs me-1"></i> Enviar Fatura
+              <i class="bx bx-paper-plane bx-xs me-1"></i> Enviar Registro
             </span>
           </button>
           <button class="btn btn-primary d-grid w-100 mb-3">Baixar</button>
           <a class="btn btn-primary d-grid w-100 mb-3" target="_blank" href="#">
             Imprimir
           </a>
-          <a href="#" class="btn btn-primary d-grid w-100 mb-3">
-            Editar Fatura
+          <a href="{% url 'financial:financial_record_update' object.pk %}" class="btn btn-primary d-grid w-100 mb-3">
+            Editar Registro
           </a>
         </div>
       </div>

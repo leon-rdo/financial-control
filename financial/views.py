@@ -1,5 +1,5 @@
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView
+from django.views.generic import CreateView, DetailView, UpdateView
 from django.db.models import Sum
 
 from .filters import CategoryFilter, FinancialRecordFilter, InstallmentFilter
@@ -10,7 +10,7 @@ from django_filters.views import FilterView
 
 
 class FinancialRecordCreateView(CreateView):
-    template_name = "financial/financial-records/create.html"
+    template_name = "financial/financial-records/form.html"
     model = FinancialRecord
     form_class = FinancialRecordForm
     extra_context = {
@@ -50,6 +50,19 @@ class FinancialRecordDetailView(DetailView):
         "title": "Detalhes do Registro Financeiro",
         "description": "Detalhes do registro financeiro selecionado",
     }
+
+
+class FinancialRecordUpdateView(UpdateView):
+    template_name = "financial/financial-records/form.html"
+    model = FinancialRecord
+    form_class = FinancialRecordForm
+    extra_context = {
+        "title": "Atualizar Registro Financeiro",
+        "description": "Formulário para atualizar um registro financeiro existente",
+    }
+    
+    def get_success_url(self):
+        return reverse_lazy("financial:financial_record_detail", kwargs={"pk": self.object.pk})
 
 
 class InstallmentListView(FilterView):
