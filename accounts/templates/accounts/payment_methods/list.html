@@ -1,5 +1,20 @@
 {% extends 'base.html' %}
 
+{% block extra_head %}
+<style>
+    @media (min-width: 768px) {
+        #viewPaymentMethodOffcanvas.offcanvas-end {
+            width: 60vw;
+        }
+    }
+    @media (min-width: 992px) {
+        #viewPaymentMethodOffcanvas.offcanvas-end {
+            width: 45vw;
+        }
+    }
+</style>
+{% endblock extra_head %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4"><span class="text-muted fw-light">Forma de Pagamento /</span> Lista</h4>
@@ -7,8 +22,10 @@
     <!-- Payment_method List Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <a href="{% url 'accounts:payment_method_create' %}" class="btn btn-primary">Adicionar Forma de Pagamento</a>
-            <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#filtersOffcanvas">Filtros</button>
+            <a href="{% url 'accounts:payment_method_create' %}" class="btn btn-primary">Adicionar Forma de
+                Pagamento</a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas"
+                data-bs-target="#filtersOffcanvas">Filtros</button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="invoice-list-table table border-top mb-3">
@@ -35,7 +52,20 @@
                         <td>{{ payment_method.financial_records.count }}</td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <a href="{% url 'accounts:payment_method_update' payment_method.pk %}" class="btn btn-icon" aria-label="Editar" title="Editar">
+                                <button class="btn btn-icon" data-bs-toggle="offcanvas"
+                                    data-bs-target="#viewPaymentMethodOffcanvas" aria-label="Ver" title="Ver"
+                                    data-fin_institution="{{ payment_method.fin_institution }}"
+                                    data-owner="{{ payment_method.owner.name }}"
+                                    data-owner_type="Pessoa {{ payment_method.owner.get_person_type_display }}"
+                                    data-owner_document="{{ payment_method.owner.document|default:'Sem documento' }}"
+                                    data-owner_description="{{ payment_method.owner.description|default:'Sem descrição' }}"
+                                    data-payment_type="{{ payment_method.get_payment_type_display }}"
+                                    data-description="{{ payment_method.description|default:'Sem descrição' }}"
+                                    data-record_count="{{ payment_method.financial_records.count }}">
+                                    <i class="icon-base bx bx-show icon-md"></i>
+                                </button>
+                                <a href="{% url 'accounts:payment_method_update' payment_method.pk %}"
+                                    class="btn btn-icon" aria-label="Editar" title="Editar">
                                     <i class="icon-base bx bx-edit icon-md"></i>
                                 </a>
                                 <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
@@ -62,7 +92,8 @@
                         Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} forma de pagamentos
                     </div>
                 </div>
-                <div class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
+                <div
+                    class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
                     <div class="dt-paging">
                         <nav aria-label="pagination">
                             <ul class="pagination">
@@ -141,6 +172,48 @@
         </div>
     </div>
 </div>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="viewPaymentMethodOffcanvas" aria-labelledby="viewPaymentMethodOffcanvasLabel">
+    <div class="offcanvas-header">
+        <h5 id="viewPaymentMethodOffcanvasLabel" class="offcanvas-title">Ver Forma de Pagamento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+    </div>
+    <div class="offcanvas-body text-nowrap">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold mb-1">Instituição Financeira</h6>
+                <p id="fin_institution"></p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold mb-1">Tipo de Pagamento</h6>
+                <p id="payment_type"></p>
+            </div>
+            <div class="col-md-6 mb-3 text-wrap">
+                <h6 class="fw-bold mb-1">Dono</h6>
+                <p id="owner"></p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold mb-1">Tipo de Pessoa</h6>
+                <p id="owner_type"></p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold mb-1">CPF/CNPJ</h6>
+                <p id="owner_document"></p>
+            </div>
+            <div class="col-md-6 mb-3 text-wrap">
+                <h6 class="fw-bold mb-1">Descrição do Dono</h6>
+                <p id="owner_description"></p>
+            </div>
+            <div class="col-md-6 mb-3 text-wrap">
+                <h6 class="fw-bold mb-1">Descrição da Forma</h6>
+                <p id="description"></p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold mb-1">Qtd. de Registros Financeiros</h6>
+                <p id="record_count"></p>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block extra_scripts %}
@@ -163,6 +236,23 @@
     deleteModal.addEventListener('hidden.bs.modal', function (event) {
         const deleteIdInput = document.getElementById('delete_id');
         deleteIdInput.value = '';
+    });
+    const viewPaymentMethodOffcanvas = document.getElementById('viewPaymentMethodOffcanvas');
+    viewPaymentMethodOffcanvas.addEventListener('show.bs.offcanvas', function (event) {
+        const button = event.relatedTarget;
+        const finInstitution = button.getAttribute('data-fin_institution');
+        const owner = button.getAttribute('data-owner');
+        const paymentType = button.getAttribute('data-payment_type');
+        const description = button.getAttribute('data-description');
+
+        document.getElementById('fin_institution').textContent = finInstitution;
+        document.getElementById('owner').textContent = owner;
+        document.getElementById('owner_type').textContent = button.getAttribute('data-owner_type');
+        document.getElementById('owner_document').textContent = button.getAttribute('data-owner_document');
+        document.getElementById('owner_description').textContent = button.getAttribute('data-owner_description');
+        document.getElementById('payment_type').textContent = paymentType;
+        document.getElementById('description').textContent = description;
+        document.getElementById('record_count').textContent = button.getAttribute('data-record_count');
     });
 </script>
 {% endblock extra_scripts %}
