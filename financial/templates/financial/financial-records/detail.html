@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="row invoice-preview">
+    <!-- Register -->
+    <div class="col-xl-9 col-md-8 col-12 mb-md-0 mb-4">
+      <div class="card invoice-preview-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between flex-xl-row flex-md-column flex-sm-row flex-column p-sm-3 p-0">
+            <div class="mb-xl-0 mb-4">
+              <div class="d-flex align-items-center svg-illustration mb-3 gap-2">
+                <span class="app-brand-logo demo">
+                  <img src="{% static 'assets/img/branding/black-wallet.svg' %}" alt="Logo" width="30" height="30" />
+                </span>
+                <span class="app-brand-text demo text-body fw-bold">Controle Financeiro</span>
+              </div>
+              <div class="mb-2">
+              <h6 class="mb-0">Descrição:</h6>
+              {{ object.description|linebreaks }}
+              </div>
+            </div>
+            <div>
+              <h4>Registro Financeiro #{{ object.pk }}</h4>
+              <div class="mb-2">
+                <span class="me-1" title="{{ object.category.description }}">{{ object.category.name }} &mdash; {% if object.category.is_income %}Receita <i class="bx bxs-upvote text-success"></i>{% else %}Despesa <i
+                    class="bx bxs-downvote text-danger"></i>{% endif %}</span>
+              </div>
+              <div class="mb-2">
+                <span class="me-1">Realizado em:</span>
+                <span class="fw-medium" title="{{ object.date|date:'l, j \d\e F \d\e Y' }}">{{ object.date|date:'d/m/Y' }}</span>
+              </div>
+              <div>
+                <span class="me-1">Última parcela:</span>
+                {% with object.installments.first as last_installment %}
+                <span class="fw-medium" title="{{ last_installment.due_date|date:'F \d\e Y' }}">
+                  {{ last_installment.due_date|date:'F/Y' }}
+                </span>
+                {% endwith %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="my-0" />
+        <div class="card-body">
+          <div class="row p-sm-3 p-0">
+            <div class="col-xl-6 col-md-12 col-sm-5 col-12 mb-xl-0 mb-md-4 mb-sm-0 mb-4">
+              <h6 class="pb-2">Entidade:</h6>
+              <p class="mb-1">{{ object.entity.name }}</p>
+              <p class="mb-1">
+                {% if object.entity.person_type == "F" %}
+                <i class="bx bxs-user"></i> Pessoa Física
+                {% else %}
+                <i class="bx bxs-business"></i> Pessoa Jurídica
+                {% endif %}
+              </p>
+              <p class="mb-1">{{ object.entity.description|truncatewords:7 }}</p>
+              <p class="mb-1">Documento: {{ object.entity.document|default:'-----' }}</p>
+            </div>
+            <div class="col-xl-6 col-md-12 col-sm-7 col-12">
+              <h6 class="pb-2">Pagamento:</h6>
+              <table>
+                <tbody>
+                  <tr>
+                    <td class="pe-3">Valor Total:</td>
+                    <td>R$ {{ object.amount }}</td>
+                  </tr>
+                  <tr>
+                    <td class="pe-3">Instituição Financeira:</td>
+                    <td>{{ object.payment_method.fin_institution }}</td>
+                  </tr>
+                  <tr>
+                    <td class="pe-3">Tipo de Pagamento:</td>
+                    <td>
+                      {% if object.payment_method.payment_type == "C" %}Cartão
+                      {% elif object.payment_method.payment_type == "B" %}Boleto
+                      {% elif object.payment_method.payment_type == "D" %}Débito
+                      {% elif object.payment_method.payment_type == "P" %}Pix
+                      {% elif object.payment_method.payment_type == "T" %}Transferência
+                      {% else %}Outros{% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="pe-3">Proprietário:</td>
+                    <td>{{ object.payment_method.owner.name }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="table-responsive pb-5">
+          <table class="table border-top m-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Vencimento</th>
+                <th>Valor</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% now 'm/Y' as now %}
+              {% for installment in object.installments.all %}
+              <tr {% if installment.due_date|date:'m/Y' == now %}
+                class="bg-secondary-subtle"
+              {% endif %}>
+                <td>{{ installment.installment_number }}</td>
+                <td>{{ installment.due_date|date:'F \d\e Y' }}</td>
+                <td>R$ {{ installment.amount }}</td>
+                <td>
+                  {% if installment.is_paid %}
+                  <span class="badge bg-success">Pago</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center">Nenhuma parcela cadastrada.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- /Register -->
+
+    <!-- Actions -->
+    <div class="col-xl-3 col-md-4 col-12 invoice-actions">
+      <div class="card">
+        <div class="card-body">
+          <button class="btn btn-primary d-grid w-100 mb-3" data-bs-toggle="offcanvas"
+            data-bs-target="#sendInvoiceOffcanvas">
+            <span class="d-flex align-items-center justify-content-center text-nowrap">
+              <i class="bx bx-paper-plane bx-xs me-1"></i> Enviar Fatura
+            </span>
+          </button>
+          <button class="btn btn-primary d-grid w-100 mb-3">Baixar</button>
+          <a class="btn btn-primary d-grid w-100 mb-3" target="_blank" href="#">
+            Imprimir
+          </a>
+          <a href="#" class="btn btn-primary d-grid w-100 mb-3">
+            Editar Fatura
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- /Actions -->
+  </div>
+
+  <!-- Send Record Sidebar -->
+  <div class="offcanvas offcanvas-end" id="sendInvoiceOffcanvas" aria-hidden="true">
+    <div class="offcanvas-header mb-3">
+      <h5 class="offcanvas-title">Enviar Registro por E-mail</h5>
+      <button
+        type="button"
+        class="btn-close text-reset"
+        data-bs-dismiss="offcanvas"
+        aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body flex-grow-1">
+      <form>
+        <div class="mb-3">
+          <label for="invoice-from" class="form-label">De</label>
+          <input
+            type="text"
+            class="form-control"
+            id="invoice-from"
+            value="{{ user.email }}"
+            placeholder="exemplo@email.com" />
+        </div>
+        <div class="mb-3">
+          <label for="invoice-to" class="form-label">Para</label>
+          <input
+            type="text"
+            class="form-control"
+            id="invoice-to"
+            value="{{ user.email }}"
+            placeholder="exemplo@email.com" />
+        </div>
+        <div class="mb-3">
+          <label for="invoice-subject" class="form-label">Assunto</label>
+          <input
+            type="text"
+            class="form-control"
+            id="invoice-subject"
+            value="Registro Financeiro no valor de R$ {{ object.amount }} para {{ object.entity.name }}"
+            placeholder="Registro Financeiro..." />
+        </div>
+        <div class="mb-3">
+          <label for="invoice-message" class="form-label">Mensagem</label>
+          <textarea class="form-control" name="invoice-message" id="invoice-message" cols="3" rows="8">
+            Registro Financeiro #{{ object.pk }}
+            Descrição: {{ object.description|striptags }}
+            Categoria: {{ object.category.name }} {% if object.category.is_income %}(Receita){% else %}(Despesa){% endif %}
+            Valor Total: R$ {{ object.amount }}
+            Entidade: {{ object.entity.name }}
+            Data: {{ object.date|date:'d/m/Y' }}
+          </textarea>
+        </div>
+        <div class="mb-4">
+          <span class="badge bg-label-primary d-flex align-items-center">
+            <i class="bx bx-link bx-xs"></i>
+            <span class="align-middle">Registro Financeiro em anexo</span>
+          </span>
+        </div>
+        <div class="mb-3 d-flex flex-wrap">
+          <button type="button" class="btn btn-primary me-3" data-bs-dismiss="offcanvas">Enviar</button>
+          <button type="button" class="btn btn-label-secondary" data-bs-dismiss="offcanvas">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- /Send Record Sidebar -->
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}{% endblock extra_scripts %}
