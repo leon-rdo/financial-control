@@ -8,6 +8,7 @@ from accounts.filters import EntityFilter, PaymentMethodFilter, UserFilter
 from accounts.forms import PaymentMethodForm
 from .models import Entity, PaymentMethod
 
+
 class UserListView(FilterView):
     template_name = "accounts/users/list.html"
     model = get_user_model()

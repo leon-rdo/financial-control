@@ -142,10 +142,13 @@
                                     aria-label="Editar" title="Editar">
                                     <i class="icon-base bx bx-edit icon-md"></i>
                                 </a>
-                                <a href="#" class="btn btn-icon delete-record" data-bs-toggle="tooltip"
-                                    data-bs-placement="top" aria-label="Excluir" title="Excluir">
+                                <button class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                    data-record-id="{{ record.id }}"
+                                    data-installments-count="{{ record.installments.count }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir"
+                                    title="Excluir">
                                     <i class="icon-base bx bx-trash icon-md"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -218,6 +221,51 @@
     </div>
     {% include 'snippets/filtersOffcanvas.html' %}
 </div>
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar deleção</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir este registro financeiro?</p>
+                    <p class="text-danger">Essa ação não pode ser desfeita.</p>
+                    <p id="installmentsDeleteWarning">Esse registro possui <span class="badge bg-danger" id="installmentsDeleteCount"></span> parcela(s) associada(s).</p>
+                    <input type="hidden" name="delete_id" id="delete_id" value="">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock content %}
 
-{% block extra_scripts %}{% endblock extra_scripts %}
+{% block extra_scripts %}
+<script>
+    const deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const recordId = button.getAttribute('data-record-id');
+        const deleteIdInput = document.getElementById('delete_id');
+        deleteIdInput.value = recordId;
+        const financialRecordsCount = button.getAttribute('data-installments-count');
+        if (financialRecordsCount == 0) {
+            installmentsDeleteWarning = document.getElementById('installmentsDeleteWarning').hidden = true;
+        } else {
+            const installmentsDeleteCount = document.getElementById('installmentsDeleteCount');
+            installmentsDeleteCount.textContent = financialRecordsCount;
+            installmentsDeleteWarning = document.getElementById('installmentsDeleteWarning').hidden = false;
+        }
+    });
+    deleteModal.addEventListener('hidden.bs.modal', function (event) {
+        const deleteIdInput = document.getElementById('delete_id');
+        deleteIdInput.value = '';
+    });
+</script>
+{% endblock extra_scripts %}

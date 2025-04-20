@@ -42,6 +42,14 @@ class FinancialRecordListView(FilterView):
         context["total_balance"] = total_balance
         return context
 
+    def post(self, request, *args, **kwargs):
+        delete_id = request.POST.get("delete_id")
+
+        if delete_id:
+            FinancialRecord.objects.filter(id=delete_id).delete()
+
+        return redirect(request.path)
+
 
 class FinancialRecordDetailView(DetailView):
     template_name = "financial/financial-records/detail.html"
