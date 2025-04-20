@@ -17,7 +17,9 @@ class FinancialRecordCreateView(CreateView):
         "title": "Criar Registro Financeiro",
         "description": "Formulário para criar um novo registro financeiro",
     }
-    success_url = reverse_lazy("financial:financial_record_list")
+    
+    def get_success_url(self):
+        return reverse_lazy("financial:financial_record_detail", kwargs={"pk": self.object.pk})
 
 
 class FinancialRecordListView(FilterView):
