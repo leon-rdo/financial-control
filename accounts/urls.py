@@ -8,4 +8,5 @@ urlpatterns = [
     path("entidades/", EntityListView.as_view(), name="entity_list"),
     path("metodos-de-pagamento/", PaymentMethodListView.as_view(), name="payment_method_list"),
     path("metodos-de-pagamento/criar/", PaymentMethodCreateView.as_view(), name="payment_method_create"),
+    path("metodos-de-pagamento/<int:pk>/editar/", PaymentMethodUpdateView.as_view(), name="payment_method_update"),
 ]

@@ -1,5 +1,5 @@
 from django.shortcuts import redirect
-from django.views.generic import CreateView
+from django.views.generic import CreateView, UpdateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
 from django.contrib.auth import get_user_model
@@ -58,6 +58,17 @@ class EntityListView(FilterView):
         return redirect(request.path)
 
 
+class PaymentMethodCreateView(CreateView):
+    model = PaymentMethod
+    form_class = PaymentMethodForm
+    template_name = "accounts/payment_methods/form.html"
+    success_url = reverse_lazy("accounts:payment_method_list")
+    extra_context = {
+        "title": "Criar Forma de Pagamento",
+        "description": "Criar uma nova forma de pagamento",
+    }
+
+
 class PaymentMethodListView(FilterView):
     template_name = "accounts/payment_methods/list.html"
     model = PaymentMethod
@@ -77,12 +88,12 @@ class PaymentMethodListView(FilterView):
         return redirect(request.path)
 
 
-class PaymentMethodCreateView(CreateView):
+class PaymentMethodUpdateView(UpdateView):
     model = PaymentMethod
     form_class = PaymentMethodForm
-    template_name = "accounts/payment_methods/create.html"
+    template_name = "accounts/payment_methods/form.html"
     success_url = reverse_lazy("accounts:payment_method_list")
     extra_context = {
-        "title": "Criar Forma de Pagamento",
-        "description": "Criar uma nova forma de pagamento",
+        "title": "Atualizar Forma de Pagamento",
+        "description": "Atualizar uma forma de pagamento",
     }
