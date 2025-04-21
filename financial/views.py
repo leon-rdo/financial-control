@@ -59,6 +59,14 @@ class FinancialRecordDetailView(DetailView):
         "description": "Detalhes do registro financeiro selecionado",
     }
 
+    def post(self, request, *args, **kwargs):
+        delete_id = request.POST.get("delete_id")
+
+        if delete_id:
+            FinancialRecord.objects.filter(id=delete_id).delete()
+
+        return redirect(request.path)
+
 
 class FinancialRecordUpdateView(UpdateView):
     template_name = "financial/financial-records/form.html"
