@@ -1,5 +1,7 @@
-from django.db import models
+from django.db import models, transaction
 from django.forms import ValidationError
+from decimal import Decimal, ROUND_DOWN
+from dateutil.relativedelta import relativedelta
 
 
 class Category(models.Model):
@@ -46,6 +48,39 @@ class FinancialRecord(models.Model):
     @property
     def is_paid(self):
         return self.installments.filter(is_paid=True).count() == self.installments.count()
+    
+    def create_installments(self, qty: int, layaway: bool):
+        """
+        Create installments for this record, distributing cents in the last one.
+        """
+        total = abs(self.amount)
+        base = (total / qty).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
+        last = (total - base * (qty - 1)).quantize(Decimal('0.01'))
+
+        parcelas = []
+        for i in range(qty):
+            numero = i + 1
+            vencimento = (
+                self.date + relativedelta(months=+numero)
+                if layaway else
+                self.date
+            )
+            pago = False if layaway else True
+            amt = base if i < qty - 1 else last
+
+            parcelas.append(
+                Installment(
+                    fin_record=self,
+                    installment_number=numero,
+                    due_date=vencimento,
+                    amount=amt,
+                    is_paid=pago,
+                )
+            )
+
+        with transaction.atomic():
+            self.installments.all().delete()
+            Installment.objects.bulk_create(parcelas)
 
     def clean(self):
         if self.category:

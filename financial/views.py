@@ -7,6 +7,8 @@ from financial.forms import FinancialRecordForm
 from .models import Category, FinancialRecord, Installment
 from django.shortcuts import redirect
 from django_filters.views import FilterView
+from dateutil.relativedelta import relativedelta
+from decimal import Decimal, ROUND_DOWN
 
 
 class FinancialRecordCreateView(CreateView):
@@ -17,7 +19,15 @@ class FinancialRecordCreateView(CreateView):
         "title": "Criar Registro Financeiro",
         "description": "Formulário para criar um novo registro financeiro",
     }
-    
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        record = self.object
+        qty = form.cleaned_data.get("installments_quantity") or 1
+        layaway = form.cleaned_data.get("is_layaway")
+        record.create_installments(qty, layaway)
+        return response
+
     def get_success_url(self):
         return reverse_lazy("financial:financial_record_detail", kwargs={"pk": self.object.pk})
 
