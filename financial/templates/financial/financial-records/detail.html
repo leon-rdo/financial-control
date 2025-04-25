@@ -44,19 +44,21 @@
         <hr class="my-0" />
         <div class="card-body">
           <div class="row p-sm-3 p-0">
-            <div class="col-xl-6 col-md-12 col-sm-5 col-12 mb-xl-0 mb-md-4 mb-sm-0 mb-4">
-              <h6 class="pb-2">Entidade:</h6>
-              <p class="mb-1">{{ object.entity.name }}</p>
-              <p class="mb-1">
-                {% if object.entity.person_type == "F" %}
-                <i class="bx bxs-user"></i> Pessoa Física
-                {% else %}
-                <i class="bx bxs-business"></i> Pessoa Jurídica
-                {% endif %}
-              </p>
-              <p class="mb-1">{{ object.entity.description|truncatewords:7 }}</p>
-              <p class="mb-1">Documento: {{ object.entity.document|default:'-----' }}</p>
-            </div>
+            {% if object.entity %}
+              <div class="col-xl-6 col-md-12 col-sm-5 col-12 mb-xl-0 mb-md-4 mb-sm-0 mb-4">
+                <h6 class="pb-2">Entidade:</h6>
+                <p class="mb-1">{{ object.entity.name }}</p>
+                <p class="mb-1">
+                  {% if object.entity.person_type == "F" %}
+                  <i class="bx bxs-user"></i> Pessoa Física
+                  {% else %}
+                  <i class="bx bxs-business"></i> Pessoa Jurídica
+                  {% endif %}
+                </p>
+                <p class="mb-1">{{ object.entity.description|truncatewords:7 }}</p>
+                <p class="mb-1">Documento: {{ object.entity.document|default:'-----' }}</p>
+              </div>
+            {% endif %}
             <div class="col-xl-6 col-md-12 col-sm-7 col-12">
               <h6 class="pb-2">Pagamento:</h6>
               <table>
@@ -65,25 +67,27 @@
                     <td class="pe-3">Valor Total:</td>
                     <td>R$ {{ object.amount }}</td>
                   </tr>
-                  <tr>
-                    <td class="pe-3">Instituição Financeira:</td>
-                    <td>{{ object.payment_method.fin_institution }}</td>
-                  </tr>
-                  <tr>
-                    <td class="pe-3">Tipo de Pagamento:</td>
-                    <td>
-                      {% if object.payment_method.payment_type == "C" %}Cartão
-                      {% elif object.payment_method.payment_type == "B" %}Boleto
-                      {% elif object.payment_method.payment_type == "D" %}Débito
-                      {% elif object.payment_method.payment_type == "P" %}Pix
-                      {% elif object.payment_method.payment_type == "T" %}Transferência
-                      {% else %}Outros{% endif %}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="pe-3">Proprietário:</td>
-                    <td>{{ object.payment_method.owner.name }}</td>
-                  </tr>
+                  {% if object.payment_method %}
+                    <tr>
+                      <td class="pe-3">Instituição Financeira:</td>
+                      <td>{{ object.payment_method.fin_institution }}</td>
+                    </tr>
+                    <tr>
+                      <td class="pe-3">Tipo de Pagamento:</td>
+                      <td>
+                        {% if object.payment_method.payment_type == "C" %}Cartão
+                        {% elif object.payment_method.payment_type == "B" %}Boleto
+                        {% elif object.payment_method.payment_type == "D" %}Débito
+                        {% elif object.payment_method.payment_type == "P" %}Pix
+                        {% elif object.payment_method.payment_type == "T" %}Transferência
+                        {% else %}Outros{% endif %}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="pe-3">Proprietário:</td>
+                      <td>{{ object.payment_method.owner.name }}</td>
+                    </tr>
+                  {% endif %}
                 </tbody>
               </table>
             </div>
