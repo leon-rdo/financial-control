@@ -139,19 +139,19 @@ class Command(BaseCommand):
                         date_str = row["Data"].strip()
                         try:
                             date_obj = datetime.strptime(date_str, "%d/%m/%Y").date()
-                        except Exception as e:
+                        except ValueError as e:
                             logger.error(
                                 f"Data inválida ({date_str}) em receita. Registro ignorado. Erro: {e}"
                             )
                             continue
                         try:
                             amount = parse_float_br(row["Valor"])
-                        except Exception as e:
+                        except ValueError as e:
                             logger.error(
                                 f"Valor inválido ({row['Valor']}) em receita. Registro ignorado. Erro: {e}"
                             )
                             continue
-                        description = row["Descrição"].strip()
+
                         entidade_id = row["Entidade"].strip()
                         try:
                             entity = entities_map[entidade_id]
@@ -160,19 +160,10 @@ class Command(BaseCommand):
                                 f"Entidade com ID {entidade_id} não encontrada em receita. Registro ignorado."
                             )
                             continue
-                        # Associa o método de pagamento disponível para a entidade
-                        payment_method = PaymentMethod.objects.filter(
-                            owner=entity
-                        ).first()
-                        if not payment_method:
-                            payment_method = PaymentMethod.objects.create(
-                                fin_institution="Nenhuma", owner=entity
-                            )
-                            logger.info(
-                                f"Forma de pagamento padrão criada para entidade {entity.name}: Nenhuma"
-                            )
 
-                        # Mapeia a categoria informada no CSV para um objeto Category (is_income=True)
+                        # Não atribui forma de pagamento para incomes
+                        payment_method = None
+
                         cat_name = (
                             row["Categoria"].strip() if row["Categoria"] else "Receitas"
                         )
@@ -188,13 +179,24 @@ class Command(BaseCommand):
 
                         fin_record = FinancialRecord.objects.create(
                             amount=amount,
-                            description=description,
+                            description=row["Descrição"].strip(),
                             entity=entity,
                             payment_method=payment_method,
                             date=date_obj,
                             category=category_obj,
                         )
                         record_map[income_id] = fin_record
+
+                        Installment.objects.create(
+                            fin_record=fin_record,
+                            installment_number=1,
+                            due_date=date_obj.replace(day=1),
+                            amount=amount,
+                            is_paid=True,
+                        )
+                        logger.debug(
+                            f"Parcela criada para receita {income_id}: Parcela 1"
+                        )
                         logger.debug(f"Receita criada: {fin_record}")
                 logger.info("Receitas importadas com sucesso.")
 
@@ -206,50 +208,38 @@ class Command(BaseCommand):
                         date_str = row["Data"].strip()
                         try:
                             date_obj = datetime.strptime(date_str, "%d/%m/%Y").date()
-                        except Exception as e:
+                        except ValueError as e:
                             logger.error(
                                 f"Data inválida ({date_str}) em despesa. Registro ignorado. Erro: {e}"
                             )
                             continue
+
                         try:
                             amount = parse_float_br(row["Valor"])
-                        except Exception as e:
+                        except ValueError as e:
                             logger.error(
                                 f"Valor inválido ({row['Valor']}) em despesa. Registro ignorado. Erro: {e}"
                             )
                             continue
+
                         amount = -abs(amount)  # Garante valor negativo
                         description = row["Descrição"].strip()
+
                         recebedor_id = row["Recebedor"].strip()
-                        try:
-                            entity = entities_map[recebedor_id]
-                        except KeyError:
+                        entity = entities_map.get(recebedor_id)
+                        if entity is None:
                             logger.warning(
-                                f"Entidade com ID {recebedor_id} não encontrada em despesa. Usando entidade padrão 'Desconhecida'."
+                                f"Entidade com ID {recebedor_id} não encontrada em despesa. Registrando sem entidade."
                             )
-                            # Cria (ou recupera) a entidade padrão "Desconhecida"
-                            if "default" not in entities_map:
-                                default_entity, created = Entity.objects.get_or_create(
-                                    name="Desconhecida",
-                                    defaults={
-                                        "description": "Entidade padrão para registros sem entidade",
-                                        "person_type": "F",
-                                        "document": "",
-                                    },
-                                )
-                                entities_map["default"] = default_entity
-                            entity = entities_map["default"]
-                        # Usa o mapeamento pelo ID antigo do método de pagamento
+
                         old_pm_id = row["Forma de Pagamento"].strip()
-                        if old_pm_id in payment_methods_map:
-                            payment_method = payment_methods_map[old_pm_id]
-                        else:
+                        payment_method = payment_methods_map.get(old_pm_id)
+                        if not payment_method:
                             logger.warning(
                                 f"Método de pagamento '{old_pm_id}' não encontrado para despesa. Registro ignorado."
                             )
                             continue
 
-                        # Mapeia a categoria informada no CSV para um objeto Category (is_income=False)
                         cat_name = (
                             row["Categoria"].strip() if row["Categoria"] else "Despesas"
                         )
@@ -285,42 +275,45 @@ class Command(BaseCommand):
                                 f"Registro financeiro não encontrado para parcela (Lançamento: {lancamento_key}). Parcela ignorada."
                             )
                             continue
+
+                        parent = record_map[lancamento_key]
+
                         try:
                             year = int(row["ANO"])
                             month = int(row["Mês"])
-                        except Exception as e:
+                        except ValueError as e:
                             logger.error(
                                 f"ANO ou Mês inválidos em parcela. Parcela ignorada. Erro: {e}"
                             )
                             continue
+
                         due_date = datetime(year=year, month=month, day=1).date()
+
                         try:
-                            installment_amount = parse_float_br(row["Valor"])
-                        except Exception as e:
+                            raw = parse_float_br(row["Valor"])
+                        except ValueError as e:
                             logger.error(
                                 f"Valor inválido ({row['Valor']}) na parcela. Parcela ignorada. Erro: {e}"
                             )
                             continue
+
+                        # Garante que parcelas de expenses fiquem negativas
+                        installment_amount = raw * (-1 if parent.amount < 0 else 1)
+
                         try:
                             installment_number = int(row["Nº da Parcela"])
-                        except Exception as e:
+                        except ValueError as e:
                             logger.error(
                                 f"Nº da Parcela inválido ({row['Nº da Parcela']}). Parcela ignorada. Erro: {e}"
                             )
                             continue
-                        is_paid = row["Foi paga?"].strip().lower() in [
-                            "sim",
-                            "true",
-                            "1",
-                            "yes",
-                        ]
 
                         Installment.objects.create(
-                            fin_record=record_map[lancamento_key],
+                            fin_record=parent,
                             installment_number=installment_number,
                             due_date=due_date,
                             amount=installment_amount,
-                            is_paid=is_paid,
+                            is_paid=True,
                         )
                         logger.debug(
                             f"Parcela criada para lançamento {lancamento_key}: Parcela {installment_number}"
