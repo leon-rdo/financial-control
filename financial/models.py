@@ -57,7 +57,7 @@ class FinancialRecord(models.Model):
         """
         Create installments for this record, distributing cents in the last one.
         """
-        total = abs(self.amount)
+        total = self.amount
         base = (total / qty).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
         last = (total - base * (qty - 1)).quantize(Decimal('0.01'))
 
