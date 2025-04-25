@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="py-3 mb-4"><span class="text-muted fw-light">Parcela /</span> Lista</h4>
@@ -98,12 +98,16 @@
                                 <div class="avatar-wrapper">
                                     <div class="avatar avatar-sm me-3">
                                         <span class="avatar-initial rounded-circle bg-label-primary">
-                                            {{ installment.fin_record.entity.name|slice:":2"|upper }}
+                                            {% if installment.fin_record.entity %}
+                                                {{ installment.fin_record.entity.name|slice:":2"|upper }}
+                                            {% else %}
+                                                <img src="{% static 'assets/img/avatars/anonymous.svg' %}" alt="Anonymous avatar">
+                                            {% endif %}
                                         </span>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-column">
-                                    <span class="text-heading text-truncate fw-medium">{{ installment.fin_record.entity.name }}</span>
+                                    <span class="text-heading text-truncate fw-medium">{{ installment.fin_record.entity.name|default:"Entidade Desconhecida" }}</span>
                                     <small class="text-truncate">{{ installment.fin_record.entity.document }}</small>
                                 </div>
                             </div>
