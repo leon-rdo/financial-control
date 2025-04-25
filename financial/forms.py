@@ -18,6 +18,7 @@ class FinancialRecordForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
+
     installments_quantity = forms.IntegerField(
         label="Quantidade de parcelas",
         required=False,

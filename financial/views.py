@@ -7,8 +7,6 @@ from financial.forms import FinancialRecordForm
 from .models import Category, FinancialRecord, Installment
 from django.shortcuts import redirect
 from django_filters.views import FilterView
-from dateutil.relativedelta import relativedelta
-from decimal import Decimal, ROUND_DOWN
 
 
 class FinancialRecordCreateView(CreateView):
@@ -44,15 +42,18 @@ class FinancialRecordListView(FilterView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        total_incomes = FinancialRecord.objects.filter(amount__gte=0).aggregate(Sum("amount"))["amount__sum"] or 0
-        total_expenses = abs(FinancialRecord.objects.filter(amount__lt=0).aggregate(Sum("amount"))["amount__sum"] or 0)
-        total_balance = FinancialRecord.objects.aggregate(Sum("amount"))["amount__sum"] or 0
+        full_queryset = self.filterset.qs if hasattr(self, 'filterset') else self.get_queryset()
+
+        total_incomes = full_queryset.filter(amount__gte=0).aggregate(Sum("amount"))["amount__sum"] or 0
+        total_expenses = abs(full_queryset.filter(amount__lt=0).aggregate(Sum("amount"))["amount__sum"] or 0)
+        total_balance = full_queryset.aggregate(Sum("amount"))["amount__sum"] or 0
+
         context["total_incomes"] = total_incomes
         context["total_expenses"] = total_expenses
         context["total_balance"] = total_balance
         return context
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         delete_id = request.POST.get("delete_id")
 
         if delete_id:
@@ -99,10 +100,20 @@ class InstallmentListView(FilterView):
     extra_context = {
         "title": "Parcelas",
         "description": "Lista de parcelas",
-        "total_amount": Installment.objects.aggregate(Sum("amount"))["amount__sum"] or 0,
-        "total_paid": Installment.objects.filter(is_paid=True).aggregate(Sum("amount"))["amount__sum"] or 0,
-        "total_unpaid": abs(Installment.objects.filter(is_paid=False).aggregate(Sum("amount"))["amount__sum"] or 0),
     }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        full_queryset = self.filterset.qs if hasattr(self, 'filterset') else self.get_queryset()
+
+        total_amount = full_queryset.aggregate(Sum("amount"))["amount__sum"] or 0
+        total_paid = full_queryset.filter(is_paid=True).aggregate(Sum("amount"))["amount__sum"] or 0
+        total_unpaid = abs(full_queryset.filter(is_paid=False).aggregate(Sum("amount"))["amount__sum"] or 0)
+
+        context["total_amount"] = total_amount
+        context["total_paid"] = total_paid
+        context["total_unpaid"] = total_unpaid
+        return context
 
 
 class CategoryListView(FilterView):
