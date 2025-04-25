@@ -26,12 +26,16 @@ class FinancialRecord(models.Model):
         on_delete=models.CASCADE,
         related_name="financial_records",
         verbose_name="Entidade",
+        blank=True,
+        null=True
     )
     payment_method = models.ForeignKey(
         "accounts.PaymentMethod",
         on_delete=models.CASCADE,
         related_name="financial_records",
         verbose_name="Forma de Pagamento",
+        blank=True,
+        null=True
     )
     date = models.DateField("Data")
     category = models.ForeignKey(
@@ -93,7 +97,8 @@ class FinancialRecord(models.Model):
         return super().clean()
 
     def __str__(self):
-        return f"{self.entity.name} - R$ {self.amount} em {self.date}"
+        entity_name = self.entity.name if self.entity else "Sem Entidade"
+        return f"{entity_name} - R$ {self.amount} em {self.date}"
     
     class Meta:
         verbose_name = "Registro Financeiro"
