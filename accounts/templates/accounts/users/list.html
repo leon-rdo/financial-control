@@ -70,62 +70,7 @@
           {% endfor %}
         </tbody>
       </table>
-      <div class="row mx-3 justify-content-between">
-        <div
-          class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0">
-          <div class="dt-info" aria-live="polite" role="status">
-            Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} usuários
-          </div>
-        </div>
-        <div
-          class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
-          <div class="dt-paging">
-            <nav aria-label="pagination">
-              <ul class="pagination">
-                {% if page_obj.has_previous %}
-                <li class="dt-paging-button page-item">
-                  <a class="page-link previous" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
-                    <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
-                  </a>
-                </li>
-                {% else %}
-                <li class="dt-paging-button page-item disabled">
-                  <span class="page-link previous" aria-disabled="true">
-                    <i class="icon-base bx bx-chevron-left scaleX-n1-rtl icon-18px"></i>
-                  </span>
-                </li>
-                {% endif %}
-
-                {% for num in paginator.page_range %}
-                {% if page_obj.number == num %}
-                <li class="dt-paging-button page-item active">
-                  <span class="page-link">{{ num }}</span>
-                </li>
-                {% else %}
-                <li class="dt-paging-button page-item">
-                  <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                </li>
-                {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="dt-paging-button page-item">
-                  <a class="page-link next" href="?page={{ page_obj.next_page_number }}" aria-label="Próximo">
-                    <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
-                  </a>
-                </li>
-                {% else %}
-                <li class="dt-paging-button page-item disabled">
-                  <span class="page-link next" aria-disabled="true">
-                    <i class="icon-base bx bx-chevron-right scaleX-n1-rtl icon-18px"></i>
-                  </span>
-                </li>
-                {% endif %}
-              </ul>
-            </nav>
-          </div>
-        </div>
-      </div>
+      {% include 'snippets/pagination.html' %}
     </div>
   </div>
   {% include 'snippets/filtersOffcanvas.html' %}
