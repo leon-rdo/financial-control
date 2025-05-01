@@ -1,21 +1,33 @@
 <!doctype html>
 {% load static %}
 <html
-  lang="en"
+  lang="pt-BR"
   class="light-style layout-menu-fixed layout-compact"
   dir="ltr"
   data-theme="theme-default"
-  data-assets-path="{% static 'assets/' %}"
-  data-template="horizontal-menu-template-no-customizer">
+  data-assets-path="{% static 'assets/' %}">
   <head>
     <meta charset="utf-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 
-    <title>Início</title>
+    <title>{{ title }}</title>
 
-    <meta name="description" content="" />
+    <!-- Meta Tags -->
+    <meta name="description" content="{{ description }}" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="og-title" content="{{ title }}" />
+    <meta name="og:description" content="{{ description }}" />
+    <meta name="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/branding/logo-and-brand.png' %}" />
+    <meta name="og:url" content="{{ request.build_absolute_uri }}" />
+    <meta name="og:type" content="website" />
+    <meta name="og:site_name" content="ConFin" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="{{ title }}" />
+    <meta name="twitter:description" content="{{ description }}" />
+    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/branding/logo-and-brand.png' %}" />
+    <meta name="twitter:url" content="{{ request.build_absolute_uri }}" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'assets/img/favicon/favicon.ico' %}" />
@@ -41,12 +53,8 @@
     <link rel="stylesheet" href="{% static 'assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css' %}" />
     <link rel="stylesheet" href="{% static 'assets/vendor/libs/apex-charts/apex-charts.css' %}" />
 
-    <!-- Page CSS -->
-
     <!-- Helpers -->
     <script src="{% static 'assets/vendor/js/helpers.js' %}"></script>
-    <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
-    <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
     <script src="{% static 'assets/js/config.js' %}"></script>
     {% if form or filter %}
         <link rel="stylesheet" href="{% static 'assets/vendor/libs/select2/select2.css' %}" />
