@@ -1,75 +1,97 @@
 <div class="row mx-3 justify-content-between">
     <div
-        class="d-md-flex justify-content-between align-items-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0">
+        class="d-md-flex justify-content-md-between align-items-md-center dt-layout-start col-md-auto me-auto px-3 pe-md-0 mt-0 text-center text-md-start">
         <div class="dt-info" aria-live="polite" role="status">
             Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
         </div>
     </div>
     <div
         class="d-md-flex align-items-center dt-layout-end col-md-auto ms-auto justify-content-md-between justify-content-center d-flex flex-wrap gap-sm-4 mb-sm-0 mb-6 mt-0 pe-md-3 ps-0">
-        <div class="dt-paging">
+        <div class="dt-paging d-none d-md-block">
             <nav>
                 <ul class="pagination">
-                  {% if page_obj.has_previous %}
-                  <li class="page-item">
-                    <a class="page-link"
-                       href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
-                      « Anterior
-                    </a>
-                  </li>
-                  {% endif %}
-              
-                  {% with start=page_obj.number|add:"-3" end=page_obj.number|add:"3" %}
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                            &blacktriangleleft; Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% with start=page_obj.number|add:"-3" end=page_obj.number|add:"3" %}
                     {% if start > 1 %}
                     <li class="page-item">
-                      <a class="page-link"
-                         href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page=1">
-                        1
-                      </a>
+                        <a class="page-link"
+                            href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page=1">
+                            1
+                        </a>
                     </li>
                     {% if start > 2 %}
                     <li class="page-item disabled"><span class="page-link">…</span></li>
                     {% endif %}
                     {% endif %}
-              
+
                     {% for num in paginator.page_range %}
-                      {% if num >= start and num <= end %}
-                        {% if num == page_obj.number %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% if num >= start and num <= end %} {% if num == page_obj.number %} <li class="page-item active">
+                        <span class="page-link">{{ num }}</span></li>
                         {% else %}
                         <li class="page-item">
-                          <a class="page-link"
-                             href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ num }}">
-                            {{ num }}
-                          </a>
+                            <a class="page-link"
+                                href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ num }}">
+                                {{ num }}
+                            </a>
                         </li>
                         {% endif %}
-                      {% endif %}
-                    {% endfor %}
-              
-                    {% if end < paginator.num_pages %}
-                      {% if end < paginator.num_pages|add:"-1" %}
-                      <li class="page-item disabled"><span class="page-link">…</span></li>
-                      {% endif %}
-                      <li class="page-item">
-                        <a class="page-link"
-                           href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ paginator.num_pages }}">
-                          {{ paginator.num_pages }}
-                        </a>
-                      </li>
-                    {% endif %}
-                  {% endwith %}
-              
-                  {% if page_obj.has_next %}
-                  <li class="page-item">
-                    <a class="page-link"
-                       href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
-                      Próximo »
-                    </a>
-                  </li>
-                  {% endif %}
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if end < paginator.num_pages %} {% if end < paginator.num_pages|add:"-1" %} <li
+                            class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ paginator.num_pages }}">
+                                    {{ paginator.num_pages }}
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% endwith %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                    Próximo &blacktriangleright;
+                                </a>
+                            </li>
+                            {% endif %}
                 </ul>
-              </nav>              
+            </nav>
+        </div>
+        <div class="dt-paging d-md-none">
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != " page" %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"
+                            aria-label="Anterior">
+                            &blacktriangleleft;
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">{{ page_obj.number }} de {{ paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"
+                            aria-label="Próximo">
+                            &blacktriangleright;
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
         </div>
     </div>
-</div>
