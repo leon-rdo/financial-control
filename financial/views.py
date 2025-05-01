@@ -75,6 +75,7 @@ class FinancialRecordDetailView(DetailView):
 
         if delete_id:
             FinancialRecord.objects.filter(id=delete_id).delete()
+            return redirect(reverse_lazy("financial:financial_record_list"))
 
         return redirect(request.path)
 
