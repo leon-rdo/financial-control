@@ -3,10 +3,26 @@ from django.views.generic import CreateView, UpdateView
 from django.urls import reverse_lazy
 from django_filters.views import FilterView
 from django.contrib.auth import get_user_model
+from django.contrib.auth.views import LoginView, LogoutView
 
 from accounts.filters import EntityFilter, PaymentMethodFilter, UserFilter
 from accounts.forms import PaymentMethodForm
 from .models import Entity, PaymentMethod
+
+
+class LoginView(LoginView):
+    extra_context = {
+        "title": "Entrar",
+        "description": "Entre na sua conta",
+    }
+
+
+class LogoutView(LogoutView):
+    next_page = reverse_lazy("accounts:login")
+    extra_context = {
+        "title": "Sair",
+        "description": "Você saiu da sua conta",
+    }
 
 
 class UserListView(FilterView):
