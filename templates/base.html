@@ -12,20 +12,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
 
-    <title>{{ title }}</title>
+    <title>{{ title|default_if_none:'ConFin' }}</title>
 
     <!-- Meta Tags -->
-    <meta name="description" content="{{ description }}" />
+    <meta name="description" content="{{ description|default_if_none:'Sistema de controle financeiro pessoal' }}" />
     <meta name="robots" content="noindex, nofollow" />
-    <meta name="og-title" content="{{ title }}" />
-    <meta name="og:description" content="{{ description }}" />
+    <meta name="og-title" content="{{ title|default_if_none:'ConFin' }}" />
+    <meta name="og:description" content="{{ description|default_if_none:'Sistema de controle financeiro pessoal' }}" />
     <meta name="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/branding/logo-and-brand.png' %}" />
     <meta name="og:url" content="{{ request.build_absolute_uri }}" />
     <meta name="og:type" content="website" />
     <meta name="og:site_name" content="ConFin" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{{ title }}" />
-    <meta name="twitter:description" content="{{ description }}" />
+    <meta name="twitter:title" content="{{ title|default_if_none:'ConFin' }}" />
+    <meta name="twitter:description" content="{{ description|default_if_none:'Sistema de controle financeiro pessoal' }}" />
     <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/branding/logo-and-brand.png' %}" />
     <meta name="twitter:url" content="{{ request.build_absolute_uri }}" />
 
