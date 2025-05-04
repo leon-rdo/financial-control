@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'assets/vendor/css/pages/page-auth.css' %}" />
+{% endblock extra_head %}
+
+{% block content %}
+<div class="authentication-wrapper authentication-cover">
+    <div class="authentication-inner row m-0">
+        <div class="d-none d-lg-flex col-lg-7 col-xl-8 align-items-center p-5">
+            <div class="w-100 d-flex justify-content-center">
+                <img src="{% static 'assets/img/branding/logo-and-brand.png' %}" class="img-fluid" alt="Login image" />
+            </div>
+        </div>
+        {% block auth_content %}{% endblock auth_content %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script src="{% static 'assets/js/pages-auth.js' %}"></script>
+{% if form %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('formAuthentication');
+        if (form) {
+            const formElements = form.querySelectorAll('input, select, textarea');
+            formElements.forEach(function (element) {
+                if (element.type !== 'checkbox' && element.type !== 'radio' && element.type !== 'hidden' && element.type !== 'submit' && element.type !== 'button' && element.type !== 'reset') {
+                    element.classList.add('form-control');
+                }
+                if (element.parentElement && element.parentElement.tagName === 'P') {
+                    element.parentElement.classList.add('mb-3');
+                }
+            });
+            const labels = form.querySelectorAll('label');
+            labels.forEach(function (label) {
+                label.classList.add('form-label');
+            });
+        }
+    });
+</script>
+{% endif %}
+{% endblock extra_scripts %}

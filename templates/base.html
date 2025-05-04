@@ -69,8 +69,9 @@
     <!-- Layout wrapper -->
     <div class="layout-wrapper layout-navbar-full layout-horizontal layout-without-menu">
       <div class="layout-container">
+        
+        {% if user.is_authenticated %}
         <!-- Navbar -->
-
         <nav class="layout-navbar navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
           <div class="container-xxl">
             <div class="navbar-brand app-brand demo d-none d-xl-flex py-0 me-4">
@@ -80,26 +81,79 @@
                 </span>
                 <span class="app-brand-text demo menu-text fw-bold">ConFin</span>
               </a>
-
               <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
                 <i class="bx bx-chevron-left bx-sm align-middle"></i>
               </a>
             </div>
-
             <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
               <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
                 <i class="bx bx-menu bx-sm"></i>
               </a>
             </div>
+            <div class="nav-item navbar-dropdown dropdown-user dropdown">
+              <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+                <div class="avatar avatar-online">
+                  <span class="avatar-initial rounded-circle bg-label-primary">
+                    {{ user.username|slice:":2"|upper }}
+                  </span>
+                </div>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <span class="dropdown-item">
+                    <div class="d-flex">
+                      <div class="flex-shrink-0 me-3">
+                        <div class="avatar avatar-online">
+                          <span class="avatar-initial rounded-circle bg-label-primary">
+                            {{ user.username|slice:":2"|upper }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="flex-grow-1">
+                        <span class="fw-medium d-block">{{ request.user.get_full_name }}</span>
+                        <small class="text-muted">{{ user.is_superuser|yesno:"Super-," }}{{ user.is_staff|yesno:"Administrador,Usuário" }}</small>
+                      </div>
+                    </div>
+                  </span>
+                </li>
+                <li>
+                  <div class="dropdown-divider"></div>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#">
+                    <i class="bx bx-user me-2"></i>
+                    <span class="align-middle">Meus Dados</span>
+                  </a>
+                </li>
+                {% if request.user.is_staff %}
+                  <li>
+                    <a class="dropdown-item" href="{% url 'admin:index' %}">
+                      <i class="bx bx-cog me-2"></i>
+                      <span class="align-middle">Administração</span>
+                    </a>
+                  </li>
+                {% endif %}
+                <li>
+                  <div class="dropdown-divider"></div>
+                </li>
+                <li>
+                  <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                    <i class="bx bx-power-off text-danger me-2"></i>
+                    <span class="align-middle">Sair</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </nav>
-
         <!-- / Navbar -->
+        {% endif %}
 
         <!-- Layout container -->
         <div class="layout-page">
           <!-- Content wrapper -->
           <div class="content-wrapper">
+            {% if user.is_authenticated %}
             <!-- Menu -->
             <aside id="layout-menu" class="layout-menu-horizontal menu-horizontal menu bg-menu-theme flex-grow-0">
               <div class="container-xxl d-flex h-100">
@@ -128,6 +182,7 @@
               </div>
             </aside>            
             <!-- / Menu -->
+            {% endif %}
 
             <!-- Content -->
             {% block content %}{% endblock content %}
@@ -152,7 +207,6 @@
           </div>
           <!--/ Content wrapper -->
         </div>
-
         <!--/ Layout container -->
       </div>
     </div>
@@ -162,6 +216,31 @@
 
     <!-- Drag Target Area To SlideIn Menu On Small Screens -->
     <div class="drag-target"></div>
+
+    {% if user.is_authenticated %}
+      <!-- Logout Modal -->
+      <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Você tem certeza que deseja sair?</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body fw-medium">
+              <p>Ao sair, você precisará inserir suas credenciais novamente para acessar o sistema.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <form action="{% url 'accounts:logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Sair</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!--/ Logout Modal -->
+    {% endif %}
 
     <!--/ Layout wrapper -->
 
