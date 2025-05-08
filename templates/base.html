@@ -241,7 +241,17 @@
       </div>
       <!--/ Logout Modal -->
     {% endif %}
-
+    {% if messages %}
+      <div id="messages-container" style="position: fixed; bottom: 1rem; left: 1rem; z-index: 1055;" class="d-flex flex-column gap-2">
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show mb-0" role="alert" style="min-width: 450px;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  
     <!--/ Layout wrapper -->
 
     <!-- Core JS -->
