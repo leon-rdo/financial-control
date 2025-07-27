@@ -149,40 +149,46 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
         delete_id = request.POST.get("delete_id")
         edit_id = request.POST.get("edit_id")
 
-        # Edit
-        if edit_id:
-            if not user.has_perm("financial.change_category"):
-                messages.error(request, "Você não tem permissão para editar esta categoria.")
+        try:
+            # Edit
+            if edit_id:
+                if not user.has_perm("financial.change_category"):
+                    messages.error(request, "Você não tem permissão para editar esta categoria.")
+                    return redirect(request.path)
+                category = Category.objects.get(id=edit_id)
+                category.name = request.POST.get("name")
+                category.description = request.POST.get("description")
+                category.is_income = request.POST.get("is_income") == "true"
+                category.save()
+                messages.success(request, "Categoria editada com sucesso.")
                 return redirect(request.path)
-            category = Category.objects.get(id=edit_id)
-            category.name = request.POST.get("name")
-            category.description = request.POST.get("description")
-            category.is_income = request.POST.get("is_income") == "true"
-            category.save()
-            messages.success(request, "Categoria editada com sucesso.")
-            return redirect(request.path)
 
-        # Create
-        if name:
-            if not user.has_perm("financial.add_category"):
-                messages.error(request, "Você não tem permissão para criar uma nova categoria.")
-                return redirect(request.path)
-            category = Category.objects.create(
-                name=name,
-                description=request.POST.get("description"),
-                is_income=request.POST.get("is_income") == "true"
-            )
-            messages.success(request, "Categoria criada com sucesso.")
+            # Create
+            if name:
+                if not user.has_perm("financial.add_category"):
+                    messages.error(request, "Você não tem permissão para criar uma nova categoria.")
+                    return redirect(request.path)
+                category = Category.objects.create(
+                    name=name,
+                    description=request.POST.get("description"),
+                    is_income=request.POST.get("is_income") == "true"
+                )
+                messages.success(request, "Categoria criada com sucesso.")
 
-            page_number = get_page_number(self.get_queryset(), category, self.paginate_by)
-            return redirect(f"{request.path}?page={page_number}&object_id={category.pk}")
+                page_number = get_page_number(self.get_queryset(), category, self.paginate_by)
+                return redirect(f"{request.path}?page={page_number}&object_id={category.pk}")
 
-        # Delete
-        if delete_id:
-            if not user.has_perm("financial.delete_category"):
-                messages.error(request, "Você não tem permissão para deletar esta categoria.")
-                return redirect(request.path)
-            Category.objects.filter(id=delete_id).delete()
-            messages.success(request, "Categoria deletada com sucesso.")
+            # Delete
+            if delete_id:
+                if not user.has_perm("financial.delete_category"):
+                    messages.error(request, "Você não tem permissão para deletar esta categoria.")
+                    return redirect(request.path)
+                Category.objects.filter(id=delete_id).delete()
+                messages.success(request, "Categoria deletada com sucesso.")
+
+        except Category.DoesNotExist:
+            messages.error(request, "Categoria não encontrada.")
+        except Exception as e:
+            messages.error(request, "Ocorreu um erro inesperado. Tente novamente ou contate a administração.")
 
         return redirect(request.path)

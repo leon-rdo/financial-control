@@ -55,42 +55,47 @@ class EntityListView(PermissionRequiredMixin, FilterView):
         delete_id = request.POST.get("delete_id")
         edit_id = request.POST.get("edit_id")
 
-        # Editar
-        if edit_id:
-            if not user.has_perm("accounts.change_entity"):
-                messages.error(request, "Você não tem permissão para editar esta entidade.")
+        try:
+            # Editar
+            if edit_id:
+                if not user.has_perm("accounts.change_entity"):
+                    messages.error(request, "Você não tem permissão para editar esta entidade.")
+                    return redirect(request.path)
+                entity = Entity.objects.get(id=edit_id)
+                entity.name = request.POST.get("name")
+                entity.description = request.POST.get("description")
+                entity.person_type = request.POST.get("person_type")
+                entity.document = request.POST.get("document")
+                entity.save()
+                messages.success(request, "Entidade editada com sucesso.")
                 return redirect(request.path)
-            entity = Entity.objects.get(id=edit_id)
-            entity.name = request.POST.get("name")
-            entity.description = request.POST.get("description")
-            entity.person_type = request.POST.get("person_type")
-            entity.document = request.POST.get("document")
-            entity.save()
-            messages.success(request, "Entidade editada com sucesso.")
-            return redirect(request.path)
 
-        # Criar
-        if name and not delete_id:
-            if not user.has_perm("accounts.add_entity"):
-                messages.error(request, "Você não tem permissão para criar uma nova entidade.")
-                return redirect(request.path)
-            entity = Entity.objects.create(
-                name=name,
-                description=request.POST.get("description", ""),
-                person_type=request.POST.get("person_type"),
-                document=request.POST.get("document"),
-            )
-            page_number = get_page_number(self.get_queryset(), entity, self.paginate_by)
-            messages.success(request, "Entidade criada com sucesso.")
-            return redirect(f"{request.path}?page={page_number}&object_id={entity.pk}")
+            # Criar
+            if name and not delete_id:
+                if not user.has_perm("accounts.add_entity"):
+                    messages.error(request, "Você não tem permissão para criar uma nova entidade.")
+                    return redirect(request.path)
+                entity = Entity.objects.create(
+                    name=name,
+                    description=request.POST.get("description", ""),
+                    person_type=request.POST.get("person_type"),
+                    document=request.POST.get("document"),
+                )
+                page_number = get_page_number(self.get_queryset(), entity, self.paginate_by)
+                messages.success(request, "Entidade criada com sucesso.")
+                return redirect(f"{request.path}?page={page_number}&object_id={entity.pk}")
 
-        # Deletar
-        if delete_id:
-            if not user.has_perm("accounts.delete_entity"):
-                messages.error(request, "Você não tem permissão para deletar esta entidade.")
-                return redirect(request.path)
-            Entity.objects.filter(id=delete_id).delete()
-            messages.success(request, "Entidade deletada com sucesso.")
+            # Deletar
+            if delete_id:
+                if not user.has_perm("accounts.delete_entity"):
+                    messages.error(request, "Você não tem permissão para deletar esta entidade.")
+                    return redirect(request.path)
+                Entity.objects.filter(id=delete_id).delete()
+                messages.success(request, "Entidade deletada com sucesso.")
+        except Entity.DoesNotExist:
+            messages.error(request, "Entidade não encontrada.")
+        except Exception as e:
+            messages.error(request, "Ocorreu um erro inesperado. Tente novamente ou contate a administração.")
 
         return redirect(request.path)
 
