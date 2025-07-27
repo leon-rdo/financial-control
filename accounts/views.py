@@ -9,6 +9,7 @@ from django_filters.views import FilterView
 
 from accounts.filters import EntityFilter, PaymentMethodFilter, UserFilter
 from accounts.forms import PaymentMethodForm
+from utils.page_for_object import get_page_number
 from .models import Entity, PaymentMethod
 
 
@@ -42,6 +43,7 @@ class UserListView(PermissionRequiredMixin, FilterView):
 class EntityListView(PermissionRequiredMixin, FilterView):
     template_name = "accounts/entities/list.html"
     model = Entity
+    ordering = ["name"]
     paginate_by = 40
     filterset_class = EntityFilter
     extra_context = {"title": "Entidades", "description": "Lista de entidades"}
@@ -72,13 +74,15 @@ class EntityListView(PermissionRequiredMixin, FilterView):
             if not user.has_perm("accounts.add_entity"):
                 messages.error(request, "Você não tem permissão para criar uma nova entidade.")
                 return redirect(request.path)
-            Entity.objects.create(
+            entity = Entity.objects.create(
                 name=name,
                 description=request.POST.get("description", ""),
                 person_type=request.POST.get("person_type"),
                 document=request.POST.get("document"),
             )
+            page_number = get_page_number(self.get_queryset(), entity, self.paginate_by)
             messages.success(request, "Entidade criada com sucesso.")
+            return redirect(f"{request.path}?page={page_number}&object_id={entity.pk}")
 
         # Deletar
         if delete_id:

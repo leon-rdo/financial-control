@@ -279,6 +279,30 @@
           });
         </script>        
     {% endif %}
+    {% if object_list %}
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const objectId = urlParams.get('object_id');
+
+      if (objectId) {
+          const objectRow = document.querySelector(`tr[data-object-id="${objectId}"]`);
+          if (objectRow) {
+              // Scroll to the object row
+              objectRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+              // Add highlight effect
+              objectRow.style.backgroundColor = '#fff3cd';
+              objectRow.style.border = '2px solid #ffc107';
+
+              // Remove highlight after 3 seconds
+              setTimeout(() => {
+                  objectRow.style.backgroundColor = '';
+                  objectRow.style.border = '';
+              }, 3000);
+          }
+      }
+    </script>
+    {% endif %}
     {% block extra_scripts %}{% endblock extra_scripts %}
   </body>
 </html>

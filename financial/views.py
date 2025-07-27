@@ -3,6 +3,8 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView
 from django.db.models import Sum
+
+from utils.page_for_object import get_page_number
 from .filters import CategoryFilter, FinancialRecordFilter, InstallmentFilter
 from financial.forms import FinancialRecordForm
 from .models import Category, FinancialRecord, Installment
@@ -136,6 +138,7 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
     permission_required = 'financial.view_category'
     template_name = "financial/categories/list.html"
     model = Category
+    ordering = ["name"]
     filterset_class = CategoryFilter
     paginate_by = 40
     extra_context = {"title": "Categorias", "description": "Lista de categorias"}
@@ -164,12 +167,15 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
             if not user.has_perm("financial.add_category"):
                 messages.error(request, "Você não tem permissão para criar uma nova categoria.")
                 return redirect(request.path)
-            Category.objects.create(
+            category = Category.objects.create(
                 name=name,
                 description=request.POST.get("description"),
                 is_income=request.POST.get("is_income") == "true"
             )
             messages.success(request, "Categoria criada com sucesso.")
+
+            page_number = get_page_number(self.get_queryset(), category, self.paginate_by)
+            return redirect(f"{request.path}?page={page_number}&object_id={category.pk}")
 
         # Delete
         if delete_id:

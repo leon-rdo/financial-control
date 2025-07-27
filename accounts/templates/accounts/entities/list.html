@@ -25,7 +25,7 @@
                 </thead>
                 <tbody>
                     {% for entity in object_list %}
-                    <tr>
+                    <tr data-object-id="{{ entity.id }}">
                         <td class="dt-select"><input aria-label="Select row" class="form-check-input" type="checkbox" />
                         </td>
                         <td>
