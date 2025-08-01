@@ -7,8 +7,12 @@
     <!-- Category List Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategory">Adicionar Categoria</button>
-            <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#filtersOffcanvas">Filtros</button>
+            <button class="btn btn-primary" hx-get="{% url 'financial:category_create' %}" hx-target="#modalContent"
+                hx-swap="innerHTML">
+                Adicionar Categoria
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas"
+                data-bs-target="#filtersOffcanvas">Filtros</button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="invoice-list-table table border-top mb-3">
@@ -52,8 +56,7 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#editModal"
-                                    data-category-id="{{ category.id }}"
-                                    data-category-name="{{ category.name }}"
+                                    data-category-id="{{ category.id }}" data-category-name="{{ category.name }}"
                                     data-category-description="{{ category.description|default:'' }}"
                                     data-category-is-income="{{ category.is_income|yesno:'true,false' }}"
                                     data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Editar" title="Editar">
@@ -167,7 +170,8 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label" for="editCategoryDescription">Descrição</label>
-                        <textarea id="editCategoryDescription" name="description" class="form-control" rows="3"></textarea>
+                        <textarea id="editCategoryDescription" name="description" class="form-control"
+                            rows="3"></textarea>
                     </div>
                     <div class="col-12 col-md-6">
                         <label class="form-label d-block">Tipo</label>
@@ -187,9 +191,34 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+</div>
 {% endblock content %}
 
 {% block extra_scripts %}
+<script>
+  document.body.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target.id === 'modalContent') {
+      const modalEl = document.getElementById('categoryModal');
+      // só show() se ainda não tiver a classe “show” (ou instância ativa)
+      if (!modalEl.classList.contains('show')) {
+        new bootstrap.Modal(modalEl).show();
+      }
+    }
+  });
+
+  document.body.addEventListener('htmx:afterOnLoad', e => {
+    if (e.detail.xhr.getResponseHeader('HX-Trigger')?.includes('categoryAdded')) {
+      const tbody = document.querySelector('table.invoice-list-table tbody');
+      tbody.insertAdjacentHTML('afterbegin', e.detail.xhr.responseText);
+      bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+    }
+  });
+</script>
+
 <script>
     const deleteModal = document.getElementById('deleteModal');
     deleteModal.addEventListener('show.bs.modal', function (event) {

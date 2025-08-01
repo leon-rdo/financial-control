@@ -1,6 +1,6 @@
 from django import forms
 from django_select2.forms import ModelSelect2Widget, Select2Widget
-from .models import FinancialRecord
+from .models import Category, FinancialRecord
 
 
 class FinancialRecordForm(forms.ModelForm):
@@ -80,3 +80,14 @@ class FinancialRecordForm(forms.ModelForm):
             cleaned_data["amount"] = abs(amount) if is_income else -abs(amount)
 
         return cleaned_data
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ["name", "description", "is_income"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control form-control-lg border-2"}),
+            "description": forms.Textarea(attrs={"class": "form-control form-control-lg border-2", "rows": 3}),
+            "is_income": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }

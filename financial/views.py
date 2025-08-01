@@ -1,3 +1,4 @@
+import json
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.urls import reverse_lazy
@@ -6,9 +7,9 @@ from django.db.models import Sum
 
 from utils.page_for_object import get_page_number
 from .filters import CategoryFilter, FinancialRecordFilter, InstallmentFilter
-from financial.forms import FinancialRecordForm
+from financial.forms import CategoryForm, FinancialRecordForm
 from .models import Category, FinancialRecord, Installment
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django_filters.views import FilterView
 
 
@@ -192,3 +193,20 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
             messages.error(request, "Ocorreu um erro inesperado. Tente novamente ou contate a administração.")
 
         return redirect(request.path)
+
+
+class CategoryCreateView(PermissionRequiredMixin, CreateView):
+    model = Category
+    form_class = CategoryForm
+    template_name = 'financial/categories/partials/partial_category_form.html'
+    permission_required = 'financial.add_category'
+
+    def form_valid(self, form):
+        self.object = form.save()
+        # Se for requisição HTMX, devolve só a linha nova + trigger
+        if self.request.headers.get('HX-Request'):
+            ctx = {'category': self.object}
+            resp = render(self.request, 'financial/categories/partials/partial_category_form.html', ctx)
+            resp['HX-Trigger'] = json.dumps({'categoryAdded': None})
+            return resp
+        return super().form_valid(form)

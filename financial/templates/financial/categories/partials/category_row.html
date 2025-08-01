@@ -1,0 +1,11 @@
+{# partials/category_row.html #}
+<tr data-object-id="{{ category.id }}">
+  <td><input type="checkbox" class="form-check-input"></td>
+  <td>{{ category.name }}</td>
+  <td>{{ category.is_income|yesno:"Receita,Despesa" }}</td>
+  <td>{{ category.description|default:"–"|truncatechars:40 }}</td>
+  <td>{{ category.financial_records.count }}</td>
+  <td>
+    <!-- botões Edit/Delete idênticos aos atuais, preenchidos por data-attrs -->
+  </td>
+</tr>
