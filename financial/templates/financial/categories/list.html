@@ -8,7 +8,7 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <button class="btn btn-primary" hx-get="{% url 'financial:category_create' %}" hx-target="#modalContent"
-                hx-swap="innerHTML">
+                hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#crudModal">
                 Adicionar Categoria
             </button>
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas"
@@ -19,6 +19,7 @@
                 <thead>
                     <tr>
                         <th></th>
+                        <div id="new-row-container" style="display:none;"></div>
                         <th>Categoria</th>
                         <th>Tipo</th>
                         <th>Descrição</th>
@@ -85,49 +86,6 @@
     {% include 'snippets/filtersOffcanvas.html' %}
 </div>
 
-<div class="modal fade" id="addCategory" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-simple modal-edit-user">
-        <div class="modal-content p-3 p-md-5">
-            <div class="modal-body">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                <div class="text-center mb-4">
-                    <h3>Adicionar categoria</h3>
-                    <p>Adicione uma categoria para usá-la ao criar registros financeiros.</p>
-                </div>
-                <form id="addCategoryForm" class="row g-3" method="post">
-                    {% csrf_token %}
-                    <div class="col-12 col-md-6">
-                        <label class="form-label" for="categoryName">Nome</label>
-                        <input type="text" id="categoryName" name="name" class="form-control"
-                            placeholder="Nome da Categoria" required />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label" for="categoryDescription">Descrição</label>
-                        <textarea id="categoryDescription" name="description" class="form-control" rows="3"
-                            placeholder="Descrição breve da categoria"></textarea>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="form-label d-block">Tipo</label>
-                        <div class="btn-group" role="group" aria-label="Tipo de Categoria">
-                            <input type="radio" class="btn-check" name="is_income" id="entrada" value="true"
-                                autocomplete="off" checked>
-                            <label class="btn btn-outline-primary" for="entrada">Entrada</label>
-                            <input type="radio" class="btn-check" name="is_income" id="saida" value="false"
-                                autocomplete="off">
-                            <label class="btn btn-outline-primary" for="saida">Saída</label>
-                        </div>
-                    </div>
-                    <div class="col-12 text-center">
-                        <button type="submit" class="btn btn-primary me-sm-3 me-1">Criar</button>
-                        <button type="reset" class="btn btn-label-secondary" data-bs-dismiss="modal" aria-label="Close">
-                            Cancelar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -191,74 +149,7 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="categoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" id="modalContent"></div>
-    </div>
-</div>
+{% include 'snippets/partials/modal_base.html' %}
 {% endblock content %}
 
-{% block extra_scripts %}
-<script>
-  document.body.addEventListener('htmx:afterSwap', e => {
-    if (e.detail.target.id === 'modalContent') {
-      const modalEl = document.getElementById('categoryModal');
-      // só show() se ainda não tiver a classe “show” (ou instância ativa)
-      if (!modalEl.classList.contains('show')) {
-        new bootstrap.Modal(modalEl).show();
-      }
-    }
-  });
-
-  document.body.addEventListener('htmx:afterOnLoad', e => {
-    if (e.detail.xhr.getResponseHeader('HX-Trigger')?.includes('categoryAdded')) {
-      const tbody = document.querySelector('table.invoice-list-table tbody');
-      tbody.insertAdjacentHTML('afterbegin', e.detail.xhr.responseText);
-      bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
-    }
-  });
-</script>
-
-<script>
-    const deleteModal = document.getElementById('deleteModal');
-    deleteModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const categoryId = button.getAttribute('data-category-id');
-        const deleteIdInput = document.getElementById('delete_id');
-        deleteIdInput.value = categoryId;
-        const financialRecordsCount = button.getAttribute('data-financial-records-count');
-        if (financialRecordsCount == 0) {
-            categoryFinancialRecordsDeleteWarning = document.getElementById('categoryFinancialRecordsDeleteWarning').hidden = true;
-        } else {
-            const categoryFinancialRecordsDeleteCount = document.getElementById('categoryFinancialRecordsDeleteCount');
-            categoryFinancialRecordsDeleteCount.textContent = financialRecordsCount;
-            categoryFinancialRecordsDeleteWarning = document.getElementById('categoryFinancialRecordsDeleteWarning').hidden = false;
-        }
-    });
-    deleteModal.addEventListener('hidden.bs.modal', function (event) {
-        const deleteIdInput = document.getElementById('delete_id');
-        deleteIdInput.value = '';
-    });
-
-    const addCategoryModal = document.getElementById('addCategory');
-    addCategoryModal.addEventListener('hidden.bs.modal', function (event) {
-        const addCategoryForm = document.getElementById('addCategoryForm');
-        addCategoryForm.reset();
-    });
-    const editModal = document.getElementById('editModal');
-    editModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        document.getElementById('edit_id').value = button.getAttribute('data-category-id');
-        document.getElementById('editCategoryName').value = button.getAttribute('data-category-name');
-        document.getElementById('editCategoryDescription').value = button.getAttribute('data-category-description');
-
-        // Definir radio button correto
-        const isIncome = button.getAttribute('data-category-is-income');
-        if (isIncome === 'true') {
-            document.getElementById('editEntrada').checked = true;
-        } else {
-            document.getElementById('editSaida').checked = true;
-        }
-    });
-</script>
-{% endblock extra_scripts %}
+{% block extra_scripts %}{% endblock extra_scripts %}

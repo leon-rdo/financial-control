@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView
 from django.db.models import Sum
 
+from utils.htmx_views import HxModalCreateView
 from utils.page_for_object import get_page_number
 from .filters import CategoryFilter, FinancialRecordFilter, InstallmentFilter
 from financial.forms import CategoryForm, FinancialRecordForm
@@ -135,6 +136,15 @@ class InstallmentListView(PermissionRequiredMixin, FilterView):
         return context
 
 
+class CategoryCreateView(HxModalCreateView):
+    model = Category
+    form_class = CategoryForm
+    modal_title = "Criar Categoria"
+    edit_url_name = None
+    delete_url_name = None
+    row_template = "financial/categories/partials/category_row.html"
+
+
 class CategoryListView(PermissionRequiredMixin, FilterView):
     permission_required = 'financial.view_category'
     template_name = "financial/categories/list.html"
@@ -146,7 +156,6 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        name = request.POST.get("name")
         delete_id = request.POST.get("delete_id")
         edit_id = request.POST.get("edit_id")
 
@@ -164,21 +173,6 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
                 messages.success(request, "Categoria editada com sucesso.")
                 return redirect(request.path)
 
-            # Create
-            if name:
-                if not user.has_perm("financial.add_category"):
-                    messages.error(request, "Você não tem permissão para criar uma nova categoria.")
-                    return redirect(request.path)
-                category = Category.objects.create(
-                    name=name,
-                    description=request.POST.get("description"),
-                    is_income=request.POST.get("is_income") == "true"
-                )
-                messages.success(request, "Categoria criada com sucesso.")
-
-                page_number = get_page_number(self.get_queryset(), category, self.paginate_by)
-                return redirect(f"{request.path}?page={page_number}&object_id={category.pk}")
-
             # Delete
             if delete_id:
                 if not user.has_perm("financial.delete_category"):
@@ -193,20 +187,3 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
             messages.error(request, "Ocorreu um erro inesperado. Tente novamente ou contate a administração.")
 
         return redirect(request.path)
-
-
-class CategoryCreateView(PermissionRequiredMixin, CreateView):
-    model = Category
-    form_class = CategoryForm
-    template_name = 'financial/categories/partials/partial_category_form.html'
-    permission_required = 'financial.add_category'
-
-    def form_valid(self, form):
-        self.object = form.save()
-        # Se for requisição HTMX, devolve só a linha nova + trigger
-        if self.request.headers.get('HX-Request'):
-            ctx = {'category': self.object}
-            resp = render(self.request, 'financial/categories/partials/partial_category_form.html', ctx)
-            resp['HX-Trigger'] = json.dumps({'categoryAdded': None})
-            return resp
-        return super().form_valid(form)

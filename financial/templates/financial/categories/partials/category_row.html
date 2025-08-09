@@ -1,11 +1,32 @@
-{# partials/category_row.html #}
-<tr data-object-id="{{ category.id }}">
+<tr data-object-id="{{ object.id }}">
   <td><input type="checkbox" class="form-check-input"></td>
-  <td>{{ category.name }}</td>
-  <td>{{ category.is_income|yesno:"Receita,Despesa" }}</td>
-  <td>{{ category.description|default:"–"|truncatechars:40 }}</td>
-  <td>{{ category.financial_records.count }}</td>
+  <td>{{ object.name }}</td>
   <td>
-    <!-- botões Edit/Delete idênticos aos atuais, preenchidos por data-attrs -->
+    <div class="d-flex align-items-center" title="{{ object.is_income|yesno:'Receita,Despesa' }}">
+      <span class="d-inline-block me-2">
+        <span class="badge p-1_5 rounded-pill {{ object.is_income|yesno:'bg-label-success,bg-label-danger' }}">
+          <i class="icon-base icon-16px {{ object.is_income|yesno:'bx bx-up-arrow-alt,bx bx-down-arrow-alt' }}"></i>
+        </span>
+      </span>
+      {{ object.is_income|yesno:"Receita,Despesa" }}
+    </div>
+  </td>
+  <td>{{ object.description|default:"–"|truncatechars:40 }}</td>
+  <td>{{ object.financial_records.count }}</td>
+  <td>
+    <div class="d-flex align-items-center">
+      <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#editModal"
+        data-category-id="{{ object.id }}" data-category-name="{{ object.name }}"
+        data-category-description="{{ object.description|default:'' }}"
+        data-category-is-income="{{ object.is_income|yesno:'true,false' }}" data-bs-toggle="tooltip"
+        data-bs-placement="top" aria-label="Editar" title="Editar">
+        <i class="icon-base bx bx-edit icon-md"></i>
+      </a>
+      <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
+        data-category-id="{{ object.id }}" data-financial-records-count="{{ object.financial_records.count }}"
+        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir" title="Excluir">
+        <i class="icon-base bx bx-trash icon-md"></i>
+      </a>
+    </div>
   </td>
 </tr>
