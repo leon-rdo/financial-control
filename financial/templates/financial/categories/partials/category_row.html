@@ -15,13 +15,10 @@
   <td>{{ object.financial_records.count }}</td>
   <td>
     <div class="d-flex align-items-center">
-      <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#editModal"
-        data-category-id="{{ object.id }}" data-category-name="{{ object.name }}"
-        data-category-description="{{ object.description|default:'' }}"
-        data-category-is-income="{{ object.is_income|yesno:'true,false' }}" data-bs-toggle="tooltip"
-        data-bs-placement="top" aria-label="Editar" title="Editar">
+      <button class="btn p-0" hx-get="{% url 'financial:category_update' object.id %}" hx-target="#modalContent"
+        hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#crudModal">
         <i class="icon-base bx bx-edit icon-md"></i>
-      </a>
+      </button>
       <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
         data-category-id="{{ object.id }}" data-financial-records-count="{{ object.financial_records.count }}"
         data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir" title="Excluir">

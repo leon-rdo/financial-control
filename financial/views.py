@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView
 from django.db.models import Sum
 
-from utils.htmx_views import HxModalCreateView
+from utils.htmx_views import HxModalCreateView, HxModalUpdateView
 from utils.page_for_object import get_page_number
 from .filters import CategoryFilter, FinancialRecordFilter, InstallmentFilter
 from financial.forms import CategoryForm, FinancialRecordForm
@@ -140,7 +140,7 @@ class CategoryCreateView(HxModalCreateView):
     model = Category
     form_class = CategoryForm
     modal_title = "Criar Categoria"
-    edit_url_name = None
+    edit_url_name = 'financial:category_update'
     delete_url_name = None
     row_template = "financial/categories/partials/category_row.html"
 
@@ -157,22 +157,8 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
     def post(self, request, *args, **kwargs):
         user = request.user
         delete_id = request.POST.get("delete_id")
-        edit_id = request.POST.get("edit_id")
 
         try:
-            # Edit
-            if edit_id:
-                if not user.has_perm("financial.change_category"):
-                    messages.error(request, "Você não tem permissão para editar esta categoria.")
-                    return redirect(request.path)
-                category = Category.objects.get(id=edit_id)
-                category.name = request.POST.get("name")
-                category.description = request.POST.get("description")
-                category.is_income = request.POST.get("is_income") == "true"
-                category.save()
-                messages.success(request, "Categoria editada com sucesso.")
-                return redirect(request.path)
-
             # Delete
             if delete_id:
                 if not user.has_perm("financial.delete_category"):
@@ -187,3 +173,12 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
             messages.error(request, "Ocorreu um erro inesperado. Tente novamente ou contate a administração.")
 
         return redirect(request.path)
+
+
+class CategoryUpdateView(HxModalUpdateView):
+    model = Category
+    form_class = CategoryForm
+    modal_title = "Editar Categoria"
+    edit_url_name = 'financial:category_update'
+    delete_url_name = None
+    row_template = "financial/categories/partials/category_row.html"

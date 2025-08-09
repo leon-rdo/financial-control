@@ -18,4 +18,5 @@ urlpatterns = [
     path("parcelas/", InstallmentListView.as_view(), name="installment_list"),
     path("categorias/criar/", CategoryCreateView.as_view(), name="category_create"),
     path("categorias/", CategoryListView.as_view(), name="category_list"),
+    path("categorias/<int:pk>/editar/", CategoryUpdateView.as_view(), name="category_update"),
 ]

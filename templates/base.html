@@ -307,44 +307,41 @@
       }
     </script>
     {% endif %}
-    <!-- HTMX CRUD Table -->
     <script>
-      // Abre o modal quando conteúdo é carregado
-      document.body.addEventListener('htmx:afterSwap', (e) => {
-        if (e.detail.target.id === 'modalContent' && e.detail.target.innerHTML) {
-          const modalEl = document.getElementById('crudModal');
-          if (modalEl) {
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
-          }
-        }
-      });
-
-      // Trata criação bem-sucedida
+      // Criação bem-sucedida
       document.body.addEventListener('htmx:beforeSwap', (e) => {
-        // Verifica se é uma resposta de sucesso (linha da tabela)
-        if (e.detail.xhr.responseText.includes('<tr') && 
-            e.detail.target.id === 'new-row-container') {
-          
-          // Insere nova linha no topo da tabela
+        const html = e.detail.xhr.responseText;
+        if (html.includes('<tr') && e.detail.target.id === 'new-row-container') {
           const tbody = document.querySelector('table.invoice-list-table tbody');
-          tbody.insertAdjacentHTML('afterbegin', e.detail.xhr.responseText);
-          
-          // Remove linha vazia se existir
+          tbody.insertAdjacentHTML('afterbegin', html);
+
           const emptyRow = tbody.querySelector('tr:only-child');
           if (emptyRow && emptyRow.textContent.includes('Nenhuma')) {
             emptyRow.remove();
           }
-          
-          // Fecha o modal
-          const modal = bootstrap.Modal.getInstance(document.getElementById('crudModal'));
-          if (modal) modal.hide();
-          
-          // Limpa o conteúdo do modal
+
+          bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
           document.getElementById('modalContent').innerHTML = '';
-          
-          // Cancela o swap padrão
           e.detail.shouldSwap = false;
         }
+      });
+
+      // Edição bem-sucedida
+      document.body.addEventListener('objectUpdated', (e) => {
+        const html = e.detail.value; // vem direto do servidor
+        const temp = document.createElement('tbody');
+        temp.innerHTML = html.trim();
+        const newRow = temp.querySelector('tr');
+
+        if (newRow && newRow.dataset.objectId) {
+          const oldRow = document.querySelector(
+            `table.invoice-list-table tbody tr[data-object-id="${newRow.dataset.objectId}"]`
+          );
+          if (oldRow) oldRow.replaceWith(newRow);
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
+        document.getElementById('modalContent').innerHTML = '';
       });
     </script>
     {% block extra_scripts %}{% endblock extra_scripts %}
