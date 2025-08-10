@@ -1,7 +1,7 @@
 import json
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.views.generic import CreateView, UpdateView
+from django.views.generic import CreateView, UpdateView, DeleteView
 
 
 class HxModalCreateView(CreateView):
@@ -84,3 +84,38 @@ class HxModalUpdateView(UpdateView):
             "edit_url": self.edit_url_name,
             "delete_url": self.delete_url_name,
         }
+
+
+class HxModalDeleteView(DeleteView):
+    template_name = "snippets/partials/confirm_delete.html"
+    modal_title = "Confirmar Exclusão"
+    submit_label = "Excluir"
+    success_message = "Registro excluído com sucesso."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "modal_title": self.modal_title,
+                "submit_label": self.submit_label,
+                "form_action": self.request.path,
+                "object_name": str(self.get_object()),
+            }
+        )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Evita fluxo padrão que exige success_url e envia evento HTMX."""
+        self.object = self.get_object()
+        object_id = self.object.id
+        model_name = self.model.__name__
+        self.object.delete()
+
+        return HttpResponse(
+            "",
+            headers={
+                "HX-Trigger": json.dumps(
+                    {"objectDeleted": {"id": object_id, "model": model_name}}
+                )
+            },
+        )

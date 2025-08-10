@@ -343,6 +343,18 @@
         bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
         document.getElementById('modalContent').innerHTML = '';
       });
+
+      document.body.addEventListener('objectDeleted', (e) => {
+        const { id } = e.detail || {};
+        if (id) {
+          const row = document.querySelector(
+            `table.invoice-list-table tbody tr[data-object-id="${id}"]`
+          );
+          if (row) row.remove();
+        }
+        bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
+        document.getElementById('modalContent').innerHTML = '';
+      });
     </script>
     {% block extra_scripts %}{% endblock extra_scripts %}
   </body>

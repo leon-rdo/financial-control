@@ -61,13 +61,11 @@
                                     data-bs-target="#crudModal">
                                     <i class="icon-base bx bx-edit icon-md"></i>
                                 </button>
-                                <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
-                                    data-category-id="{{ category.id }}"
-                                    data-financial-records-count="{{ category.financial_records.count }}"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir"
-                                    title="Excluir">
+                                <button class="btn p-0" hx-get="{% url 'financial:category_delete' category.id %}"
+                                    hx-target="#modalContent" hx-swap="innerHTML" data-bs-toggle="modal"
+                                    data-bs-target="#crudModal">
                                     <i class="icon-base bx bx-trash icon-md"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -82,31 +80,6 @@
         </div>
     </div>
     {% include 'snippets/filtersOffcanvas.html' %}
-</div>
-
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmar deleção</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <form method="post">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <p>Tem certeza que deseja excluir esta categoria?</p>
-                    <p class="text-danger">Essa ação não pode ser desfeita.</p>
-                    <p id="categoryFinancialRecordsDeleteWarning">Essa categoria possui <span class="badge bg-danger"
-                            id="categoryFinancialRecordsDeleteCount"></span> registros financeiros associados.</p>
-                    <input type="hidden" name="delete_id" id="delete_id" value="">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Excluir</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
 {% include 'snippets/partials/modal_base.html' %}
 {% endblock content %}
