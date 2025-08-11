@@ -180,31 +180,6 @@ class CategoryListView(PermissionRequiredMixin, FilterView):
     paginate_by = 40
     extra_context = {"title": "Categorias", "description": "Lista de categorias"}
 
-    def post(self, request, *args, **kwargs):
-        user = request.user
-        delete_id = request.POST.get("delete_id")
-
-        try:
-            # Delete
-            if delete_id:
-                if not user.has_perm("financial.delete_category"):
-                    messages.error(
-                        request, "Você não tem permissão para deletar esta categoria."
-                    )
-                    return redirect(request.path)
-                Category.objects.filter(id=delete_id).delete()
-                messages.success(request, "Categoria deletada com sucesso.")
-
-        except Category.DoesNotExist:
-            messages.error(request, "Categoria não encontrada.")
-        except Exception as e:
-            messages.error(
-                request,
-                "Ocorreu um erro inesperado. Tente novamente ou contate a administração.",
-            )
-
-        return redirect(request.path)
-
 
 class CategoryUpdateView(HxModalUpdateView):
     model = Category
