@@ -29,46 +29,7 @@
                 </thead>
                 <tbody>
                     {% for category in category_list %}
-                    <tr data-object-id="{{ category.id }}">
-                        <td class="dt-select"><input aria-label="Select row" class="form-check-input" type="checkbox" />
-                        </td>
-                        <td>
-                            <span class="text-heading fw-medium">{{ category.name }}</span>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center"
-                                title="{{ category.is_income|yesno:'Receita,Despesa' }}">
-                                <span class="d-inline-block me-2">
-                                    <span
-                                        class="badge p-1_5 rounded-pill {{ category.is_income|yesno:'bg-label-success,bg-label-danger' }}">
-                                        <i
-                                            class="icon-base icon-16px {{ category.is_income|yesno:'bx bx-up-arrow-alt,bx bx-down-arrow-alt' }}"></i>
-                                    </span>
-                                </span>
-                                {{ category.is_income|yesno:"Receita,Despesa" }}
-                            </div>
-                        </td>
-                        <td>
-                            <span class="text-truncate">{{ category.description|default:"-"|truncatechars:40 }}</span>
-                        </td>
-                        <td class="dt-type-numeric">
-                            <span class="fw-medium">{{ category.financial_records.count }}</span>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <button class="btn p-0" hx-get="{% url 'financial:category_update' category.id %}"
-                                    hx-target="#modalContent" hx-swap="innerHTML" data-bs-toggle="modal"
-                                    data-bs-target="#crudModal">
-                                    <i class="icon-base bx bx-edit icon-md"></i>
-                                </button>
-                                <button class="btn p-0" hx-get="{% url 'financial:category_delete' category.id %}"
-                                    hx-target="#modalContent" hx-swap="innerHTML" data-bs-toggle="modal"
-                                    data-bs-target="#crudModal">
-                                    <i class="icon-base bx bx-trash icon-md"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                    {% include "financial/categories/partials/category_row.html" with object=category %}
                     {% empty %}
                     <tr>
                         <td colspan="6" class="text-center">Nenhuma categoria encontrada.</td>

@@ -1,6 +1,6 @@
 <tr data-object-id="{{ object.id }}">
-  <td><input type="checkbox" class="form-check-input"></td>
-  <td>{{ object.name }}</td>
+  <td class="dt-select"><input type="checkbox" class="form-check-input"></td>
+  <td><span class="text-heading fw-medium">{{ object.name }}</span></td>
   <td>
     <div class="d-flex align-items-center" title="{{ object.is_income|yesno:'Receita,Despesa' }}">
       <span class="d-inline-block me-2">
@@ -11,19 +11,18 @@
       {{ object.is_income|yesno:"Receita,Despesa" }}
     </div>
   </td>
-  <td>{{ object.description|default:"–"|truncatechars:40 }}</td>
-  <td>{{ object.financial_records.count }}</td>
+  <td><span class="text-truncate">{{ object.description|default:"–"|truncatechars:40 }}</span></td>
+  <td class="dt-type-numeric"><span class="fw-medium">{{ object.financial_records.count }}</span></td>
   <td>
     <div class="d-flex align-items-center">
       <button class="btn p-0" hx-get="{% url 'financial:category_update' object.id %}" hx-target="#modalContent"
         hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#crudModal">
         <i class="icon-base bx bx-edit icon-md"></i>
       </button>
-      <a href="#" class="btn btn-icon" data-bs-toggle="modal" data-bs-target="#deleteModal"
-        data-category-id="{{ object.id }}" data-financial-records-count="{{ object.financial_records.count }}"
-        data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Excluir" title="Excluir">
+      <button class="btn p-0" hx-get="{% url 'financial:category_delete' object.id %}" hx-target="#modalContent"
+        hx-swap="innerHTML" data-bs-toggle="modal" data-bs-target="#crudModal">
         <i class="icon-base bx bx-trash icon-md"></i>
-      </a>
+      </button>
     </div>
   </td>
 </tr>
