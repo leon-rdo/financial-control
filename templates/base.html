@@ -307,55 +307,64 @@
       }
     </script>
     {% endif %}
-    <script>
-      // Criação bem-sucedida
-      document.body.addEventListener('htmx:beforeSwap', (e) => {
-        const html = e.detail.xhr.responseText;
-        if (html.includes('<tr') && e.detail.target.id === 'new-row-container') {
-          const tbody = document.querySelector('table.invoice-list-table tbody');
-          tbody.insertAdjacentHTML('afterbegin', html);
+<script>
+  // CRIAÇÃO (recomendo trocar o "beforeSwap" por um evento explícito; ver nota abaixo)
+  document.body.addEventListener('objectAdded', (e) => {
+    const html = e.detail.value; // string <tr>...</tr> vinda do servidor
+    const temp = document.createElement('tbody');
+    temp.innerHTML = html.trim();
+    const newRow = temp.querySelector('tr');
+    if (!newRow) return;
 
-          const emptyRow = tbody.querySelector('tr:only-child');
-          if (emptyRow && emptyRow.textContent.includes('Nenhuma')) {
-            emptyRow.remove();
-          }
+    const tbody = document.querySelector('table.invoice-list-table tbody');
+    // remove "Nenhuma categoria..." se existir
+    const empty = tbody.querySelector('tr td[colspan]');
+    if (empty && /Nenhuma/.test(empty.textContent)) empty.closest('tr').remove();
 
-          bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
-          document.getElementById('modalContent').innerHTML = '';
-          e.detail.shouldSwap = false;
-        }
-      });
+    tbody.insertAdjacentElement('afterbegin', newRow);
+    htmx.process(newRow); // <<< essencial
 
-      // Edição bem-sucedida
-      document.body.addEventListener('objectUpdated', (e) => {
-        const html = e.detail.value; // vem direto do servidor
-        const temp = document.createElement('tbody');
-        temp.innerHTML = html.trim();
-        const newRow = temp.querySelector('tr');
+    const modalEl = document.getElementById('crudModal');
+    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    document.getElementById('modalContent').innerHTML = '';
+  });
 
-        if (newRow && newRow.dataset.objectId) {
-          const oldRow = document.querySelector(
-            `table.invoice-list-table tbody tr[data-object-id="${newRow.dataset.objectId}"]`
-          );
-          if (oldRow) oldRow.replaceWith(newRow);
-        }
+  // EDIÇÃO
+  document.body.addEventListener('objectUpdated', (e) => {
+    const html = e.detail.value; // <tr>...</tr> enviado pelo HX-Trigger no update
+    const temp = document.createElement('tbody');
+    temp.innerHTML = html.trim();
+    const newRow = temp.querySelector('tr');
 
-        bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
-        document.getElementById('modalContent').innerHTML = '';
-      });
+    if (newRow && newRow.dataset.objectId) {
+      const oldRow = document.querySelector(
+        `table.invoice-list-table tbody tr[data-object-id="${newRow.dataset.objectId}"]`
+      );
+      if (oldRow) {
+        oldRow.replaceWith(newRow);
+        htmx.process(newRow); // <<< essencial
+      }
+    }
 
-      document.body.addEventListener('objectDeleted', (e) => {
-        const { id } = e.detail || {};
-        if (id) {
-          const row = document.querySelector(
-            `table.invoice-list-table tbody tr[data-object-id="${id}"]`
-          );
-          if (row) row.remove();
-        }
-        bootstrap.Modal.getInstance(document.getElementById('crudModal'))?.hide();
-        document.getElementById('modalContent').innerHTML = '';
-      });
-    </script>
+    const modalEl = document.getElementById('crudModal');
+    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    document.getElementById('modalContent').innerHTML = '';
+  });
+
+  // EXCLUSÃO
+  document.body.addEventListener('objectDeleted', (e) => {
+    const { id } = e.detail || {};
+    if (id) {
+      document
+        .querySelector(`table.invoice-list-table tbody tr[data-object-id="${id}"]`)
+        ?.remove();
+    }
+    const modalEl = document.getElementById('crudModal');
+    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    document.getElementById('modalContent').innerHTML = '';
+  });
+</script>
+
     {% block extra_scripts %}{% endblock extra_scripts %}
   </body>
 </html>

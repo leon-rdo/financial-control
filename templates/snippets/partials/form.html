@@ -5,7 +5,12 @@
   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
 </div>
 
-<form hx-post="{{ form_action }}" hx-target="#new-row-container" hx-swap="innerHTML" hx-encoding="multipart/form-data">
+<form
+  hx-post="{{ form_action }}"
+  hx-target="#modalContent"
+  hx-swap="innerHTML"
+  hx-encoding="multipart/form-data"
+>
   <div class="modal-body">
     {% csrf_token %}
     {% for field in form %}
