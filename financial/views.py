@@ -186,7 +186,7 @@ class CategoryUpdateView(HxModalUpdateView):
     form_class = CategoryForm
     modal_title = "Editar Categoria"
     edit_url_name = "financial:category_update"
-    delete_url_name = None
+    delete_url_name = "financial:category_delete"
     row_template = "financial/categories/partials/category_row.html"
 
 
