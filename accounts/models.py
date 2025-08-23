@@ -23,6 +23,7 @@ class Entity(models.Model):
     class Meta:
         verbose_name = "Entidade"
         verbose_name_plural = "Entidades"
+        ordering = ["name"]
 
 
 class PaymentMethod(models.Model):
@@ -54,3 +55,4 @@ class PaymentMethod(models.Model):
     class Meta:
         verbose_name = "Forma de Pagamento"
         verbose_name_plural = "Formas de Pagamento"
+        ordering = ["fin_institution"]
