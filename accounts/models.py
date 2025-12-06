@@ -50,7 +50,7 @@ class PaymentMethod(models.Model):
     description = models.TextField("Descrição", blank=True, null=True)
 
     def __str__(self):
-        return f"{self.fin_institution} - {self.owner.name}"
+        return f"{self.fin_institution} - {self.owner.name} ({self.get_payment_type_display()})"
     
     class Meta:
         verbose_name = "Forma de Pagamento"
