@@ -1,0 +1,126 @@
+<div class="modal-header">
+  <h5 class="modal-title fw-bold">
+    <i class="bx bx-user-plus me-2"></i>{{ modal_title }}
+  </h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+</div>
+
+<form
+  hx-post="{{ form_action }}"
+  hx-target="#modalContent"
+  hx-swap="innerHTML"
+  hx-encoding="multipart/form-data"
+>
+  <div class="modal-body">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+      <label for="modal_entity_name" class="form-label fw-semibold">
+        {{ form.name.label }}
+        <span class="text-danger">*</span>
+      </label>
+      <input type="text" name="name" id="modal_entity_name" class="form-control" 
+             value="{{ form.name.value|default:'' }}" required>
+      {% for error in form.name.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold d-block">
+        {{ form.person_type.label }}
+        <span class="text-danger">*</span>
+      </label>
+      <div class="btn-group w-100" role="group">
+        <input type="radio" class="btn-check" name="person_type" id="modal_entity_pessoa_fisica" value="F" 
+               {% if form.person_type.value == 'F' or not form.person_type.value %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="modal_entity_pessoa_fisica">
+          <i class="bx bx-user me-1"></i>Pessoa Física
+        </label>
+        <input type="radio" class="btn-check" name="person_type" id="modal_entity_pessoa_juridica" value="J"
+               {% if form.person_type.value == 'J' %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="modal_entity_pessoa_juridica">
+          <i class="bx bx-building me-1"></i>Pessoa Jurídica
+        </label>
+      </div>
+      {% for error in form.person_type.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label for="modal_entity_document" class="form-label fw-semibold">
+        {{ form.document.label }}
+      </label>
+      <input type="text" name="document" id="modal_entity_document" class="form-control" 
+             value="{{ form.document.value|default:'' }}" 
+             pattern="\d{11}|\d{14}" 
+             title="CPF (11 dígitos) ou CNPJ (14 dígitos)">
+      <div class="form-text text-muted small">
+        <i class="bx bx-info-circle me-1"></i>CPF (11 dígitos) ou CNPJ (14 dígitos)
+      </div>
+      {% for error in form.document.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label for="modal_entity_description" class="form-label fw-semibold">
+        {{ form.description.label }}
+      </label>
+      <textarea name="description" id="modal_entity_description" class="form-control" rows="3">{{ form.description.value|default:'' }}</textarea>
+      {% for error in form.description.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+      <i class="bx bx-x me-1"></i>Cancelar
+    </button>
+    <button type="submit" class="btn btn-primary px-4">
+      <i class="bx bx-check me-1"></i>{{ submit_label }}
+    </button>
+  </div>
+</form>
+
+<script>
+  // Máscara para CPF/CNPJ
+  const docInput = document.getElementById('modal_entity_document');
+  if (docInput) {
+    docInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 14) {
+        value = value.slice(0, 14);
+      }
+      e.target.value = value;
+    });
+
+    // Auto-complete com CNPJ API
+    docInput.addEventListener('blur', function(e) {
+      const value = e.target.value.replace(/\D/g, '');
+      if (value.length === 14) {
+        fetch(`https://open.cnpja.com/office/${value}`)
+          .then(response => {
+            if (response.ok) return response.json();
+            throw new Error('CNPJ não encontrado');
+          })
+          .then(data => {
+            document.getElementById('modal_entity_name').value = data.company.name;
+            document.getElementById('modal_entity_description').value = data.mainActivity.text;
+            document.getElementById('modal_entity_pessoa_juridica').checked = true;
+          })
+          .catch(error => console.log('Não foi possível buscar dados do CNPJ'));
+      }
+    });
+  }
+</script>

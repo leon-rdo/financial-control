@@ -6,10 +6,13 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, UpdateView
 from django_filters.views import FilterView
+from django.http import HttpResponse
+import json
 
 from accounts.filters import EntityFilter, PaymentMethodFilter, UserFilter
-from accounts.forms import PaymentMethodForm
+from accounts.forms import PaymentMethodForm, EntityForm
 from utils.page_for_object import get_page_number
+from utils.htmx_views import HxModalCreateView
 from .models import Entity, PaymentMethod
 
 
@@ -59,7 +62,9 @@ class EntityListView(PermissionRequiredMixin, FilterView):
             # Editar
             if edit_id:
                 if not user.has_perm("accounts.change_entity"):
-                    messages.error(request, "Você não tem permissão para editar esta entidade.")
+                    messages.error(
+                        request, "Você não tem permissão para editar esta entidade."
+                    )
                     return redirect(request.path)
                 entity = Entity.objects.get(id=edit_id)
                 entity.name = request.POST.get("name")
@@ -73,7 +78,9 @@ class EntityListView(PermissionRequiredMixin, FilterView):
             # Criar
             if name and not delete_id:
                 if not user.has_perm("accounts.add_entity"):
-                    messages.error(request, "Você não tem permissão para criar uma nova entidade.")
+                    messages.error(
+                        request, "Você não tem permissão para criar uma nova entidade."
+                    )
                     return redirect(request.path)
                 entity = Entity.objects.create(
                     name=name,
@@ -81,23 +88,99 @@ class EntityListView(PermissionRequiredMixin, FilterView):
                     person_type=request.POST.get("person_type"),
                     document=request.POST.get("document"),
                 )
-                page_number = get_page_number(self.get_queryset(), entity, self.paginate_by)
+                page_number = get_page_number(
+                    self.get_queryset(), entity, self.paginate_by
+                )
                 messages.success(request, "Entidade criada com sucesso.")
-                return redirect(f"{request.path}?page={page_number}&object_id={entity.pk}")
+                return redirect(
+                    f"{request.path}?page={page_number}&object_id={entity.pk}"
+                )
 
             # Deletar
             if delete_id:
                 if not user.has_perm("accounts.delete_entity"):
-                    messages.error(request, "Você não tem permissão para deletar esta entidade.")
+                    messages.error(
+                        request, "Você não tem permissão para deletar esta entidade."
+                    )
                     return redirect(request.path)
                 Entity.objects.filter(id=delete_id).delete()
                 messages.success(request, "Entidade deletada com sucesso.")
         except Entity.DoesNotExist:
             messages.error(request, "Entidade não encontrada.")
         except Exception as e:
-            messages.error(request, "Ocorreu um erro inesperado. Tente novamente ou contate a administração.")
+            messages.error(
+                request,
+                "Ocorreu um erro inesperado. Tente novamente ou contate a administração.",
+            )
 
         return redirect(request.path)
+
+
+class EntityModalCreateView(HxModalCreateView):
+    model = Entity
+    form_class = EntityForm
+    template_name = "accounts/entities/partials/entity_form.html"
+    modal_title = "Criar Entidade"
+    submit_label = "Criar Entidade"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "modal_title": self.modal_title,
+                "submit_label": self.submit_label,
+                "form_action": self.request.path,
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+        # Retorna JSON com o novo objeto para atualizar o select
+        return HttpResponse(
+            "",
+            headers={
+                "HX-Trigger": json.dumps(
+                    {"entityCreated": {"id": self.object.id, "name": self.object.name}}
+                )
+            },
+        )
+
+
+class PaymentMethodModalCreateView(HxModalCreateView):
+    model = PaymentMethod
+    form_class = PaymentMethodForm
+    template_name = "accounts/payment_methods/partials/payment_method_form.html"
+    modal_title = "Criar Forma de Pagamento"
+    submit_label = "Criar"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "modal_title": self.modal_title,
+                "submit_label": self.submit_label,
+                "form_action": self.request.path,
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+        # Retorna JSON com o novo objeto para atualizar o select
+        return HttpResponse(
+            "",
+            headers={
+                "HX-Trigger": json.dumps(
+                    {
+                        "paymentMethodCreated": {
+                            "id": self.object.id,
+                            "text": str(self.object),
+                        }
+                    }
+                )
+            },
+        )
 
 
 class PaymentMethodCreateView(PermissionRequiredMixin, CreateView):
@@ -128,7 +211,10 @@ class PaymentMethodListView(PermissionRequiredMixin, FilterView):
 
         if delete_id:
             if not request.user.has_perm("accounts.delete_paymentmethod"):
-                messages.error(request, "Você não tem permissão para deletar esta forma de pagamento.")
+                messages.error(
+                    request,
+                    "Você não tem permissão para deletar esta forma de pagamento.",
+                )
                 return redirect(request.path)
             PaymentMethod.objects.filter(id=delete_id).delete()
             messages.success(request, "Forma de pagamento deletada com sucesso.")

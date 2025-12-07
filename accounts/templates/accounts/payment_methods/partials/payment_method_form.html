@@ -1,0 +1,155 @@
+<div class="modal-header">
+  <h5 class="modal-title fw-bold">
+    <i class="bx bx-wallet me-2"></i>{{ modal_title }}
+  </h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+</div>
+
+<form
+  hx-post="{{ form_action }}"
+  hx-target="#modalContent"
+  hx-swap="innerHTML"
+  hx-encoding="multipart/form-data"
+>
+  <div class="modal-body">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+      <label for="{{ form.fin_institution.id_for_label }}" class="form-label fw-semibold">
+        {{ form.fin_institution.label }}
+        <span class="text-danger">*</span>
+      </label>
+      {{ form.fin_institution }}
+      {% for error in form.fin_institution.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.owner.id_for_label }}" class="form-label fw-semibold">
+        {{ form.owner.label }}
+        <span class="text-danger">*</span>
+      </label>
+      <div class="d-flex gap-2">
+        <div class="flex-grow-1">
+          {{ form.owner }}
+        </div>
+        <button 
+          type="button" 
+          class="btn btn-outline-primary"
+          onclick="openNestedEntityModal(event)"
+          title="Criar nova entidade">
+          <i class="bx bx-plus"></i>
+        </button>
+      </div>
+      {% for error in form.owner.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.payment_type.id_for_label }}" class="form-label fw-semibold">
+        {{ form.payment_type.label }}
+        <span class="text-danger">*</span>
+      </label>
+      {{ form.payment_type }}
+      {% for error in form.payment_type.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">
+        {{ form.description.label }}
+      </label>
+      {{ form.description }}
+      {% for error in form.description.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+      <i class="bx bx-x me-1"></i>Cancelar
+    </button>
+    <button type="submit" class="btn btn-primary px-4">
+      <i class="bx bx-check me-1"></i>{{ submit_label }}
+    </button>
+  </div>
+</form>
+
+<!-- Modal aninhado para criar entidade -->
+<div class="modal fade" id="nestedModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content" id="nestedModalContent">
+      <!-- Conteúdo será injetado aqui via HTMX -->
+    </div>
+  </div>
+</div>
+
+<script>
+  function openNestedEntityModal(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Carrega o formulário de entidade no modal aninhado
+    fetch('{% url "accounts:entity_create_modal" %}')
+      .then(response => response.text())
+      .then(html => {
+        const container = document.getElementById('nestedModalContent');
+        container.innerHTML = html;
+        
+        // Processa HTMX no novo conteúdo
+        htmx.process(container);
+        
+        // Executa os scripts inline manualmente
+        const scripts = container.querySelectorAll('script');
+        scripts.forEach(script => {
+          const newScript = document.createElement('script');
+          newScript.textContent = script.textContent;
+          document.body.appendChild(newScript);
+          document.body.removeChild(newScript);
+        });
+        
+        // Abre o modal aninhado
+        const nestedModal = new bootstrap.Modal(document.getElementById('nestedModal'));
+        nestedModal.show();
+      });
+  }
+
+  // Handler para quando uma entidade é criada no modal aninhado
+  document.addEventListener('entityCreated', function(e) {
+    const nestedModalEl = document.getElementById('nestedModal');
+    if (nestedModalEl && nestedModalEl.classList.contains('show')) {
+      const { id, name } = e.detail;
+      const ownerSelect = document.querySelector('#crudModal select[name="owner"]');
+      
+      if (ownerSelect) {
+        // Adiciona a nova opção
+        const option = new Option(name, id, true, true);
+        ownerSelect.appendChild(option);
+        
+        // Dispara o evento change para o Select2 atualizar
+        $(ownerSelect).trigger('change');
+      }
+      
+      // Fecha apenas o modal aninhado
+      const nestedModal = bootstrap.Modal.getInstance(nestedModalEl);
+      if (nestedModal) {
+        nestedModal.hide();
+      }
+      
+      // Limpa o conteúdo
+      document.getElementById('nestedModalContent').innerHTML = '';
+    }
+  });
+</script>

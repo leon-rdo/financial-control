@@ -1,0 +1,73 @@
+<div class="modal-header">
+  <h5 class="modal-title fw-bold">
+    <i class="bx bx-category me-2"></i>{{ modal_title }}
+  </h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+</div>
+
+<form
+  hx-post="{{ form_action }}"
+  hx-target="#modalContent"
+  hx-swap="innerHTML"
+  hx-encoding="multipart/form-data"
+>
+  <div class="modal-body">
+    {% csrf_token %}
+    
+    <div class="mb-3">
+      <label for="modal_category_name" class="form-label fw-semibold">
+        {{ form.name.label }}
+        <span class="text-danger">*</span>
+      </label>
+      <input type="text" name="name" id="modal_category_name" class="form-control form-control-lg border-2" 
+             value="{{ form.name.value|default:'' }}" required>
+      {% for error in form.name.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <label for="modal_category_description" class="form-label fw-semibold">
+        {{ form.description.label }}
+      </label>
+      <textarea name="description" id="modal_category_description" class="form-control form-control-lg border-2" rows="3">{{ form.description.value|default:'' }}</textarea>
+      <div class="form-text text-muted small">
+        <i class="bx bx-info-circle me-1"></i>Descreva brevemente esta categoria
+      </div>
+      {% for error in form.description.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="mb-3">
+      <div class="form-check form-switch">
+        <input type="checkbox" name="is_income" id="modal_category_is_income" class="form-check-input" 
+               {% if form.is_income.value %}checked{% endif %}>
+        <label class="form-check-label fw-semibold" for="modal_category_is_income">
+          {{ form.is_income.label }}
+        </label>
+      </div>
+      <div class="form-text text-muted small">
+        <i class="bx bx-info-circle me-1"></i>Marque se esta categoria é para receitas (entradas)
+      </div>
+      {% for error in form.is_income.errors %}
+      <div class="invalid-feedback d-block text-danger small">
+        <i class="bx bx-error me-1"></i>{{ error }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="modal-footer border-top">
+    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+      <i class="bx bx-x me-1"></i>Cancelar
+    </button>
+    <button type="submit" class="btn btn-primary px-4">
+      <i class="bx bx-check me-1"></i>{{ submit_label }}
+    </button>
+  </div>
+</form>

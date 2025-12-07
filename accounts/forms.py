@@ -1,5 +1,5 @@
 from django import forms
-from .models import PaymentMethod
+from .models import PaymentMethod, Entity
 from django_select2.forms import ModelSelect2Widget, Select2Widget
 import requests
 
@@ -8,7 +8,7 @@ class PaymentMethodForm(forms.ModelForm):
     fin_institution = forms.ChoiceField(
         widget=Select2Widget(attrs={"class": "form-select"}),
         choices=[],
-        label="Instituição Financeira"
+        label="Instituição Financeira",
     )
 
     class Meta:
@@ -21,7 +21,7 @@ class PaymentMethodForm(forms.ModelForm):
                     "class": "form-select",
                     "data-minimum-input-length": "0",
                     "data-ajax--delay": "250",
-                }
+                },
             ),
             "description": forms.Textarea(attrs={"class": "form-control"}),
             "payment_type": forms.Select(attrs={"class": "form-select"}),
@@ -36,9 +36,30 @@ class PaymentMethodForm(forms.ModelForm):
         except Exception:
             banks = []
 
-        choices = [('', 'Selecione uma Instituição')]
+        choices = [("", "Selecione uma Instituição")]
         for bank in banks:
-            if bank['code']:
+            if bank["code"]:
                 option = f"{bank['code']} - {bank['name']}"
                 choices.append((option, option))
         self.fields["fin_institution"].choices = choices
+
+
+class EntityForm(forms.ModelForm):
+    class Meta:
+        model = Entity
+        fields = ["name", "description", "person_type", "document"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "person_type": forms.RadioSelect(
+                attrs={"class": "form-check-input"},
+                choices=[("F", "Física"), ("J", "Jurídica")],
+            ),
+            "document": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "pattern": r"\d{11}|\d{14}",
+                    "title": "CPF (11 dígitos) ou CNPJ (14 dígitos)",
+                }
+            ),
+        }

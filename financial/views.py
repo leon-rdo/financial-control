@@ -4,6 +4,7 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView
 from django.db.models import Sum
+from django.http import HttpResponse
 
 from utils.htmx_views import HxModalCreateView, HxModalDeleteView, HxModalUpdateView
 from utils.page_for_object import get_page_number
@@ -165,10 +166,59 @@ class InstallmentListView(PermissionRequiredMixin, FilterView):
 class CategoryCreateView(HxModalCreateView):
     model = Category
     form_class = CategoryForm
+    template_name = "financial/categories/partials/category_form.html"
     modal_title = "Criar Categoria"
+    submit_label = "Criar Categoria"
     edit_url_name = "financial:category_update"
     delete_url_name = "financial:category_delete"
     row_template = "financial/categories/partials/category_row.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "modal_title": self.modal_title,
+                "submit_label": self.submit_label,
+                "form_action": self.request.path,
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+
+        # Se a requisição veio do formulário de registros financeiros,
+        # retorna JSON para atualizar o select
+        if self.request.headers.get("HX-Request"):
+            from django.template.loader import render_to_string
+
+            # Verifica se deve retornar JSON ou HTML
+            referer = self.request.META.get("HTTP_REFERER", "")
+            if "registros/criar" in referer or (
+                "registros" in referer and "editar" in referer
+            ):
+                return HttpResponse(
+                    "",
+                    headers={
+                        "HX-Trigger": json.dumps(
+                            {
+                                "categoryCreated": {
+                                    "id": self.object.id,
+                                    "name": self.object.name,
+                                }
+                            }
+                        )
+                    },
+                )
+
+            # Caso contrário, retorna HTML para a tabela
+            context = self.get_row_context_data()
+            row_html = render_to_string(
+                self.row_template, context, request=self.request
+            )
+            return HttpResponse(row_html, headers={"HX-Trigger": "objectAdded"})
+
+        return super().form_valid(form)
 
 
 class CategoryListView(PermissionRequiredMixin, FilterView):
