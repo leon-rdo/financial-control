@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Entidades - Controle Financeiro{% endblock %}
+
+{% block content %}
+<div x-data="{ showModal: false, deleteUrl: '' }">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Entidades</h1>
+        <button 
+            hx-get="{% url 'entity_create' %}" 
+            hx-target="#modal-container"
+            hx-swap="innerHTML"
+            class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nova Entidade
+        </button>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+            <form hx-get="{% url 'entity_list' %}" hx-target="#entity-table" hx-trigger="change, submit">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Buscar</span>
+                        </label>
+                        {{ filter.form.name }}
+                    </div>
+                    
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Tipo</span>
+                        </label>
+                        {{ filter.form.type }}
+                    </div>
+                    
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Status</span>
+                        </label>
+                        {{ filter.form.active }}
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                    <a href="{% url 'entity_list' %}" class="btn btn-ghost btn-sm">Limpar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Table -->
+    <div id="entity-table" class="card bg-base-100 shadow-xl">
+        {% include "core/entity_table.html" %}
+    </div>
+    
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" :class="{ 'modal-open': showModal }">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Confirmar Exclusão</h3>
+            <p class="py-4">Tem certeza que deseja excluir esta entidade? Esta ação não pode ser desfeita.</p>
+            <div class="modal-action">
+                <button @click="showModal = false" class="btn btn-ghost">Cancelar</button>
+                <button 
+                    @click="htmx.ajax('DELETE', deleteUrl, {target: '#entity-table', swap: 'outerHTML'}); showModal = false"
+                    class="btn btn-error">
+                    Excluir
+                </button>
+            </div>
+        </div>
+        <div class="modal-backdrop" @click="showModal = false"></div>
+    </div>
+</div>
+
+<script>
+    document.body.addEventListener('openDeleteModal', function(event) {
+        const modal = document.querySelector('[x-data]').__x.$data;
+        modal.deleteUrl = event.detail.url;
+        modal.showModal = true;
+    });
+</script>
+{% endblock %}

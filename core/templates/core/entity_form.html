@@ -1,0 +1,291 @@
+<div
+  class="modal modal-open"
+  x-data="{ open: true }"
+  x-show="open"
+  @keydown.escape.window="open = false"
+>
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">
+        {% if object.pk %}Editar Entidade{% else %}Nova Entidade{% endif %}
+      </h3>
+      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
+        ✕
+      </button>
+    </div>
+
+    <form
+      hx-post="{% if object.pk %}{% url 'entity_update' object.pk %}{% else %}{% url 'entity_create' %}{% endif %}"
+      hx-target="#entity-table"
+      hx-swap="outerHTML"
+      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Entidade salva com sucesso!'); }"
+    >
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <!-- Document with CNPJ Lookup -->
+        <div class="form-control" x-data="cnpjFetch()" x-init="init()">
+          <label class="label">
+            <span class="label-text font-semibold">Documento (CPF/CNPJ)</span>
+          </label>
+          <div class="join w-full">
+            {{ form.document }}
+            <button
+              type="button"
+              @click="fetchCNPJ()"
+              :disabled="loading"
+              class="btn btn-primary join-item"
+              title="Buscar dados do CNPJ"
+              x-show="showButton"
+            >
+              <span x-show="!loading">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </span>
+              <span
+                x-show="loading"
+                class="loading loading-spinner loading-sm"
+              ></span>
+            </button>
+          </div>
+          {% if form.document.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error"
+              >{{ form.document.errors.0 }}</span
+            >
+          </label>
+          {% endif %}
+          <div x-show="error" class="alert alert-error mt-2 text-sm" x-cloak>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="stroke-current shrink-0 h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span x-text="error"></span>
+          </div>
+          <div
+            x-show="success"
+            class="alert alert-success mt-2 text-sm"
+            x-cloak
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="stroke-current shrink-0 h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Dados preenchidos automaticamente!</span>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Nome *</span>
+          </label>
+          {{ form.name }} {% if form.name.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error"
+              >{{ form.name.errors.0 }}</span
+            >
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Type -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Tipo *</span>
+          </label>
+          {{ form.type }} {% if form.type.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error"
+              >{{ form.type.errors.0 }}</span
+            >
+          </label>
+          {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Email -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Email</span>
+            </label>
+            {{ form.email }} {% if form.email.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error"
+                >{{ form.email.errors.0 }}</span
+              >
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Phone -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Telefone</span>
+            </label>
+            {{ form.phone }} {% if form.phone.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error"
+                >{{ form.phone.errors.0 }}</span
+              >
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Active -->
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-4">
+            {{ form.active }}
+            <span class="label-text font-semibold">Ativo</span>
+          </label>
+          {% if form.active.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error"
+              >{{ form.active.errors.0 }}</span
+            >
+          </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" @click="open = false" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-backdrop" @click="open = false"></div>
+</div>
+
+<script>
+  function cnpjFetch() {
+    return {
+      loading: false,
+      error: "",
+      success: false,
+      showButton: false,
+      form: null,
+
+      init() {
+        this.form = this.$el.closest("form");
+        const documentField = this.form.querySelector('input[name="document"]');
+
+        this.checkCNPJ();
+
+        if (documentField) {
+          documentField.addEventListener("input", () => {
+            this.checkCNPJ();
+          });
+          documentField.addEventListener("keyup", () => {
+            this.checkCNPJ();
+          });
+        }
+      },
+
+      checkCNPJ() {
+        if (!this.form) return;
+        const documentField = this.form.querySelector('input[name="document"]');
+        const value = documentField?.value || "";
+        const clean = value.replace(/\D/g, "");
+        this.showButton = clean.length === 14;
+      },
+
+      fetchCNPJ() {
+        if (!this.form) return;
+        const documentField = this.form.querySelector('input[name="document"]');
+        const cnpj = documentField?.value || "";
+
+        const cnpjClean = cnpj.replace(/\D/g, "");
+
+        if (!cnpjClean || cnpjClean.length !== 14) {
+          this.error = "Digite um CNPJ válido com 14 dígitos";
+          this.success = false;
+          setTimeout(() => {
+            this.error = "";
+          }, 3000);
+          return;
+        }
+
+        this.loading = true;
+        this.error = "";
+        this.success = false;
+
+        fetch(`/api/fetch-cnpj/?cnpj=${cnpjClean}`)
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(data.error || "Erro ao buscar CNPJ");
+              });
+            }
+            return response.json();
+          })
+          .then((result) => {
+            if (result.success && result.data) {
+              const nameField = this.form.querySelector('input[name="name"]');
+              const emailField = this.form.querySelector('input[name="email"]');
+              const phoneField = this.form.querySelector('input[name="phone"]');
+              const typeField = this.form.querySelector('select[name="type"]');
+
+              if (nameField && result.data.name)
+                nameField.value = result.data.name;
+              if (emailField && result.data.email)
+                emailField.value = result.data.email;
+              if (phoneField && result.data.phone)
+                phoneField.value = result.data.phone;
+
+              if (typeField && !typeField.value) {
+                typeField.value = "SUPPLIER";
+              }
+
+              this.success = true;
+              setTimeout(() => {
+                this.success = false;
+              }, 3000);
+            }
+          })
+          .catch((error) => {
+            this.error = error.message;
+            setTimeout(() => {
+              this.error = "";
+            }, 5000);
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+      },
+    };
+  }
+</script>

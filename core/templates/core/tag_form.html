@@ -1,0 +1,65 @@
+<div class="modal modal-open" x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false">
+    <div class="modal-box">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="font-bold text-lg">
+                {% if object.pk %}Editar Tag{% else %}Nova Tag{% endif %}
+            </h3>
+            <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">✕</button>
+        </div>
+        
+        <form 
+            hx-post="{% if object.pk %}{% url 'tag_update' object.pk %}{% else %}{% url 'tag_create' %}{% endif %}"
+            hx-target="#tag-table"
+            hx-swap="outerHTML"
+            @htmx:after-request="if(event.detail.successful) { open = false; showToast('Tag salva com sucesso!'); }">
+            
+            {% csrf_token %}
+            
+            <div class="space-y-4">
+                <!-- Name -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Nome *</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.name.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Color -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cor</span>
+                    </label>
+                    <div class="flex gap-2 items-center">
+                        {{ form.color }}
+                        <div 
+                            x-data="{ color: '{{ form.color.value|default:'#3b82f6' }}' }"
+                            class="w-12 h-12 rounded-lg border-2 border-base-300 cursor-pointer"
+                            :style="`background-color: ${color}`"
+                            @click="$refs.colorInput.click()"
+                            x-init="$watch('color', value => $refs.colorInput.value = value)">
+                        </div>
+                    </div>
+                    {% if form.color.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.color.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                    <label class="label">
+                        <span class="label-text-alt">Código hexadecimal (ex: #FF5733)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" @click="open = false" class="btn btn-ghost">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+    <div class="modal-backdrop" @click="open = false"></div>
+</div>
