@@ -35,15 +35,16 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    'django_select2',
+    # 'django_select2',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
+    'core.apps.CoreConfig',
     'financial.apps.FinancialConfig',
-    'django_filters',
+    # 'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -130,6 +131,13 @@ LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Belem'
 
 USE_I18N = True
+LANGUAGES = [
+    ('pt-br', 'Português Brasileiro'),
+    ('en', 'English'),
+]
+LOCALE_PATHS = [
+    os.path.join(BASE_DIR, 'locale'),
+]
 
 USE_TZ = False
 
