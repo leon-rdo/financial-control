@@ -35,17 +35,27 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    # 'django_select2',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts.apps.AccountsConfig',
-    'core.apps.CoreConfig',
-    'financial.apps.FinancialConfig',
-    # 'django_filters',
+    
+    # Third party apps
+    'django_filters',
+    'django_select2',
+    'corsheaders',
+    'rest_framework',
+    'tailwind',
+    
+    # Local apps
+    'core',
+    'accounts',
+    'financial',
 ]
+
+# TAILWIND_APP_NAME = 'theme'
+SELECT2_CACHE_BACKEND = 'default'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -55,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.HTMXMiddleware',
 ]
 
 ROOT_URLCONF = 'financial_control.urls'
@@ -69,8 +80,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'accounts.context_processors.urls_context',
+                'django.contrib.messages.context_processors.messages'
             ],
         },
     },

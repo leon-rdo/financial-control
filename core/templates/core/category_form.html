@@ -1,0 +1,120 @@
+<div class="modal modal-open" x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false">
+    <div class="modal-box max-w-2xl">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="font-bold text-lg">
+                {% if object.pk %}Editar Categoria{% else %}Nova Categoria{% endif %}
+            </h3>
+            <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">✕</button>
+        </div>
+        
+        <form 
+            hx-post="{% if object.pk %}{% url 'category_update' object.pk %}{% else %}{% url 'category_create' %}{% endif %}"
+            hx-target="#category-table"
+            hx-swap="outerHTML"
+            @htmx:after-request="if(event.detail.successful) { open = false; showToast('Categoria salva com sucesso!'); }">
+            
+            {% csrf_token %}
+            
+            <div class="space-y-4">
+                <!-- Name -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Nome *</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.name.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Type -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Tipo *</span>
+                    </label>
+                    {{ form.type }}
+                    {% if form.type.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.type.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+                
+                <!-- Color -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Cor</span>
+                    </label>
+                    <div class="flex gap-2 items-center">
+                        {{ form.color }}
+                        <div 
+                            x-data="{ color: '{{ form.color.value|default:'#3b82f6' }}' }"
+                            class="w-12 h-12 rounded-lg border-2 border-base-300 cursor-pointer"
+                            :style="`background-color: ${color}`"
+                            @click="$refs.colorInput.click()"
+                            x-init="$watch('color', value => $refs.colorInput.value = value)">
+                        </div>
+                    </div>
+                    {% if form.color.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.color.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                    <label class="label">
+                        <span class="label-text-alt">Código hexadecimal (ex: #FF5733)</span>
+                    </label>
+                </div>
+                
+                <!-- Icon -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-semibold">Ícone</span>
+                    </label>
+                    {{ form.icon }}
+                    {% if form.icon.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.icon.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                    <label class="label">
+                        <span class="label-text-alt">Identificador do ícone (ex: 🏠, 🍔, 💰)</span>
+                    </label>
+                </div>
+                
+                <!-- Active -->
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        {{ form.active }}
+                        <span class="label-text font-semibold">Ativo</span>
+                    </label>
+                    {% if form.active.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.active.errors.0 }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <button type="button" @click="open = false" class="btn btn-ghost">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+    <div class="modal-backdrop" @click="open = false"></div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        const modal = document.querySelector('[x-data]');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.__x.$data.open = false;
+                }
+            });
+        }
+    });
+</script>

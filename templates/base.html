@@ -1,370 +1,191 @@
-<!doctype html>
 {% load static %}
-<html
-  lang="pt-BR"
-  class="light-style layout-menu-fixed layout-compact"
-  dir="ltr"
-  data-theme="theme-default"
-  data-assets-path="{% static 'assets/' %}">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-
-    <title>{{ title|default_if_none:'ConFin' }}</title>
-
-    <!-- Meta Tags -->
-    <meta name="description" content="{{ description|default_if_none:'Sistema de controle financeiro pessoal' }}" />
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="og-title" content="{{ title|default_if_none:'ConFin' }}" />
-    <meta name="og:description" content="{{ description|default_if_none:'Sistema de controle financeiro pessoal' }}" />
-    <meta name="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/branding/logo-and-brand.png' %}" />
-    <meta name="og:url" content="{{ request.build_absolute_uri }}" />
-    <meta name="og:type" content="website" />
-    <meta name="og:site_name" content="ConFin" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="{{ title|default_if_none:'ConFin' }}" />
-    <meta name="twitter:description" content="{{ description|default_if_none:'Sistema de controle financeiro pessoal' }}" />
-    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/img/branding/logo-and-brand.png' %}" />
-    <meta name="twitter:url" content="{{ request.build_absolute_uri }}" />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{% static 'assets/img/favicon/favicon.ico' %}" />
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
-      rel="stylesheet" />
-      
-      <!-- Icons -->
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{% static 'assets/vendor/fonts/fontawesome.css' %}" />
-    <link rel="stylesheet" href="{% static 'assets/vendor/fonts/flag-icons.css' %}" />
-
-    <!-- Core CSS -->
-    <link rel="stylesheet" href="{% static 'assets/vendor/css/rtl/core.css' %}" />
-    <link rel="stylesheet" href="{% static 'assets/vendor/css/rtl/theme-default.css' %}" />
-    <link rel="stylesheet" href="{% static 'assets/css/demo.css' %}" />
-
-    <!-- Vendors CSS -->
-    <link rel="stylesheet" href="{% static 'assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css' %}" />
-    <link rel="stylesheet" href="{% static 'assets/vendor/libs/apex-charts/apex-charts.css' %}" />
-
-    <!-- Helpers -->
-    <script src="{% static 'assets/vendor/js/helpers.js' %}"></script>
-    <script src="{% static 'assets/js/config.js' %}"></script>
-    {% if form or filter %}
-        <link rel="stylesheet" href="{% static 'assets/vendor/libs/select2/select2.css' %}" />
-        {{ filter.form.media.css }}
-        {{ form.media.css }}
-    {% endif %}
-
-    <!-- HTMX -->
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js" integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm" crossorigin="anonymous"></script>
-
-    <!-- Extra -->
-    {% block extra_head %}{% endblock extra_head %}
-  </head>
-
-  <body>
-    <!-- Layout wrapper -->
-    <div class="layout-wrapper layout-navbar-full layout-horizontal layout-without-menu">
-      <div class="layout-container">
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Controle Financeiro{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        .select2-container { width: 100% !important; }
+        .select2-container--default .select2-selection--single {
+            height: 3rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 2rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 2.8rem;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-base-200 min-h-screen">
+    <div class="drawer lg:drawer-open">
+        <input id="drawer" type="checkbox" class="drawer-toggle" />
         
-        {% if user.is_authenticated %}
-        <!-- Navbar -->
-        <nav class="layout-navbar navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
-          <div class="container-xxl">
-            <div class="navbar-brand app-brand demo d-none d-xl-flex py-0 me-4">
-              <a href="/" class="app-brand-link gap-2">
-                <span class="app-brand-logo demo">
-                  <img src="{% static 'assets/img/branding/black-wallet.svg' %}" alt="Logo" width="30" height="30" />
-                </span>
-                <span class="app-brand-text demo menu-text fw-bold">ConFin</span>
-              </a>
-              <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-xl-none">
-                <i class="bx bx-chevron-left bx-sm align-middle"></i>
-              </a>
-            </div>
-            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-              <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                <i class="bx bx-menu bx-sm"></i>
-              </a>
-            </div>
-            <div class="nav-item navbar-dropdown dropdown-user dropdown">
-              <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
-                <div class="avatar avatar-online">
-                  <span class="avatar-initial rounded-circle bg-label-primary">
-                    {{ user.username|slice:":2"|upper }}
-                  </span>
+        <div class="drawer-content flex flex-col">
+            <!-- Navbar -->
+            <div class="navbar bg-base-100 shadow-lg lg:hidden">
+                <div class="flex-none">
+                    <label for="drawer" class="btn btn-square btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </label>
                 </div>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                  <span class="dropdown-item">
-                    <div class="d-flex">
-                      <div class="flex-shrink-0 me-3">
-                        <div class="avatar avatar-online">
-                          <span class="avatar-initial rounded-circle bg-label-primary">
-                            {{ user.username|slice:":2"|upper }}
-                          </span>
-                        </div>
-                      </div>
-                      <div class="flex-grow-1">
-                        <span class="fw-medium d-block">{{ request.user.get_full_name }}</span>
-                        <small class="text-muted">{{ user.is_superuser|yesno:"Super-," }}{{ user.is_staff|yesno:"Administrador,Usuário" }}</small>
-                      </div>
-                    </div>
-                  </span>
-                </li>
-                <li>
-                  <div class="dropdown-divider"></div>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#">
-                    <i class="bx bx-user me-2"></i>
-                    <span class="align-middle">Meus Dados</span>
-                  </a>
-                </li>
-                {% if request.user.is_staff %}
-                  <li>
-                    <a class="dropdown-item" href="{% url 'admin:index' %}">
-                      <i class="bx bx-cog me-2"></i>
-                      <span class="align-middle">Administração</span>
-                    </a>
-                  </li>
-                {% endif %}
-                <li>
-                  <div class="dropdown-divider"></div>
-                </li>
-                <li>
-                  <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                    <i class="bx bx-power-off text-danger me-2"></i>
-                    <span class="align-middle">Sair</span>
-                  </button>
-                </li>
-              </ul>
+                <div class="flex-1">
+                    <a class="btn btn-ghost text-xl">Controle Financeiro</a>
+                </div>
             </div>
-          </div>
-        </nav>
-        <!-- / Navbar -->
-        {% endif %}
-
-        <!-- Layout container -->
-        <div class="layout-page">
-          <!-- Content wrapper -->
-          <div class="content-wrapper">
-            {% if user.is_authenticated %}
-            <!-- Menu -->
-            <aside id="layout-menu" class="layout-menu-horizontal menu-horizontal menu bg-menu-theme flex-grow-0">
-              <div class="container-xxl d-flex h-100">
-                <ul class="menu-inner">
-                  {% for link in urls %}
-                  <li class="menu-item {% if link.is_active %}active{% endif %} {% if link.sub_urls %}menu-dropdown{% endif %}">
-                    <a href="{{ link.url }}" class="menu-link {% if link.sub_urls %}menu-toggle{% endif %}">
-                        <i class="menu-icon tf-icons {{ link.icon }}"></i>
-                        <div data-i18n="{{ link.name }}">{{ link.name }}</div>
-                      </a>
-                      {% if link.sub_urls %}
-                        <ul class="menu-sub">
-                          {% for sub_link in link.sub_urls %}
-                            <li class="menu-item {% if request.path == sub_link.url %}active{% endif %}">
-                              <a href="{{ sub_link.url }}" class="menu-link">
-                                <i class="menu-icon tf-icons {{ sub_link.icon }}"></i>
-                                <div data-i18n="{{ sub_link.name }}">{{ sub_link.name }}</div>
-                              </a>
-                            </li>
-                          {% endfor %}
-                        </ul>
-                      {% endif %}
+            
+            <!-- Main Content -->
+            <main class="flex-1 p-6">
+                <div id="toast-container" class="toast toast-top toast-end z-50"></div>
+                
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="drawer-side">
+            <label for="drawer" class="drawer-overlay"></label>
+            <aside class="bg-base-100 w-80 min-h-screen">
+                <div class="p-4">
+                    <h1 class="text-2xl font-bold text-primary">Controle Financeiro</h1>
+                </div>
+                
+                <ul class="menu p-4 space-y-2">
+                    <li class="menu-title">
+                        <span>Principal</span>
                     </li>
-                  {% endfor %}
+                    <li>
+                        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    
+                    <li class="menu-title">
+                        <span>Transações</span>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Transações
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Compras Parceladas
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Recorrências
+                        </a>
+                    </li>
+                    
+                    <li class="menu-title">
+                        <span>Cadastros</span>
+                    </li>
+                    <li>
+                        <a href="{% url 'category_list' %}" class="{% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            Categorias
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            Entidades
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            Tags
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            Contas Bancárias
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Formas de Pagamento
+                        </a>
+                    </li>
                 </ul>
-              </div>
-            </aside>            
-            <!-- / Menu -->
-            {% endif %}
-
-            <!-- Content -->
-            {% block content %}{% endblock content %}
-            <!--/ Content -->
-            <!-- Footer -->
-            <footer class="content-footer footer bg-footer-theme mt-3">
-              <div class="container-xxl d-flex flex-wrap justify-content-between py-2 flex-md-row flex-column">
-                <div class="mb-2 mb-md-0 d-flex align-items-center">
-                  © <script>document.write(new Date().getFullYear());</script>, por
-                  <a href="https://github.com/leon-rdo" target="_blank" class="footer-link d-flex align-items-center fw-medium"><i class='bx bxl-github mx-1'></i> leon-rdo</a>
-                </div>
-                <div class="d-none d-lg-flex align-items-center justify-content-between">
-                  <a href="https://github.com/leon-rdo/financial-control" class="footer-link d-flex align-items-center me-4" target="_blank"><i class='bx bxl-git me-2'></i> Repositório</a>
-                  <a href="https://demos.themeselection.com/sneat-bootstrap-html-admin-template/documentation/" target="_blank" class="footer-link d-flex align-items-center me-4"><i class='bx bxs-category-alt me-2' ></i> Tema</a>
-                  <a href="https://themeselection.com/" target="_blank" class="footer-link d-flex align-items-center me-4"><i class='bx bxs-duplicate me-2' ></i> Outros temas</a>
-                </div>
-              </div>
-            </footer>
-            <!-- / Footer -->
-
-            <div class="content-backdrop fade"></div>
-          </div>
-          <!--/ Content wrapper -->
+            </aside>
         </div>
-        <!--/ Layout container -->
-      </div>
     </div>
-
-    <!-- Overlay -->
-    <div class="layout-overlay layout-menu-toggle"></div>
-
-    <!-- Drag Target Area To SlideIn Menu On Small Screens -->
-    <div class="drag-target"></div>
-
-    {% if user.is_authenticated %}
-      <!-- Logout Modal -->
-      <div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Você tem certeza que deseja sair?</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body fw-medium">
-              <p>Ao sair, você precisará inserir suas credenciais novamente para acessar o sistema.</p>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Cancelar</button>
-              <form action="{% url 'accounts:logout' %}" method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Sair</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!--/ Logout Modal -->
-    {% endif %}
-    {% if messages %}
-      <div id="messages-container" style="position: fixed; bottom: 1rem; left: 1rem; z-index: 1055;" class="d-flex flex-column gap-2">
-        {% for message in messages %}
-          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show mb-0" role="alert" style="min-width: 450px;">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  
-    <!--/ Layout wrapper -->
-
-    <!-- Core JS -->
-    <!-- build:js assets/vendor/js/core.js -->
-
-    <script src="{% static 'assets/vendor/libs/jquery/jquery.js' %}"></script>
-    <script src="{% static 'assets/vendor/libs/popper/popper.js' %}"></script>
-    <script src="{% static 'assets/vendor/js/bootstrap.js' %}"></script>
-    <script src="{% static 'assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js' %}"></script>
-    <script src="{% static 'assets/vendor/libs/hammer/hammer.js' %}"></script>
-    <script src="{% static 'assets/vendor/js/menu.js' %}"></script>
-
-    <!-- endbuild -->
-
-    <!-- Main JS -->
-    <script src="{% static 'assets/js/main.js' %}"></script>
-    {% if form or filter %}
-        {{ form.media.js }}
-        {{ filter.form.media.js }}
-        <script>
-          document.getElementById("resetFilters").addEventListener("click", function (e) {
-            e.preventDefault();
-            const url = window.location.origin + window.location.pathname;
-            window.location.href = url;
-          });
-        </script>        
-    {% endif %}
-    {% if object_list %}
+    
     <script>
-      const urlParams = new URLSearchParams(window.location.search);
-      const objectId = urlParams.get('object_id');
-
-      if (objectId) {
-          const objectRow = document.querySelector(`tr[data-object-id="${objectId}"]`);
-          if (objectRow) {
-              // Scroll to the object row
-              objectRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-              // Add highlight effect
-              objectRow.style.backgroundColor = '#fff3cd';
-              objectRow.style.border = '2px solid #ffc107';
-
-              // Remove highlight after 3 seconds
-              setTimeout(() => {
-                  objectRow.style.backgroundColor = '';
-                  objectRow.style.border = '';
-              }, 3000);
-          }
-      }
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.id === 'toast-container') {
+                setTimeout(() => {
+                    event.detail.target.querySelector('.alert')?.remove();
+                }, 3000);
+            }
+        });
+        
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const alertClass = type === 'error' ? 'alert-error' : 'alert-success';
+            const toast = document.createElement('div');
+            toast.className = `alert ${alertClass} shadow-lg`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" class="btn btn-sm btn-ghost">✕</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        document.body.addEventListener('showToast', function(event) {
+            showToast(event.detail.message, event.detail.type);
+        });
     </script>
-    {% endif %}
-<script>
-  // CRIAÇÃO (recomendo trocar o "beforeSwap" por um evento explícito; ver nota abaixo)
-  document.body.addEventListener('objectAdded', (e) => {
-    const html = e.detail.value; // string <tr>...</tr> vinda do servidor
-    const temp = document.createElement('tbody');
-    temp.innerHTML = html.trim();
-    const newRow = temp.querySelector('tr');
-    if (!newRow) return;
-
-    const tbody = document.querySelector('table.invoice-list-table tbody');
-    // remove "Nenhuma categoria..." se existir
-    const empty = tbody.querySelector('tr td[colspan]');
-    if (empty && /Nenhuma/.test(empty.textContent)) empty.closest('tr').remove();
-
-    tbody.insertAdjacentElement('afterbegin', newRow);
-    htmx.process(newRow); // <<< essencial
-
-    const modalEl = document.getElementById('crudModal');
-    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-    document.getElementById('modalContent').innerHTML = '';
-  });
-
-  // EDIÇÃO
-  document.body.addEventListener('objectUpdated', (e) => {
-    const html = e.detail.value; // <tr>...</tr> enviado pelo HX-Trigger no update
-    const temp = document.createElement('tbody');
-    temp.innerHTML = html.trim();
-    const newRow = temp.querySelector('tr');
-
-    if (newRow && newRow.dataset.objectId) {
-      const oldRow = document.querySelector(
-        `table.invoice-list-table tbody tr[data-object-id="${newRow.dataset.objectId}"]`
-      );
-      if (oldRow) {
-        oldRow.replaceWith(newRow);
-        htmx.process(newRow); // <<< essencial
-      }
-    }
-
-    const modalEl = document.getElementById('crudModal');
-    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-    document.getElementById('modalContent').innerHTML = '';
-  });
-
-  // EXCLUSÃO
-  document.body.addEventListener('objectDeleted', (e) => {
-    const { id } = e.detail || {};
-    if (id) {
-      document
-        .querySelector(`table.invoice-list-table tbody tr[data-object-id="${id}"]`)
-        ?.remove();
-    }
-    const modalEl = document.getElementById('crudModal');
-    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-    document.getElementById('modalContent').innerHTML = '';
-  });
-</script>
-
-    {% block extra_scripts %}{% endblock extra_scripts %}
-  </body>
+    
+    {% block extra_js %}{% endblock %}
+</body>
 </html>
