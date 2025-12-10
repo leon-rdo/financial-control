@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Tags</h1>
         <button 
-            hx-get="{% url 'tag_create' %}" 
+            hx-get="{% url 'core:tag_create' %}" 
             hx-target="#modal-container"
             hx-swap="innerHTML"
             class="btn btn-primary">
@@ -21,7 +21,7 @@
     <!-- Filters -->
     <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
-            <form hx-get="{% url 'tag_list' %}" hx-target="#tag-table" hx-trigger="change, submit">
+            <form hx-get="{% url 'core:tag_list' %}" hx-target="#tag-table" hx-trigger="change, submit">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-control">
                         <label class="label">
@@ -33,7 +33,7 @@
                 
                 <div class="flex gap-2 mt-4">
                     <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-                    <a href="{% url 'tag_list' %}" class="btn btn-ghost btn-sm">Limpar</a>
+                    <a href="{% url 'core:tag_list' %}" class="btn btn-ghost btn-sm">Limpar</a>
                 </div>
             </form>
         </div>

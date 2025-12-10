@@ -15,6 +15,7 @@ from .views import (
     fetch_cnpj_data,
 )
 
+app_name = 'core'
 urlpatterns = [
     # Categories
     path('categories/', CategoryListView.as_view(), name='category_list'),

@@ -8,7 +8,7 @@
         </div>
         
         <form 
-            hx-post="{% if object.pk %}{% url 'tag_update' object.pk %}{% else %}{% url 'tag_create' %}{% endif %}"
+            hx-post="{% if object.pk %}{% url 'core:tag_update' object.pk %}{% else %}{% url 'core:tag_create' %}{% endif %}"
             hx-target="#tag-table"
             hx-swap="outerHTML"
             @htmx:after-request="if(event.detail.successful) { open = false; showToast('Tag salva com sucesso!'); }">
