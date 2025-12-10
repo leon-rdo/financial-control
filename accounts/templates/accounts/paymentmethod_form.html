@@ -1,0 +1,155 @@
+<div
+  class="modal modal-open"
+  x-data="{ open: true, showCreditFields: {% if object.type == 'CREDIT' %}'true'{% else %}'false'{% endif %} }"
+  x-show="open"
+  @keydown.escape.window="open = false"
+>
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">
+        {% if object.pk %}Editar Método de Pagamento{% else %}Novo Método de Pagamento{% endif %}
+      </h3>
+      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
+        ✕
+      </button>
+    </div>
+
+    <form
+      hx-post="{% if object.pk %}{% url 'accounts:paymentmethod_update' object.pk %}{% else %}{% url 'accounts:paymentmethod_create' %}{% endif %}"
+      hx-target="#paymentmethod-table"
+      hx-swap="outerHTML"
+      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Método salvo com sucesso!'); }"
+    >
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <!-- Name -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Nome *</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.name.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Type -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Tipo *</span>
+          </label>
+          <select 
+            name="type"
+            class="select select-bordered w-full"
+            @change="showCreditFields = ($event.target.value === 'CREDIT')"
+            required>
+            <option value="">Selecione o tipo</option>
+            {% for value, label in form.fields.type.choices %}
+            <option value="{{ value }}" {% if form.type.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if form.type.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.type.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Bank Account -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Conta Bancária</span>
+            <span class="label-text-alt text-gray-500">Opcional</span>
+          </label>
+          {{ form.bank_account }}
+          {% if form.bank_account.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.bank_account.errors.0 }}</span>
+          </label>
+          {% endif %}
+          <label class="label">
+            <span class="label-text-alt">Associe para débito ou PIX</span>
+          </label>
+        </div>
+
+        <!-- Credit Card Fields (conditional) -->
+        <div x-show="showCreditFields" x-cloak>
+          <div class="divider">Informações do Cartão de Crédito</div>
+          
+          <div class="space-y-4">
+            <!-- Credit Limit -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold">Limite de Crédito</span>
+              </label>
+              {{ form.credit_limit }}
+              {% if form.credit_limit.errors %}
+              <label class="label">
+                <span class="label-text-alt text-error">{{ form.credit_limit.errors.0 }}</span>
+              </label>
+              {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Closing Day -->
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Dia de Fechamento</span>
+                </label>
+                {{ form.closing_day }}
+                {% if form.closing_day.errors %}
+                <label class="label">
+                  <span class="label-text-alt text-error">{{ form.closing_day.errors.0 }}</span>
+                </label>
+                {% endif %}
+                <label class="label">
+                  <span class="label-text-alt">1-31</span>
+                </label>
+              </div>
+
+              <!-- Due Day -->
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Dia de Vencimento</span>
+                </label>
+                {{ form.due_day }}
+                {% if form.due_day.errors %}
+                <label class="label">
+                  <span class="label-text-alt text-error">{{ form.due_day.errors.0 }}</span>
+                </label>
+                {% endif %}
+                <label class="label">
+                  <span class="label-text-alt">1-31</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active -->
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-4">
+            {{ form.active }}
+            <span class="label-text font-semibold">Método Ativo</span>
+          </label>
+          {% if form.active.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.active.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" @click="open = false" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-backdrop" @click="open = false"></div>
+</div>

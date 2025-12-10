@@ -1,0 +1,199 @@
+<div
+  class="modal modal-open"
+  x-data="{ open: true }"
+  x-show="open"
+  @keydown.escape.window="open = false"
+>
+  <div class="modal-box max-w-2xl">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">
+        {% if object.pk %}Editar Conta Bancária{% else %}Nova Conta Bancária{% endif %}
+      </h3>
+      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
+        ✕
+      </button>
+    </div>
+
+    <form
+      hx-post="{% if object.pk %}{% url 'accounts:bankaccount_update' object.pk %}{% else %}{% url 'accounts:bankaccount_create' %}{% endif %}"
+      hx-target="#bankaccount-table"
+      hx-swap="outerHTML"
+      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Conta salva com sucesso!'); }"
+    >
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <!-- Bank Selection -->
+        <div class="form-control" x-data="bankSelector()" x-init="init()">
+          <label class="label">
+            <span class="label-text font-semibold">Banco *</span>
+          </label>
+          <select 
+            x-ref="bankSelect"
+            @change="handleBankChange()"
+            class="select select-bordered w-full"
+            :disabled="loading">
+            <option value="">Selecione um banco</option>
+            <template x-for="bank in banks" :key="bank.name">
+              <option :value="bank.name" x-text="bank.bank"></option>
+            </template>
+          </select>
+          <div x-show="loading" class="mt-2">
+            <span class="loading loading-spinner loading-sm"></span>
+            <span class="text-sm ml-2">Carregando bancos...</span>
+          </div>
+          <div x-show="error" class="alert alert-error mt-2 text-sm" x-cloak>
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span x-text="error"></span>
+          </div>
+        </div>
+
+        <!-- Name (auto-filled) -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Nome *</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.name.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Bank (hidden, auto-filled) -->
+        <div class="form-control" style="display: none;">
+          {{ form.bank }}
+        </div>
+
+        <!-- Type -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Tipo *</span>
+          </label>
+          {{ form.type }}
+          {% if form.type.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.type.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Color -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Cor (opcional)</span>
+          </label>
+          <div class="flex gap-2 items-center">
+            {{ form.color }}
+            <div class="w-10 h-10 rounded border" x-data="{ color: '{{ object.color|default:"#000000" }}' }" :style="'background-color: ' + color">
+              <input 
+                type="color" 
+                class="opacity-0 w-full h-full cursor-pointer"
+                x-model="color"
+                @input="document.querySelector('input[name=color]').value = color">
+            </div>
+          </div>
+          {% if form.color.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.color.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Active -->
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-4">
+            {{ form.active }}
+            <span class="label-text font-semibold">Conta Ativa</span>
+          </label>
+          {% if form.active.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.active.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" @click="open = false" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-backdrop" @click="open = false"></div>
+</div>
+
+<script>
+  function bankSelector() {
+    return {
+      banks: [],
+      loading: false,
+      error: "",
+      form: null,
+
+      init() {
+        this.form = this.$el.closest("form");
+        this.loadBanks();
+        
+        // Se estiver editando, preencher o select com o valor atual
+        const nameField = this.form.querySelector('input[name="name"]');
+        if (nameField && nameField.value) {
+          setTimeout(() => {
+            const select = this.$refs.bankSelect;
+            if (select) {
+              select.value = nameField.value;
+            }
+          }, 500);
+        }
+      },
+
+      loadBanks() {
+        this.loading = true;
+        this.error = "";
+
+        fetch("/api/fetch-banks/")
+          .then((response) => {
+            if (!response.ok) {
+              return response.json().then((data) => {
+                throw new Error(data.error || "Erro ao carregar bancos");
+              });
+            }
+            return response.json();
+          })
+          .then((result) => {
+            if (result.success && result.banks) {
+              this.banks = result.banks;
+            }
+          })
+          .catch((error) => {
+            this.error = error.message;
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+      },
+
+      handleBankChange() {
+        const select = this.$refs.bankSelect;
+        const selectedValue = select.value;
+        
+        if (!selectedValue) return;
+
+        const selectedBank = this.banks.find(b => b.name === selectedValue);
+        if (!selectedBank) return;
+
+        // Preenche os campos
+        const nameField = this.form.querySelector('input[name="name"]');
+        const bankField = this.form.querySelector('input[name="bank"]');
+
+        if (nameField) nameField.value = selectedBank.name;
+        if (bankField) bankField.value = selectedBank.bank;
+      }
+    };
+  }
+</script>
