@@ -1,0 +1,175 @@
+<div
+  class="modal modal-open"
+  x-data="{ open: true }"
+  x-show="open"
+  @keydown.escape.window="open = false"
+>
+  <div class="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">
+        {% if object.pk %}Editar Transação{% else %}Nova Transação{% endif %}
+      </h3>
+      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
+        ✕
+      </button>
+    </div>
+
+    <form
+      hx-post="{% if object.pk %}{% url 'financial:transaction_update' object.pk %}{% else %}{% url 'financial:transaction_create' %}{% endif %}"
+      hx-target="#transaction-table"
+      hx-swap="outerHTML"
+      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Transação salva com sucesso!'); }"
+    >
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <!-- Type -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Tipo *</span>
+          </label>
+          {{ form.type }}
+          {% if form.type.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.type.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Description -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Descrição *</span>
+          </label>
+          {{ form.description }}
+          {% if form.description.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.description.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Amount -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Valor *</span>
+            </label>
+            {{ form.amount }}
+            {% if form.amount.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.amount.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Date -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Data *</span>
+            </label>
+            {{ form.date }}
+            {% if form.date.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.date.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Category -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Categoria *</span>
+            </label>
+            {{ form.category }}
+            {% if form.category.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.category.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Método de Pagamento *</span>
+            </label>
+            {{ form.payment_method }}
+            {% if form.payment_method.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.payment_method.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Entity -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Entidade</span>
+            <span class="label-text-alt text-gray-500">Opcional</span>
+          </label>
+          {{ form.entity }}
+          {% if form.entity.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.entity.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Tags -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Tags</span>
+            <span class="label-text-alt text-gray-500">Opcional</span>
+          </label>
+          {{ form.tags }}
+          {% if form.tags.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.tags.errors.0 }}</span>
+          </label>
+          {% endif %}
+          <label class="label">
+            <span class="label-text-alt">Segure Ctrl/Cmd para selecionar múltiplas</span>
+          </label>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Observações</span>
+          </label>
+          {{ form.notes }}
+          {% if form.notes.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.notes.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Confirmed -->
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-4">
+            {{ form.confirmed }}
+            <span class="label-text font-semibold">Transação Confirmada</span>
+          </label>
+          {% if form.confirmed.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.confirmed.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" @click="open = false" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-backdrop" @click="open = false"></div>
+</div>

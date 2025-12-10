@@ -1,0 +1,208 @@
+<div
+  class="modal modal-open"
+  x-data="{ open: true }"
+  x-show="open"
+  @keydown.escape.window="open = false"
+>
+  <div class="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">
+        {% if object.pk %}Editar Recorrência{% else %}Nova Recorrência{% endif %}
+      </h3>
+      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
+        ✕
+      </button>
+    </div>
+
+    <form
+      hx-post="{% if object.pk %}{% url 'financial:recurrence_update' object.pk %}{% else %}{% url 'financial:recurrence_create' %}{% endif %}"
+      hx-target="#recurrence-table"
+      hx-swap="outerHTML"
+      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Recorrência salva com sucesso!'); }"
+    >
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <!-- Type -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Tipo *</span>
+          </label>
+          {{ form.type }}
+          {% if form.type.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.type.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Description -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Descrição *</span>
+          </label>
+          {{ form.description }}
+          {% if form.description.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.description.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Amount -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Valor *</span>
+            </label>
+            {{ form.amount }}
+            {% if form.amount.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.amount.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Category -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Categoria *</span>
+            </label>
+            {{ form.category }}
+            {% if form.category.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.category.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Entity -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Entidade</span>
+              <span class="label-text-alt text-gray-500">Opcional</span>
+            </label>
+            {{ form.entity }}
+            {% if form.entity.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.entity.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Método de Pagamento *</span>
+            </label>
+            {{ form.payment_method }}
+            {% if form.payment_method.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.payment_method.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Frequency -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Frequência *</span>
+            </label>
+            {{ form.frequency }}
+            {% if form.frequency.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.frequency.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Reference Day -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Dia de Referência *</span>
+            </label>
+            {{ form.reference_day }}
+            {% if form.reference_day.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.reference_day.errors.0 }}</span>
+            </label>
+            {% endif %}
+            <label class="label">
+              <span class="label-text-alt">Dia do mês (1-31) ou semana (1-7)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Start Date -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Data de Início *</span>
+            </label>
+            {{ form.start_date }}
+            {% if form.start_date.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.start_date.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- End Date -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Data de Término</span>
+              <span class="label-text-alt text-gray-500">Opcional</span>
+            </label>
+            {{ form.end_date }}
+            {% if form.end_date.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.end_date.errors.0 }}</span>
+            </label>
+            {% endif %}
+            <label class="label">
+              <span class="label-text-alt">Deixe em branco para recorrência infinita</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Observações</span>
+          </label>
+          {{ form.notes }}
+          {% if form.notes.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.notes.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <!-- Active -->
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-4">
+            {{ form.active }}
+            <span class="label-text font-semibold">Recorrência Ativa</span>
+          </label>
+          {% if form.active.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.active.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button type="button" @click="open = false" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-backdrop" @click="open = false"></div>
+</div>

@@ -1,0 +1,156 @@
+<div
+  class="modal modal-open"
+  x-data="{ open: true }"
+  x-show="open"
+  @keydown.escape.window="open = false"
+>
+  <div class="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="font-bold text-lg">
+        {% if object.pk %}Editar Compra{% else %}Nova Compra{% endif %}
+      </h3>
+      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
+        ✕
+      </button>
+    </div>
+
+    <form
+      hx-post="{% if object.pk %}{% url 'financial:purchase_update' object.pk %}{% else %}{% url 'financial:purchase_create' %}{% endif %}"
+      hx-target="#purchase-table"
+      hx-swap="outerHTML"
+      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Compra salva com sucesso!'); }"
+    >
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <!-- Description -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Descrição *</span>
+          </label>
+          {{ form.description }}
+          {% if form.description.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.description.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Total Amount -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Valor Total *</span>
+            </label>
+            {{ form.total_amount }}
+            {% if form.total_amount.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.total_amount.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Number of Installments -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Número de Parcelas *</span>
+            </label>
+            {{ form.number_of_installments }}
+            {% if form.number_of_installments.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.number_of_installments.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Purchase Date -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Data da Compra *</span>
+            </label>
+            {{ form.purchase_date }}
+            {% if form.purchase_date.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.purchase_date.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Category -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Categoria *</span>
+            </label>
+            {{ form.category }}
+            {% if form.category.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.category.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Entity -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Loja/Fornecedor</span>
+              <span class="label-text-alt text-gray-500">Opcional</span>
+            </label>
+            {{ form.entity }}
+            {% if form.entity.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.entity.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+
+          <!-- Payment Method -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Método de Pagamento *</span>
+            </label>
+            {{ form.payment_method }}
+            {% if form.payment_method.errors %}
+            <label class="label">
+              <span class="label-text-alt text-error">{{ form.payment_method.errors.0 }}</span>
+            </label>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-semibold">Observações</span>
+          </label>
+          {{ form.notes }}
+          {% if form.notes.errors %}
+          <label class="label">
+            <span class="label-text-alt text-error">{{ form.notes.errors.0 }}</span>
+          </label>
+          {% endif %}
+        </div>
+
+        {% if object.pk %}
+        <div class="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Ao alterar o valor total ou número de parcelas, as parcelas serão recalculadas automaticamente.</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="modal-action">
+        <button type="button" @click="open = false" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-backdrop" @click="open = false"></div>
+</div>

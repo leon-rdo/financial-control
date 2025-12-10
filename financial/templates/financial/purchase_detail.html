@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ purchase.description }} - Controle Financeiro{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <div class="breadcrumbs text-sm">
+                <ul>
+                    <li><a href="{% url 'financial:purchase_list' %}">Compras</a></li>
+                    <li>{{ purchase.description }}</li>
+                </ul>
+            </div>
+            <h1 class="text-3xl font-bold">{{ purchase.description }}</h1>
+        </div>
+        <div class="flex gap-2">
+            <button 
+                hx-get="{% url 'financial:purchase_update' purchase.pk %}" 
+                hx-target="#modal-container"
+                hx-swap="innerHTML"
+                class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Editar
+            </button>
+            <a href="{% url 'financial:purchase_list' %}" class="btn btn-ghost">Voltar</a>
+        </div>
+    </div>
+
+    <!-- Purchase Info -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-sm opacity-60">Valor Total</h2>
+                <p class="text-3xl font-bold">R$ {{ purchase.total_amount|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-sm opacity-60">Parcelas</h2>
+                <p class="text-3xl font-bold">{{ purchase.number_of_installments }}x de R$ {{ purchase.total_amount|floatformat:2|divisibleby:purchase.number_of_installments|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-sm opacity-60">Status</h2>
+                <div>
+                    {% with paid_count=installments|selectattr:"paid"|list|length %}
+                    <p class="text-2xl font-bold">{{ paid_count }}/{{ installments|length }} pagas</p>
+                    <progress class="progress progress-primary w-full mt-2" value="{{ paid_count }}" max="{{ installments|length }}"></progress>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Informações da Compra</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm opacity-60">Data da Compra</p>
+                    <p class="font-medium">{{ purchase.purchase_date|date:"d/m/Y" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm opacity-60">Categoria</p>
+                    <p class="font-medium">{{ purchase.category.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm opacity-60">Método de Pagamento</p>
+                    <p class="font-medium">{{ purchase.payment_method.name }}</p>
+                </div>
+                {% if purchase.entity %}
+                <div>
+                    <p class="text-sm opacity-60">Loja/Fornecedor</p>
+                    <p class="font-medium">{{ purchase.entity.name }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if purchase.notes %}
+            <div class="mt-4">
+                <p class="text-sm opacity-60">Observações</p>
+                <p class="font-medium">{{ purchase.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Installments -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Parcelas</h2>
+            <div class="overflow-x-auto" x-data="installmentManager()">
+                <table class="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Parcela</th>
+                            <th>Valor</th>
+                            <th>Vencimento</th>
+                            <th>Mês Referência</th>
+                            <th>Status</th>
+                            <th class="text-right">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for installment in installments %}
+                        <tr>
+                            <td>
+                                <span class="font-medium">{{ installment.installment_number }}/{{ purchase.number_of_installments }}</span>
+                            </td>
+                            <td>
+                                <span class="font-medium">R$ {{ installment.amount|floatformat:2 }}</span>
+                            </td>
+                            <td>{{ installment.due_date|date:"d/m/Y" }}</td>
+                            <td>{{ installment.reference_month }}/{{ installment.reference_year }}</td>
+                            <td>
+                                <span class="badge {% if installment.paid %}badge-success{% else %}badge-warning{% endif %} badge-sm">
+                                    {% if installment.paid %}Paga{% else %}Pendente{% endif %}
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <button 
+                                    @click="togglePaid({{ installment.pk }}, $el)"
+                                    class="btn btn-sm {% if installment.paid %}btn-warning{% else %}btn-success{% endif %}">
+                                    {% if installment.paid %}Marcar como Pendente{% else %}Marcar como Paga{% endif %}
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+</div>
+
+<script>
+    function installmentManager() {
+        return {
+            togglePaid(installmentId, button) {
+                fetch(`/financial/parcelas/${installmentId}/toggle-paid/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to update the UI
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao atualizar status da parcela');
+                });
+            }
+        };
+    }
+</script>
+{% endblock %}
