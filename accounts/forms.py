@@ -97,3 +97,31 @@ class PaymentMethodForm(forms.ModelForm):
                 }
             ),
         }
+
+
+class SimplePaymentMethodForm(forms.ModelForm):
+    """Formulário simplificado para criação inline de métodos de pagamento"""
+
+    class Meta:
+        model = PaymentMethod
+        fields = ["name", "type"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "input input-bordered w-full",
+                    "placeholder": "Ex: Nubank Crédito",
+                }
+            ),
+            "type": forms.Select(
+                attrs={
+                    "class": "select select-bordered w-full",
+                }
+            ),
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.active = True
+        if commit:
+            instance.save()
+        return instance

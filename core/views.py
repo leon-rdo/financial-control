@@ -1,11 +1,13 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
+import json
+import re
 from django.http import HttpResponse, JsonResponse
+import requests
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, DeleteView, UpdateView
+from django.views.decorators.http import require_http_methods
 from django_filters.views import FilterView
 from django.template.loader import render_to_string
-from django.views.decorators.http import require_http_methods
-import requests
-import re
+
 from .models import Category, Tag, Entity
 from .forms import CategoryForm, TagForm, EntityForm
 from .filters import CategoryFilter, TagFilter, EntityFilter
@@ -29,7 +31,44 @@ class CategoryCreateView(CreateView):
     model = Category
     form_class = CategoryForm
     template_name = "core/category_form.html"
-    success_url = reverse_lazy("category_list")
+    success_url = reverse_lazy("core:category_list")
+
+    def dispatch(self, request, *args, **kwargs):
+        # Suporte para criação inline via JSON
+        if request.GET.get("inline") and request.method == "POST":
+            return self.create_inline(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def create_inline(self, request):
+        try:
+            data = json.loads(request.body)
+            form = self.form_class(data)
+
+            if form.is_valid():
+                obj = form.save()
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "object": {
+                            "id": obj.pk,
+                            "name": obj.name,
+                            "type": obj.type,
+                            "color": obj.color,
+                            "icon": obj.icon,
+                        },
+                    }
+                )
+            else:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Dados inválidos",
+                        "errors": form.errors,
+                    },
+                    status=400,
+                )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     def form_valid(self, form):
         self.object = form.save()
@@ -116,7 +155,37 @@ class TagCreateView(CreateView):
     model = Tag
     form_class = TagForm
     template_name = "core/tag_form.html"
-    success_url = reverse_lazy("tag_list")
+    success_url = reverse_lazy("core:tag_list")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.GET.get("inline") and request.method == "POST":
+            return self.create_inline(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def create_inline(self, request):
+        try:
+            data = json.loads(request.body)
+            form = self.form_class(data)
+
+            if form.is_valid():
+                obj = form.save()
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "object": {"id": obj.pk, "name": obj.name, "color": obj.color},
+                    }
+                )
+            else:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Dados inválidos",
+                        "errors": form.errors,
+                    },
+                    status=400,
+                )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     def form_valid(self, form):
         self.object = form.save()
@@ -201,7 +270,43 @@ class EntityCreateView(CreateView):
     model = Entity
     form_class = EntityForm
     template_name = "core/entity_form.html"
-    success_url = reverse_lazy("entity_list")
+    success_url = reverse_lazy("core:entity_list")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.GET.get("inline") and request.method == "POST":
+            return self.create_inline(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def create_inline(self, request):
+        try:
+            data = json.loads(request.body)
+            form = self.form_class(data)
+
+            if form.is_valid():
+                obj = form.save()
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "object": {
+                            "id": obj.pk,
+                            "name": obj.name,
+                            "type": obj.type,
+                            "email": obj.email or "",
+                            "phone": obj.phone or "",
+                        },
+                    }
+                )
+            else:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Dados inválidos",
+                        "errors": form.errors,
+                    },
+                    status=400,
+                )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     def form_valid(self, form):
         self.object = form.save()

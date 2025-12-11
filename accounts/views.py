@@ -1,13 +1,16 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
-from django.http import HttpResponse, JsonResponse
-from django_filters.views import FilterView
-from django.template.loader import render_to_string
-from django.views.decorators.http import require_http_methods
+import json
+
 import requests
-from .models import BankAccount, PaymentMethod
-from .forms import BankAccountForm, PaymentMethodForm
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
+from django.urls import reverse_lazy
+from django.views.decorators.http import require_http_methods
+from django.views.generic import CreateView, DeleteView, UpdateView
+from django_filters.views import FilterView
+
 from .filters import BankAccountFilter, PaymentMethodFilter
+from .forms import BankAccountForm, PaymentMethodForm, SimplePaymentMethodForm
+from .models import BankAccount, PaymentMethod
 
 
 class BankAccountListView(FilterView):
@@ -113,7 +116,37 @@ class PaymentMethodCreateView(CreateView):
     model = PaymentMethod
     form_class = PaymentMethodForm
     template_name = "accounts/paymentmethod_form.html"
-    success_url = reverse_lazy("paymentmethod_list")
+    success_url = reverse_lazy("accounts:paymentmethod_list")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.GET.get("inline") and request.method == "POST":
+            return self.create_inline(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def create_inline(self, request):
+        try:
+            data = json.loads(request.body)
+            form = SimplePaymentMethodForm(data)
+
+            if form.is_valid():
+                obj = form.save()
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "object": {"id": obj.pk, "name": obj.name, "type": obj.type},
+                    }
+                )
+            else:
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "error": "Dados inválidos",
+                        "errors": form.errors,
+                    },
+                    status=400,
+                )
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
     def form_valid(self, form):
         self.object = form.save()
