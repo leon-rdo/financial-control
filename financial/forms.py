@@ -70,13 +70,15 @@ class RecurrenceForm(forms.ModelForm):
                 attrs={
                     "class": "input input-bordered w-full",
                     "type": "date",
-                }
+                },
+                format="%Y-%m-%d",
             ),
             "end_date": forms.DateInput(
                 attrs={
                     "class": "input input-bordered w-full",
                     "type": "date",
-                }
+                },
+                format="%Y-%m-%d",
             ),
             "active": forms.CheckboxInput(
                 attrs={
@@ -131,7 +133,8 @@ class TransactionForm(forms.ModelForm):
                 attrs={
                     "class": "input input-bordered w-full",
                     "type": "date",
-                }
+                },
+                format="%Y-%m-%d",
             ),
             "category": forms.Select(
                 attrs={
@@ -201,7 +204,8 @@ class PurchaseForm(forms.ModelForm):
                 attrs={
                     "class": "input input-bordered w-full",
                     "type": "date",
-                }
+                },
+                format="%Y-%m-%d",
             ),
             "number_of_installments": forms.NumberInput(
                 attrs={
