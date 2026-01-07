@@ -224,6 +224,16 @@ class Purchase(models.Model):
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("updated at"), auto_now=True)
 
+    @property
+    def installment_amount(self):
+        """Calculate the amount of each installment"""
+        return self.total_amount / self.number_of_installments
+
+    @property
+    def paid_installments_count(self):
+        """Count of paid installments"""
+        return self.installments.filter(paid=True).count()
+
     class Meta:
         verbose_name = _("purchase")
         verbose_name_plural = _("purchases")

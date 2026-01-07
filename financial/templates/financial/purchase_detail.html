@@ -16,13 +16,12 @@
             <h1 class="text-3xl font-bold">{{ purchase.description }}</h1>
         </div>
         <div class="flex gap-2">
-            <button 
-                hx-get="{% url 'financial:purchase_update' purchase.pk %}" 
-                hx-target="#modal-container"
-                hx-swap="innerHTML"
-                class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <button hx-get="{% url 'financial:purchase_update' purchase.pk %}" hx-target="#modal-container"
+                hx-swap="innerHTML" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 Editar
             </button>
@@ -42,7 +41,7 @@
         <div class="card bg-base-100 shadow-xl">
             <div class="card-body">
                 <h2 class="card-title text-sm opacity-60">Parcelas</h2>
-                <p class="text-3xl font-bold">{{ purchase.number_of_installments }}x de R$ {{ purchase.total_amount|floatformat:2|divisibleby:purchase.number_of_installments|floatformat:2 }}</p>
+                <p class="text-3xl font-bold">{{ purchase.number_of_installments }}x de R$ {{ purchase.installment_amount }}</p>
             </div>
         </div>
 
@@ -50,10 +49,9 @@
             <div class="card-body">
                 <h2 class="card-title text-sm opacity-60">Status</h2>
                 <div>
-                    {% with paid_count=installments|selectattr:"paid"|list|length %}
-                    <p class="text-2xl font-bold">{{ paid_count }}/{{ installments|length }} pagas</p>
-                    <progress class="progress progress-primary w-full mt-2" value="{{ paid_count }}" max="{{ installments|length }}"></progress>
-                    {% endwith %}
+                    <p class="text-2xl font-bold">{{ purchase.paid_installments_count }}/{{ purchase.number_of_installments }} pagas</p>
+                    <progress class="progress progress-primary w-full mt-2" value="{{ purchase.paid_installments_count }}"
+                        max="{{ purchase.number_of_installments }}"></progress>
                 </div>
             </div>
         </div>
@@ -112,7 +110,8 @@
                         {% for installment in installments %}
                         <tr>
                             <td>
-                                <span class="font-medium">{{ installment.installment_number }}/{{ purchase.number_of_installments }}</span>
+                                <span class="font-medium">{{ installment.installment_number }}/{{
+                                    purchase.number_of_installments }}</span>
                             </td>
                             <td>
                                 <span class="font-medium">R$ {{ installment.amount|floatformat:2 }}</span>
@@ -120,13 +119,13 @@
                             <td>{{ installment.due_date|date:"d/m/Y" }}</td>
                             <td>{{ installment.reference_month }}/{{ installment.reference_year }}</td>
                             <td>
-                                <span class="badge {% if installment.paid %}badge-success{% else %}badge-warning{% endif %} badge-sm">
+                                <span
+                                    class="badge {% if installment.paid %}badge-success{% else %}badge-warning{% endif %} badge-sm">
                                     {% if installment.paid %}Paga{% else %}Pendente{% endif %}
                                 </span>
                             </td>
                             <td class="text-right">
-                                <button 
-                                    @click="togglePaid({{ installment.pk }}, $el)"
+                                <button @click="togglePaid({{ installment.pk }}, $el)"
                                     class="btn btn-sm {% if installment.paid %}btn-warning{% else %}btn-success{% endif %}">
                                     {% if installment.paid %}Marcar como Pendente{% else %}Marcar como Paga{% endif %}
                                 </button>
@@ -153,17 +152,17 @@
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
                     },
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Reload the page to update the UI
-                        window.location.reload();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Erro ao atualizar status da parcela');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload the page to update the UI
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Erro ao atualizar status da parcela');
+                    });
             }
         };
     }
