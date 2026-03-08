@@ -58,8 +58,6 @@
             
             <!-- Main Content -->
             <main class="flex-1 p-6">
-                <div id="toast-container" class="toast toast-top toast-end z-50"></div>
-                
                 {% block content %}{% endblock %}
             </main>
         </div>
@@ -162,16 +160,14 @@
     </div>
     
     <script>
-        document.body.addEventListener('htmx:afterSwap', function(event) {
-            if (event.detail.target.id === 'toast-container') {
-                setTimeout(() => {
-                    event.detail.target.querySelector('.alert')?.remove();
-                }, 3000);
-            }
-        });
-        
         function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
+            var container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.cssText = 'position:fixed;top:1rem;right:1rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;';
+                document.body.appendChild(container);
+            }
             const alertClass = type === 'error' ? 'alert-error' : 'alert-success';
             const toast = document.createElement('div');
             toast.className = `alert ${alertClass} shadow-lg`;
@@ -182,7 +178,7 @@
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
-        
+
         document.body.addEventListener('showToast', function(event) {
             showToast(event.detail.message, event.detail.type);
         });
