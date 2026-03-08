@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from decimal import Decimal
 from datetime import timedelta
 
@@ -419,6 +420,90 @@ class PurchaseDeleteView(DeleteView):
             return response
 
         return super().delete(request, *args, **kwargs)
+
+
+MONTH_NAMES = {
+    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
+    5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
+    9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro",
+}
+
+
+class InvoiceForecastView(TemplateView):
+    template_name = "financial/invoice_forecast.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        qs = Installment.objects.filter(paid=False).select_related(
+            "purchase__payment_method",
+            "purchase__category",
+            "purchase__entity",
+        )
+
+        payment_method_ids = self.request.GET.getlist("payment_method")
+        payment_method_ids = [pid for pid in payment_method_ids if pid]
+        if payment_method_ids:
+            qs = qs.filter(purchase__payment_method_id__in=payment_method_ids)
+
+        month_from = self.request.GET.get("month_from")
+        if month_from:
+            year, month = map(int, month_from.split("-"))
+            qs = qs.filter(
+                Q(reference_year__gt=year)
+                | Q(reference_year=year, reference_month__gte=month)
+            )
+
+        month_to = self.request.GET.get("month_to")
+        if month_to:
+            year, month = map(int, month_to.split("-"))
+            qs = qs.filter(
+                Q(reference_year__lt=year)
+                | Q(reference_year=year, reference_month__lte=month)
+            )
+
+        qs = qs.order_by(
+            "reference_year",
+            "reference_month",
+            "purchase__payment_method__name",
+            "due_date",
+        )
+
+        months_data = OrderedDict()
+        grand_total = Decimal("0")
+
+        for inst in qs:
+            key = (inst.reference_year, inst.reference_month)
+            pm = inst.purchase.payment_method
+
+            if key not in months_data:
+                months_data[key] = {
+                    "month_name": MONTH_NAMES[key[1]],
+                    "year": key[0],
+                    "methods": OrderedDict(),
+                    "total": Decimal("0"),
+                }
+
+            if pm.id not in months_data[key]["methods"]:
+                months_data[key]["methods"][pm.id] = {
+                    "payment_method": pm,
+                    "installments": [],
+                    "total": Decimal("0"),
+                }
+
+            months_data[key]["methods"][pm.id]["installments"].append(inst)
+            months_data[key]["methods"][pm.id]["total"] += inst.amount
+            months_data[key]["total"] += inst.amount
+            grand_total += inst.amount
+
+        context["months_data"] = months_data
+        context["grand_total"] = grand_total
+        context["payment_methods"] = PaymentMethod.objects.filter(active=True)
+        context["selected_payment_methods"] = payment_method_ids
+        context["selected_month_from"] = month_from or ""
+        context["selected_month_to"] = month_to or ""
+
+        return context
 
 
 @require_http_methods(["POST"])

@@ -26,6 +26,9 @@ urlpatterns = [
     path("compras/<int:pk>/editar/", views.PurchaseUpdateView.as_view(), name="purchase_update"),
     path("compras/<int:pk>/excluir/", views.PurchaseDeleteView.as_view(), name="purchase_delete"),
     
+    # Invoice Forecast
+    path("previsao-faturas/", views.InvoiceForecastView.as_view(), name="invoice_forecast"),
+
     # Installment API
     path("parcelas/<int:pk>/toggle-paid/", views.toggle_installment_paid, name="toggle_installment_paid"),
 ]

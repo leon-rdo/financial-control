@@ -147,19 +147,21 @@ class PurchaseFilter(django_filters.FilterSet):
             }
         ),
     )
-    category = django_filters.ModelChoiceFilter(
+    category = django_filters.ModelMultipleChoiceFilter(
         queryset=None,  # Will be set in __init__
-        widget=forms.Select(
+        widget=forms.SelectMultiple(
             attrs={
-                "class": "select select-bordered w-full",
+                "class": "w-full",
+                "id": "filter-category",
             }
         ),
     )
-    payment_method = django_filters.ModelChoiceFilter(
+    payment_method = django_filters.ModelMultipleChoiceFilter(
         queryset=None,  # Will be set in __init__
-        widget=forms.Select(
+        widget=forms.SelectMultiple(
             attrs={
-                "class": "select select-bordered w-full",
+                "class": "w-full",
+                "id": "filter-payment-method",
             }
         ),
     )
