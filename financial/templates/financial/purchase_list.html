@@ -24,11 +24,11 @@
                     <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Buscar</label>
                     {{ filter.form.description }}
                 </div>
-                <div class="min-w-40 flex-1">
+                <div class="min-w-48 flex-1">
                     <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Categoria</label>
                     {{ filter.form.category }}
                 </div>
-                <div class="min-w-40 flex-1">
+                <div class="min-w-48 flex-1">
                     <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Método</label>
                     {{ filter.form.payment_method }}
                 </div>
@@ -77,6 +77,19 @@
         const modal = document.querySelector('[x-data]').__x.$data;
         modal.deleteUrl = event.detail.url;
         modal.showModal = true;
+    });
+
+    $(document).ready(function() {
+        $('#filter-category').select2({
+            placeholder: 'Todas',
+            allowClear: true,
+            width: '100%',
+        });
+        $('#filter-payment-method').select2({
+            placeholder: 'Todos',
+            allowClear: true,
+            width: '100%',
+        });
     });
 </script>
 {% endblock %}
