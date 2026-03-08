@@ -1,28 +1,21 @@
 {% extends 'base.html' %}
-{% load static %}
+
+{% block title %}404 - Pagina nao encontrada{% endblock %}
+
 {% block content %}
-<div class="container-xxl flex-grow-1 container-p-y">
-    <div class="misc-wrapper text-center">
-        <h1 class="mb-2 mx-2 display-1">404</h1>
-        <h4 class="mb-2 mx-2">Página Não Encontrada! 🚫</h4>
-        <p class="mb-4 mx-2">
-            Desculpe, esta página não pôde ser encontrada. <br>
-            Se você acredita que isso é um erro, entre em contato com o administrador.
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="text-center">
+        <p class="text-7xl font-bold text-base-content/10">404</p>
+        <h1 class="text-xl font-semibold mt-4">Pagina nao encontrada</h1>
+        <p class="text-sm text-base-content/40 mt-2 max-w-sm mx-auto">
+            A pagina que voce procura nao existe ou foi movida.
         </p>
-        <div class="mt-4 mb-4">
-            <img
-            src="{% static 'assets/img/backgrounds/missing_wallet.png' %}"
-            alt="Página Não Encontrada"
-            width="300"
-            class="img-fluid"
-            />
-        </div>
-        <div class="d-flex justify-content-center mt-5">
-            <a href="/" class="btn btn-primary me-2">Voltar para Início</a>
-            <button type="button" class="btn btn-outline-secondary" onclick="window.history.length > 1 ? window.history.back() : window.location.href='/';">
+        <div class="flex justify-center gap-3 mt-6">
+            <a href="/" class="btn btn-neutral btn-sm">Voltar ao Inicio</a>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="window.history.length > 1 ? window.history.back() : window.location.href='/';">
                 Voltar
             </button>
         </div>
     </div>
 </div>
-{% endblock content %}
+{% endblock %}

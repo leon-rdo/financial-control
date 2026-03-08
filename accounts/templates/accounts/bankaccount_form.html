@@ -4,13 +4,13 @@
   x-show="open"
   @keydown.escape.window="open = false"
 >
-  <div class="modal-box max-w-2xl">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="font-bold text-lg">
-        {% if object.pk %}Editar Conta Bancária{% else %}Nova Conta Bancária{% endif %}
+  <div class="modal-box max-w-lg">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="text-base font-semibold">
+        {% if object.pk %}Editar Conta Bancaria{% else %}Nova Conta Bancaria{% endif %}
       </h3>
-      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
-        ✕
+      <button @click="open = false" class="btn btn-ghost btn-xs btn-square">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
 
@@ -25,10 +25,8 @@
       <div class="space-y-4">
         <!-- Bank Selection -->
         <div class="form-control" x-data="bankSelector()" x-init="init()">
-          <label class="label">
-            <span class="label-text font-semibold">Banco *</span>
-          </label>
-          <select 
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Banco *</label>
+          <select
             x-ref="bankSelect"
             @change="handleBankChange()"
             class="select select-bordered w-full"
@@ -42,24 +40,17 @@
             <span class="loading loading-spinner loading-sm"></span>
             <span class="text-sm ml-2">Carregando bancos...</span>
           </div>
-          <div x-show="error" class="alert alert-error mt-2 text-sm" x-cloak>
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div x-show="error" class="text-xs text-error mt-1" x-cloak>
             <span x-text="error"></span>
           </div>
         </div>
 
         <!-- Name (auto-filled) -->
         <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Nome *</span>
-          </label>
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
           {{ form.name }}
           {% if form.name.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error">{{ form.name.errors.0 }}</span>
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.name.errors.0 }}</p>
           {% endif %}
         </div>
 
@@ -70,58 +61,46 @@
 
         <!-- Type -->
         <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Tipo *</span>
-          </label>
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
           {{ form.type }}
           {% if form.type.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error">{{ form.type.errors.0 }}</span>
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.type.errors.0 }}</p>
           {% endif %}
         </div>
 
         <!-- Color -->
         <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Cor (opcional)</span>
-          </label>
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Cor (opcional)</label>
           <div class="flex gap-2 items-center">
             {{ form.color }}
             <div class="w-10 h-10 rounded border" x-data="{ color: '{{ object.color|default:"#000000" }}' }" :style="'background-color: ' + color">
-              <input 
-                type="color" 
+              <input
+                type="color"
                 class="opacity-0 w-full h-full cursor-pointer"
                 x-model="color"
                 @input="document.querySelector('input[name=color]').value = color">
             </div>
           </div>
           {% if form.color.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error">{{ form.color.errors.0 }}</span>
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.color.errors.0 }}</p>
           {% endif %}
         </div>
 
         <!-- Active -->
         <div class="form-control">
-          <label class="label cursor-pointer justify-start gap-4">
+          <label class="flex items-center gap-3 cursor-pointer">
             {{ form.active }}
-            <span class="label-text font-semibold">Conta Ativa</span>
+            <span class="text-sm font-medium">Conta Ativa</span>
           </label>
           {% if form.active.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error">{{ form.active.errors.0 }}</span>
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.active.errors.0 }}</p>
           {% endif %}
         </div>
       </div>
 
-      <div class="modal-action">
-        <button type="button" @click="open = false" class="btn btn-ghost">
-          Cancelar
-        </button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" @click="open = false" class="btn btn-ghost btn-sm">Cancelar</button>
+        <button type="submit" class="btn btn-neutral btn-sm">Salvar</button>
       </div>
     </form>
   </div>
@@ -139,7 +118,7 @@
       init() {
         this.form = this.$el.closest("form");
         this.loadBanks();
-        
+
         // Se estiver editando, preencher o select com o valor atual
         const nameField = this.form.querySelector('input[name="name"]');
         if (nameField && nameField.value) {
@@ -181,7 +160,7 @@
       handleBankChange() {
         const select = this.$refs.bankSelect;
         const selectedValue = select.value;
-        
+
         if (!selectedValue) return;
 
         const selectedBank = this.banks.find(b => b.name === selectedValue);

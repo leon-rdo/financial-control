@@ -5,12 +5,12 @@
   @keydown.escape.window="open = false"
 >
   <div class="modal-box max-w-2xl">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="font-bold text-lg">
+    <div class="flex justify-between items-center mb-5">
+      <h3 class="text-base font-semibold">
         {% if object.pk %}Editar Entidade{% else %}Nova Entidade{% endif %}
       </h3>
-      <button @click="open = false" class="btn btn-sm btn-circle btn-ghost">
-        ✕
+      <button @click="open = false" class="btn btn-ghost btn-xs btn-square">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
 
@@ -25,16 +25,14 @@
       <div class="space-y-4">
         <!-- Document with CNPJ Lookup -->
         <div class="form-control" x-data="cnpjFetch()" x-init="init()">
-          <label class="label">
-            <span class="label-text font-semibold">Documento (CPF/CNPJ)</span>
-          </label>
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Documento (CPF/CNPJ) (opcional)</label>
           <div class="join w-full">
             {{ form.document }}
             <button
               type="button"
               @click="fetchCNPJ()"
               :disabled="loading"
-              class="btn btn-primary join-item"
+              class="btn btn-neutral join-item"
               title="Buscar dados do CNPJ"
               x-show="showButton"
             >
@@ -61,129 +59,69 @@
             </button>
           </div>
           {% if form.document.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error"
-              >{{ form.document.errors.0 }}</span
-            >
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.document.errors.0 }}</p>
           {% endif %}
-          <div x-show="error" class="alert alert-error mt-2 text-sm" x-cloak>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="stroke-current shrink-0 h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+          <div x-show="error" class="text-xs text-error mt-1" x-cloak>
             <span x-text="error"></span>
           </div>
           <div
             x-show="success"
-            class="alert alert-success mt-2 text-sm"
+            class="text-xs text-success mt-1"
             x-cloak
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="stroke-current shrink-0 h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
             <span>Dados preenchidos automaticamente!</span>
           </div>
         </div>
 
         <!-- Name -->
         <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Nome *</span>
-          </label>
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
           {{ form.name }} {% if form.name.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error"
-              >{{ form.name.errors.0 }}</span
-            >
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.name.errors.0 }}</p>
           {% endif %}
         </div>
 
         <!-- Type -->
         <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Tipo *</span>
-          </label>
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
           {{ form.type }} {% if form.type.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error"
-              >{{ form.type.errors.0 }}</span
-            >
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.type.errors.0 }}</p>
           {% endif %}
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Email -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold">Email</span>
-            </label>
+            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Email (opcional)</label>
             {{ form.email }} {% if form.email.errors %}
-            <label class="label">
-              <span class="label-text-alt text-error"
-                >{{ form.email.errors.0 }}</span
-              >
-            </label>
+            <p class="text-xs text-error mt-1">{{ form.email.errors.0 }}</p>
             {% endif %}
           </div>
 
           <!-- Phone -->
           <div class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold">Telefone</span>
-            </label>
+            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Telefone (opcional)</label>
             {{ form.phone }} {% if form.phone.errors %}
-            <label class="label">
-              <span class="label-text-alt text-error"
-                >{{ form.phone.errors.0 }}</span
-              >
-            </label>
+            <p class="text-xs text-error mt-1">{{ form.phone.errors.0 }}</p>
             {% endif %}
           </div>
         </div>
 
         <!-- Active -->
         <div class="form-control">
-          <label class="label cursor-pointer justify-start gap-4">
+          <label class="flex items-center gap-3 cursor-pointer">
             {{ form.active }}
-            <span class="label-text font-semibold">Ativo</span>
+            <span class="text-sm font-medium">Ativo</span>
           </label>
           {% if form.active.errors %}
-          <label class="label">
-            <span class="label-text-alt text-error"
-              >{{ form.active.errors.0 }}</span
-            >
-          </label>
+          <p class="text-xs text-error mt-1">{{ form.active.errors.0 }}</p>
           {% endif %}
         </div>
       </div>
 
-      <div class="modal-action">
-        <button type="button" @click="open = false" class="btn btn-ghost">
-          Cancelar
-        </button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" @click="open = false" class="btn btn-ghost btn-sm">Cancelar</button>
+        <button type="submit" class="btn btn-neutral btn-sm">Salvar</button>
       </div>
     </form>
   </div>
@@ -231,7 +169,7 @@
         const cnpjClean = cnpj.replace(/\D/g, "");
 
         if (!cnpjClean || cnpjClean.length !== 14) {
-          this.error = "Digite um CNPJ válido com 14 dígitos";
+          this.error = "Digite um CNPJ valido com 14 digitos";
           this.success = false;
           setTimeout(() => {
             this.error = "";

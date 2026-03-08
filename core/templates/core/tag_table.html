@@ -1,48 +1,44 @@
-<div id="tag-table" class="card bg-base-100 shadow-xl">
+<div id="tag-table" class="bg-base-100 rounded-xl border border-base-300/40">
 <div class="overflow-x-auto">
-    <table class="table table-zebra w-full">
+    <table class="table w-full">
         <thead>
             <tr>
-                <th>Nome</th>
-                <th>Cor</th>
-                <th class="text-right">Ações</th>
+                <th class="text-xs text-base-content/40 font-normal">Nome</th>
+                <th class="text-xs text-base-content/40 font-normal">Cor</th>
+                <th class="text-xs text-base-content/40 font-normal text-right">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for tag in object_list %}
-            <tr>
-                <td>
-                    <div class="flex items-center gap-3">
-                        <span class="badge" style="background-color: {{ tag.color|default:'#3b82f6' }}; color: white;">
-                            {{ tag.name }}
-                        </span>
-                    </div>
+            <tr class="hover:bg-base-200/30 transition-colors">
+                <td class="text-sm">
+                    <span class="text-xs px-2 py-0.5 rounded font-medium text-white" style="background-color: {{ tag.color|default:'#3b82f6' }}">{{ tag.name }}</span>
                 </td>
                 <td>
                     {% if tag.color %}
                     <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 rounded" style="background-color: {{ tag.color }}"></div>
-                        <span class="text-sm text-gray-500">{{ tag.color }}</span>
+                        <div class="w-4 h-4 rounded-full" style="background-color: {{ tag.color }}"></div>
+                        <span class="text-xs text-base-content/40">{{ tag.color }}</span>
                     </div>
                     {% else %}
-                    <span class="text-sm text-gray-400">Sem cor</span>
+                    <span class="text-xs text-base-content/30">Sem cor</span>
                     {% endif %}
                 </td>
                 <td class="text-right">
-                    <div class="flex gap-2 justify-end">
-                        <button 
-                            hx-get="{% url 'core:tag_update' tag.pk %}" 
+                    <div class="flex gap-1 justify-end">
+                        <button
+                            hx-get="{% url 'core:tag_update' tag.pk %}"
                             hx-target="#modal-container"
                             hx-swap="innerHTML"
-                            class="btn btn-ghost btn-sm btn-square">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            class="btn btn-ghost btn-xs btn-square">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                         </button>
-                        <button 
+                        <button
                             @click="$dispatch('openDeleteModal', { url: '{% url 'core:tag_delete' tag.pk %}' })"
-                            class="btn btn-ghost btn-sm btn-square text-error">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            class="btn btn-ghost btn-xs btn-square text-error">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
@@ -51,7 +47,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="3" class="text-center py-8 text-gray-500">
+                <td colspan="3" class="text-center py-10 text-base-content/30 text-sm">
                     Nenhuma tag encontrada
                 </td>
             </tr>
@@ -61,18 +57,18 @@
 </div>
 
 {% if is_paginated %}
-<div class="flex justify-center mt-6">
+<div class="flex justify-center py-4">
     <div class="join">
         {% if page_obj.has_previous %}
-        <button hx-get="?page=1" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm">«</button>
-        <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm">‹</button>
+        <button hx-get="?page=1" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm btn-ghost">«</button>
+        <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm btn-ghost">‹</button>
         {% endif %}
-        
-        <button class="join-item btn btn-sm btn-active">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</button>
-        
+
+        <button class="join-item btn btn-neutral btn-sm">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</button>
+
         {% if page_obj.has_next %}
-        <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm">›</button>
-        <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm">»</button>
+        <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm btn-ghost">›</button>
+        <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#tag-table" hx-swap="outerHTML" class="join-item btn btn-sm btn-ghost">»</button>
         {% endif %}
     </div>
 </div>
