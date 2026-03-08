@@ -120,7 +120,7 @@ class DashboardView(TemplateView):
                     confirmed=False
                 ).count(),
                 # Datas
-                "current_month": today.strftime("%B %Y"),
+                "current_month": f"{MONTH_NAMES[today.month]} {today.year}",
                 "today": today,
             }
         )
