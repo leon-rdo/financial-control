@@ -1,20 +1,26 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+
 from .models import BankAccount, PaymentMethod
 
 
 @admin.register(BankAccount)
 class BankAccountAdmin(admin.ModelAdmin):
-    list_display = ["name", "bank", "type", "color_preview", "active", "created_at"]
+    list_display = ["name", "bank", "type", "color_preview", "payment_methods_count", "active", "created_at"]
     list_filter = ["type", "active", "bank", "created_at"]
     search_fields = ["name", "bank"]
-    readonly_fields = ["created_at", "updated_at"]
+    readonly_fields = ["created_at", "updated_at", "payment_methods_count"]
     list_editable = ["active"]
     list_per_page = 50
 
     fieldsets = (
         (_("Basic Information"), {"fields": ("name", "bank", "type", "active")}),
         (_("Visual"), {"fields": ("color",)}),
+        (
+            _("Statistics"),
+            {"fields": ("payment_methods_count",), "classes": ("collapse",)},
+        ),
         (
             _("Timestamps"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
@@ -23,23 +29,35 @@ class BankAccountAdmin(admin.ModelAdmin):
 
     def color_preview(self, obj):
         if obj.color:
-            return f'<div style="width: 20px; height: 20px; background-color: {obj.color}; border: 1px solid #ccc; border-radius: 3px;"></div>'
+            return format_html(
+                '<div style="width: 20px; height: 20px; background-color: {}; '
+                'border: 1px solid #ccc; border-radius: 3px; display: inline-block;"></div>',
+                obj.color,
+            )
         return "-"
 
     color_preview.short_description = _("Color")
-    color_preview.allow_tags = True
+
+    def payment_methods_count(self, obj):
+        return obj.payment_methods.count()
+
+    payment_methods_count.short_description = _("Payment Methods")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related("payment_methods")
 
     actions = ["activate_accounts", "deactivate_accounts"]
 
     @admin.action(description=_("Activate selected bank accounts"))
     def activate_accounts(self, request, queryset):
         updated = queryset.update(active=True)
-        self.message_user(request, _(f"{updated} bank accounts activated."))
+        self.message_user(request, _("{} bank accounts activated.").format(updated))
 
     @admin.action(description=_("Deactivate selected bank accounts"))
     def deactivate_accounts(self, request, queryset):
         updated = queryset.update(active=False)
-        self.message_user(request, _(f"{updated} bank accounts deactivated."))
+        self.message_user(request, _("{} bank accounts deactivated.").format(updated))
 
 
 @admin.register(PaymentMethod)
@@ -55,10 +73,12 @@ class PaymentMethodAdmin(admin.ModelAdmin):
         "created_at",
     ]
     list_filter = ["type", "active", "created_at", "bank_account"]
-    search_fields = ["name"]
+    search_fields = ["name", "bank_account__name"]
     readonly_fields = ["created_at", "updated_at"]
     list_editable = ["active"]
     list_per_page = 50
+    list_select_related = ["bank_account"]
+    autocomplete_fields = ["bank_account"]
 
     fieldsets = (
         (
@@ -87,11 +107,10 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     credit_limit_display.short_description = _("Credit Limit")
 
     def get_fieldsets(self, request, obj=None):
-        """Show credit card fields only for credit card types"""
+        """Show credit card fields expanded for credit card types"""
         fieldsets = super().get_fieldsets(request, obj)
 
         if obj and obj.type == "CREDIT":
-            # Expand credit card section
             fieldsets = list(fieldsets)
             for i, fieldset in enumerate(fieldsets):
                 if fieldset[0] == _("Credit Card Information"):
@@ -99,14 +118,18 @@ class PaymentMethodAdmin(admin.ModelAdmin):
 
         return fieldsets
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("bank_account")
+
     actions = ["activate_payment_methods", "deactivate_payment_methods"]
 
     @admin.action(description=_("Activate selected payment methods"))
     def activate_payment_methods(self, request, queryset):
         updated = queryset.update(active=True)
-        self.message_user(request, _(f"{updated} payment methods activated."))
+        self.message_user(request, _("{} payment methods activated.").format(updated))
 
     @admin.action(description=_("Deactivate selected payment methods"))
     def deactivate_payment_methods(self, request, queryset):
         updated = queryset.update(active=False)
-        self.message_user(request, _(f"{updated} payment methods deactivated."))
+        self.message_user(request, _("{} payment methods deactivated.").format(updated))
