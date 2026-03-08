@@ -81,9 +81,9 @@
                         <th>#</th>
                         <th>Valor</th>
                         <th>Vencimento</th>
-                        <th>Referencia</th>
+                        <th>Referência</th>
                         <th>Status</th>
-                        <th class="text-right">Acao</th>
+                        <th class="text-right">Ação</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,7 +92,7 @@
                         <td><span class="text-sm font-medium tabular-nums">{{ installment.installment_number }}/{{ purchase.number_of_installments }}</span></td>
                         <td><span class="text-sm font-semibold tabular-nums">R$ {{ installment.amount|floatformat:2 }}</span></td>
                         <td><span class="text-sm text-base-content/60">{{ installment.due_date|date:"d/m/Y" }}</span></td>
-                        <td><span class="text-sm text-base-content/50">{{ installment.reference_month }}/{{ installment.reference_year }}</span></td>
+                        <td><span class="text-sm text-base-content/50">{{ installment.reference_month }}/{% widthratio installment.reference_year 1 1 %}</span></td>
                         <td>
                             {% if installment.paid %}
                             <div class="flex items-center gap-1.5">
@@ -125,7 +125,7 @@
     function installmentManager() {
         return {
             togglePaid(installmentId) {
-                fetch(`/financial/parcelas/${installmentId}/toggle-paid/`, {
+                fetch(`/parcelas/${installmentId}/toggle-paid/`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
