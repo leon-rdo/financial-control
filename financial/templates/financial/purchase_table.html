@@ -1,3 +1,4 @@
+<div id="purchase-table" class="card bg-base-100 shadow-xl">
 <div class="overflow-x-auto">
     <table class="table table-zebra w-full">
         <thead>
@@ -90,8 +91,8 @@
 <div class="flex justify-center mt-6">
     <div class="join">
         {% if page_obj.has_previous %}
-        <button hx-get="?page=1" hx-target="#purchase-table" class="join-item btn btn-sm">«</button>
-        <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#purchase-table"
+        <button hx-get="?page=1" hx-target="#purchase-table" hx-swap="outerHTML" class="join-item btn btn-sm">«</button>
+        <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#purchase-table" hx-swap="outerHTML"
             class="join-item btn btn-sm">‹</button>
         {% endif %}
 
@@ -99,11 +100,12 @@
             }}</button>
 
         {% if page_obj.has_next %}
-        <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#purchase-table"
+        <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#purchase-table" hx-swap="outerHTML"
             class="join-item btn btn-sm">›</button>
-        <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#purchase-table"
+        <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#purchase-table" hx-swap="outerHTML"
             class="join-item btn btn-sm">»</button>
         {% endif %}
     </div>
 </div>
 {% endif %}
+</div>

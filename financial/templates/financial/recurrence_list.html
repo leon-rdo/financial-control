@@ -21,7 +21,7 @@
     <!-- Filters -->
     <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
-            <form hx-get="{% url 'financial:recurrence_list' %}" hx-target="#recurrence-table" hx-trigger="change, submit">
+            <form hx-get="{% url 'financial:recurrence_list' %}" hx-target="#recurrence-table" hx-swap="outerHTML" hx-trigger="change, submit">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="form-control">
                         <label class="label">
@@ -61,9 +61,7 @@
     </div>
     
     <!-- Table -->
-    <div id="recurrence-table" class="card bg-base-100 shadow-xl">
-        {% include "financial/recurrence_table.html" %}
-    </div>
+    {% include "financial/recurrence_table.html" %}
     
     <!-- Modal Container -->
     <div id="modal-container"></div>
