@@ -234,12 +234,79 @@ class TransactionListView(FilterView):
             return ["financial/transaction_table.html"]
         return [self.template_name]
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.now().date()
+        first_day_month = today.replace(day=1)
+        from dateutil.relativedelta import relativedelta
+
+        last_day_month = (first_day_month + relativedelta(months=1)) - timedelta(days=1)
+        first_day_last_month = first_day_month - relativedelta(months=1)
+        last_day_last_month = first_day_month - timedelta(days=1)
+
+        context["this_month_start"] = first_day_month.isoformat()
+        context["this_month_end"] = last_day_month.isoformat()
+        context["last_month_start"] = first_day_last_month.isoformat()
+        context["last_month_end"] = last_day_last_month.isoformat()
+        return context
+
 
 class TransactionCreateView(CreateView):
     model = Transaction
     form_class = TransactionForm
     template_name = "financial/transaction_form.html"
     success_url = reverse_lazy("financial:transaction_list")
+
+    def form_valid(self, form):
+        self.object = form.save()
+        if self.request.htmx:
+            response = HttpResponse()
+            response["HX-Trigger"] = "transactionCreated"
+            context = {
+                "object_list": Transaction.objects.all()[:20],
+                "page_obj": None,
+                "is_paginated": False,
+            }
+            html = render_to_string(
+                "financial/transaction_table.html", context, request=self.request
+            )
+            response.content = html
+            return response
+        return super().form_valid(form)
+
+
+class TransactionDuplicateView(CreateView):
+    model = Transaction
+    form_class = TransactionForm
+    template_name = "financial/transaction_form.html"
+    success_url = reverse_lazy("financial:transaction_list")
+
+    def get_initial(self):
+        initial = super().get_initial()
+        source = get_object_or_404(Transaction, pk=self.kwargs["pk"])
+        initial.update(
+            {
+                "type": source.type,
+                "description": source.description,
+                "amount": source.amount,
+                "date": timezone.now().date(),
+                "category": source.category_id,
+                "payment_method": source.payment_method_id,
+                "entity": source.entity_id,
+                "notes": source.notes,
+                "confirmed": False,
+            }
+        )
+        self._source = source
+        return initial
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        if hasattr(self, "_source"):
+            form.initial["tags"] = list(
+                self._source.tags.values_list("pk", flat=True)
+            )
+        return form
 
     def form_valid(self, form):
         self.object = form.save()
@@ -520,3 +587,161 @@ def toggle_installment_paid(request, pk):
             "installment_id": installment.pk,
         }
     )
+
+
+@require_http_methods(["POST"])
+def toggle_transaction_confirmed(request, pk):
+    """Toggle confirmed status of a transaction"""
+    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction.confirmed = not transaction.confirmed
+    transaction.save()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "confirmed": transaction.confirmed,
+            "transaction_id": transaction.pk,
+        }
+    )
+
+
+@require_http_methods(["POST"])
+def generate_recurrences_view(request):
+    """Manually trigger recurrence generation for today"""
+    from financial.services import generate_transactions_for_date
+
+    today = timezone.now().date()
+    created = generate_transactions_for_date(today)
+
+    if request.headers.get("HX-Request"):
+        response = HttpResponse()
+        if created:
+            response["HX-Trigger"] = (
+                '{"showToast": {"message": "'
+                + str(created)
+                + ' transação(ões) gerada(s)!", "type": "success"}}'
+            )
+        else:
+            response["HX-Trigger"] = (
+                '{"showToast": {"message": "Nenhuma transação nova para gerar.", "type": "success"}}'
+            )
+        return response
+
+    return JsonResponse({"success": True, "created": created})
+
+
+@require_http_methods(["POST"])
+def bulk_toggle_installments_paid(request):
+    """Mark multiple installments as paid"""
+    import json
+
+    try:
+        data = json.loads(request.body)
+        ids = data.get("installment_ids", [])
+    except (json.JSONDecodeError, AttributeError):
+        ids = request.POST.getlist("installment_ids")
+
+    ids = [int(i) for i in ids if str(i).isdigit()]
+
+    if not ids:
+        return JsonResponse({"success": False, "error": "Nenhuma parcela selecionada"}, status=400)
+
+    updated = Installment.objects.filter(pk__in=ids, paid=False).update(paid=True)
+
+    return JsonResponse({"success": True, "updated": updated})
+
+
+class MonthlyReportView(TemplateView):
+    template_name = "financial/monthly_report.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from dateutil.relativedelta import relativedelta
+
+        today = timezone.now().date()
+
+        month_from = self.request.GET.get("month_from")
+        month_to = self.request.GET.get("month_to")
+
+        if month_from:
+            year, month = map(int, month_from.split("-"))
+            start_date = today.replace(year=year, month=month, day=1)
+        else:
+            start_date = (today.replace(day=1) - relativedelta(months=5))
+
+        if month_to:
+            year, month = map(int, month_to.split("-"))
+            end_date = (
+                today.replace(year=year, month=month, day=1)
+                + relativedelta(months=1)
+                - timedelta(days=1)
+            )
+        else:
+            end_date = today
+
+        # Build list of month keys as strings "YYYY-MM" for template compatibility
+        month_keys = []
+        cursor = start_date
+        while cursor <= end_date:
+            month_keys.append(f"{cursor.year}-{cursor.month:02d}")
+            cursor += relativedelta(months=1)
+
+        # Query transactions grouped by month, category, type
+        qs = (
+            Transaction.objects.filter(confirmed=True, date__gte=start_date, date__lte=end_date)
+            .values("date__year", "date__month", "category__name", "category__color", "type")
+            .annotate(total=Sum("amount"))
+            .order_by("date__year", "date__month", "category__name")
+        )
+
+        income_categories = {}
+        expense_categories = {}
+        income_totals = {mk: Decimal("0") for mk in month_keys}
+        expense_totals = {mk: Decimal("0") for mk in month_keys}
+
+        for row in qs:
+            mk = f"{row['date__year']}-{row['date__month']:02d}"
+            cat_name = row["category__name"]
+            cat_color = row["category__color"] or ""
+            total = row["total"]
+
+            if row["type"] == "INCOME":
+                if cat_name not in income_categories:
+                    income_categories[cat_name] = {"color": cat_color, "months": {}}
+                income_categories[cat_name]["months"][mk] = total
+                if mk in income_totals:
+                    income_totals[mk] += total
+            else:
+                if cat_name not in expense_categories:
+                    expense_categories[cat_name] = {"color": cat_color, "months": {}}
+                expense_categories[cat_name]["months"][mk] = total
+                if mk in expense_totals:
+                    expense_totals[mk] += total
+
+        balance_totals = {
+            mk: income_totals[mk] - expense_totals[mk] for mk in month_keys
+        }
+
+        # Format months for display
+        months_display = []
+        for mk in month_keys:
+            y, m = map(int, mk.split("-"))
+            months_display.append(
+                {"key": mk, "name": MONTH_NAMES[m], "year": y, "short": f"{MONTH_NAMES[m][:3]}/{y % 100:02d}"}
+            )
+
+        context.update(
+            {
+                "month_keys": month_keys,
+                "months_display": months_display,
+                "income_categories": income_categories,
+                "expense_categories": expense_categories,
+                "income_totals": income_totals,
+                "expense_totals": expense_totals,
+                "balance_totals": balance_totals,
+                "selected_month_from": month_from or start_date.strftime("%Y-%m"),
+                "selected_month_to": month_to or end_date.strftime("%Y-%m"),
+            }
+        )
+
+        return context

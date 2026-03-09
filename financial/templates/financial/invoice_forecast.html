@@ -3,7 +3,7 @@
 {% block title %}Previsão de Faturas - Controle Financeiro{% endblock %}
 
 {% block content %}
-<div class="space-y-5">
+<div class="space-y-5" x-data="bulkInstallments()">
     <div>
         <h1 class="text-xl font-semibold">Previsão de Faturas</h1>
         <p class="text-sm text-base-content/40 mt-0.5">Parcelas futuras agrupadas por mês e método de pagamento</p>
@@ -45,7 +45,7 @@
         {% for month_key, month_data in months_data.items %}
         <div class="bg-base-100 rounded-xl border border-base-300/40">
             <div class="flex justify-between items-center px-5 py-3.5 border-b border-base-300/30">
-                <h2 class="text-sm font-semibold">{{ month_data.month_name }} {{ month_data.year }}</h2>
+                <h2 class="text-sm font-semibold">{{ month_data.month_name }} {{ month_data.year|stringformat:"d" }}</h2>
                 <span class="text-sm font-semibold tabular-nums text-error">R$ {{ month_data.total|floatformat:2 }}</span>
             </div>
 
@@ -65,6 +65,7 @@
                         <table class="table w-full">
                             <thead>
                                 <tr>
+                                    <th class="w-8"></th>
                                     <th>Descrição</th>
                                     <th>Parcela</th>
                                     <th>Vencimento</th>
@@ -75,6 +76,9 @@
                             <tbody>
                                 {% for inst in pm_data.installments %}
                                 <tr class="hover:bg-base-200/30">
+                                    <td @click.stop>
+                                        <input type="checkbox" value="{{ inst.pk }}" x-model="selected" class="checkbox checkbox-xs">
+                                    </td>
                                     <td>
                                         <a href="{% url 'financial:purchase_detail' inst.purchase.pk %}" class="text-sm font-medium hover:underline">{{ inst.purchase.description }}</a>
                                         {% if inst.purchase.entity %}
@@ -107,6 +111,25 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- Bulk Action Bar -->
+    <div x-show="selected.length > 0" x-cloak
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-4"
+        class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-base-100 border border-base-300/40 rounded-xl shadow-lg px-5 py-3 flex items-center gap-4 z-50">
+        <span class="text-sm text-base-content/60" x-text="selected.length + ' parcela(s) selecionada(s)'"></span>
+        <button @click="markAsPaid()" class="btn btn-success btn-sm" :disabled="loading">
+            <span x-show="!loading">Marcar como pagas</span>
+            <span x-show="loading" class="loading loading-spinner loading-sm"></span>
+        </button>
+        <button @click="selected = []" class="btn btn-ghost btn-xs btn-square" title="Limpar seleção">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
 </div>
 {% endblock %}
 
@@ -119,5 +142,43 @@
             width: '100%',
         });
     });
+
+    function bulkInstallments() {
+        return {
+            selected: [],
+            loading: false,
+
+            async markAsPaid() {
+                if (this.selected.length === 0) return;
+                this.loading = true;
+
+                try {
+                    var csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
+                    var csrfToken = csrfMatch ? csrfMatch[1] : '';
+
+                    var res = await fetch('{% url "financial:bulk_toggle_installments_paid" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ installment_ids: this.selected })
+                    });
+
+                    var data = await res.json();
+                    if (data.success) {
+                        showToast(data.updated + ' parcela(s) marcada(s) como paga(s)!');
+                        setTimeout(function() { window.location.reload(); }, 500);
+                    } else {
+                        showToast(data.error || 'Erro ao atualizar', 'error');
+                    }
+                } catch (e) {
+                    showToast('Erro de conexão', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    }
 </script>
 {% endblock %}

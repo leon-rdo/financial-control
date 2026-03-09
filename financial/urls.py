@@ -9,6 +9,7 @@ urlpatterns = [
     
     # Recurrence URLs
     path("recorrencias/", views.RecurrenceListView.as_view(), name="recurrence_list"),
+    path("recorrencias/gerar/", views.generate_recurrences_view, name="generate_recurrences"),
     path("recorrencias/criar/", views.RecurrenceCreateView.as_view(), name="recurrence_create"),
     path("recorrencias/<int:pk>/editar/", views.RecurrenceUpdateView.as_view(), name="recurrence_update"),
     path("recorrencias/<int:pk>/excluir/", views.RecurrenceDeleteView.as_view(), name="recurrence_delete"),
@@ -17,6 +18,7 @@ urlpatterns = [
     path("transacoes/", views.TransactionListView.as_view(), name="transaction_list"),
     path("transacoes/criar/", views.TransactionCreateView.as_view(), name="transaction_create"),
     path("transacoes/<int:pk>/editar/", views.TransactionUpdateView.as_view(), name="transaction_update"),
+    path("transacoes/<int:pk>/duplicar/", views.TransactionDuplicateView.as_view(), name="transaction_duplicate"),
     path("transacoes/<int:pk>/excluir/", views.TransactionDeleteView.as_view(), name="transaction_delete"),
     
     # Purchase URLs
@@ -29,6 +31,13 @@ urlpatterns = [
     # Invoice Forecast
     path("previsao-faturas/", views.InvoiceForecastView.as_view(), name="invoice_forecast"),
 
+    # Reports
+    path("relatorios/mensal/", views.MonthlyReportView.as_view(), name="monthly_report"),
+
+    # Transaction API
+    path("transacoes/<int:pk>/toggle-confirmed/", views.toggle_transaction_confirmed, name="toggle_transaction_confirmed"),
+
     # Installment API
     path("parcelas/<int:pk>/toggle-paid/", views.toggle_installment_paid, name="toggle_installment_paid"),
+    path("parcelas/bulk-toggle-paid/", views.bulk_toggle_installments_paid, name="bulk_toggle_installments_paid"),
 ]

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load financial_extras %}
+
+{% block title %}Comparativo Mensal - Controle Financeiro{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+    <div>
+        <h1 class="text-xl font-semibold">Comparativo Mensal</h1>
+        <p class="text-sm text-base-content/40 mt-0.5">Receitas e despesas por categoria ao longo dos meses</p>
+    </div>
+
+    <div class="bg-base-100 rounded-xl border border-base-300/40 p-4">
+        <form method="get" action="{% url 'financial:monthly_report' %}">
+            <div class="flex flex-wrap items-end gap-3">
+                <div class="min-w-40 flex-1">
+                    <label class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider mb-1 block">Mês Inicial</label>
+                    <input type="month" name="month_from" value="{{ selected_month_from }}" class="input input-bordered w-full">
+                </div>
+                <div class="min-w-40 flex-1">
+                    <label class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider mb-1 block">Mês Final</label>
+                    <input type="month" name="month_to" value="{{ selected_month_to }}" class="input input-bordered w-full">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-neutral btn-sm">Filtrar</button>
+                    <a href="{% url 'financial:monthly_report' %}" class="btn btn-ghost btn-sm">Limpar</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="bg-base-100 rounded-xl border border-base-300/40 overflow-x-auto">
+        <table class="table w-full">
+            <thead>
+                <tr>
+                    <th class="sticky left-0 bg-base-100 z-10 min-w-40">Categoria</th>
+                    {% for m in months_display %}
+                    <th class="text-right min-w-28">{{ m.short }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Income Section -->
+                <tr class="bg-success/5">
+                    <td colspan="{{ months_display|length|add:1 }}" class="font-semibold text-xs uppercase tracking-wider text-success">Receitas</td>
+                </tr>
+                {% for cat_name, cat_data in income_categories.items %}
+                <tr class="hover:bg-base-200/30">
+                    <td class="sticky left-0 bg-base-100 z-10">
+                        <div class="flex items-center gap-1.5">
+                            {% if cat_data.color %}
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: {{ cat_data.color }};"></span>
+                            {% endif %}
+                            <span class="text-sm">{{ cat_name }}</span>
+                        </div>
+                    </td>
+                    {% for m in month_keys %}
+                    <td class="text-right">
+                        {% with val=cat_data.months %}
+                        <span class="text-sm tabular-nums {% if val|get_item:m %}text-success{% else %}text-base-content/20{% endif %}">
+                            {% if val|get_item:m %}R$ {{ val|get_item:m|floatformat:2 }}{% else %}-{% endif %}
+                        </span>
+                        {% endwith %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ months_display|length|add:1 }}" class="text-sm text-base-content/30 text-center py-3">Sem receitas no período</td></tr>
+                {% endfor %}
+                <tr class="border-t border-base-300/30 font-semibold">
+                    <td class="sticky left-0 bg-base-100 z-10 text-sm text-success">Total Receitas</td>
+                    {% for m in month_keys %}
+                    <td class="text-right"><span class="text-sm tabular-nums text-success">R$ {{ income_totals|get_item:m|floatformat:2 }}</span></td>
+                    {% endfor %}
+                </tr>
+
+                <!-- Spacer -->
+                <tr><td colspan="{{ months_display|length|add:1 }}" class="py-1"></td></tr>
+
+                <!-- Expense Section -->
+                <tr class="bg-error/5">
+                    <td colspan="{{ months_display|length|add:1 }}" class="font-semibold text-xs uppercase tracking-wider text-error">Despesas</td>
+                </tr>
+                {% for cat_name, cat_data in expense_categories.items %}
+                <tr class="hover:bg-base-200/30">
+                    <td class="sticky left-0 bg-base-100 z-10">
+                        <div class="flex items-center gap-1.5">
+                            {% if cat_data.color %}
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: {{ cat_data.color }};"></span>
+                            {% endif %}
+                            <span class="text-sm">{{ cat_name }}</span>
+                        </div>
+                    </td>
+                    {% for m in month_keys %}
+                    <td class="text-right">
+                        {% with val=cat_data.months %}
+                        <span class="text-sm tabular-nums {% if val|get_item:m %}text-error{% else %}text-base-content/20{% endif %}">
+                            {% if val|get_item:m %}R$ {{ val|get_item:m|floatformat:2 }}{% else %}-{% endif %}
+                        </span>
+                        {% endwith %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{{ months_display|length|add:1 }}" class="text-sm text-base-content/30 text-center py-3">Sem despesas no período</td></tr>
+                {% endfor %}
+                <tr class="border-t border-base-300/30 font-semibold">
+                    <td class="sticky left-0 bg-base-100 z-10 text-sm text-error">Total Despesas</td>
+                    {% for m in month_keys %}
+                    <td class="text-right"><span class="text-sm tabular-nums text-error">R$ {{ expense_totals|get_item:m|floatformat:2 }}</span></td>
+                    {% endfor %}
+                </tr>
+
+                <!-- Balance -->
+                <tr class="border-t-2 border-base-300/40 font-bold">
+                    <td class="sticky left-0 bg-base-100 z-10 text-sm">Saldo</td>
+                    {% for m in month_keys %}
+                    <td class="text-right">
+                        {% with bal=balance_totals|get_item:m %}
+                        <span class="text-sm tabular-nums {% if bal >= 0 %}text-success{% else %}text-error{% endif %}">
+                            R$ {{ bal|floatformat:2 }}
+                        </span>
+                        {% endwith %}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

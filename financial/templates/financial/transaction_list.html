@@ -16,6 +16,38 @@
         </button>
     </div>
 
+    <!-- Quick Filters -->
+    <div class="flex flex-wrap gap-2 mb-3">
+        <button
+            hx-get="{% url 'financial:transaction_list' %}?date_from={{ this_month_start }}&date_to={{ this_month_end }}"
+            hx-target="#transaction-table"
+            hx-swap="outerHTML"
+            class="btn btn-outline btn-xs">
+            Este mês
+        </button>
+        <button
+            hx-get="{% url 'financial:transaction_list' %}?date_from={{ last_month_start }}&date_to={{ last_month_end }}"
+            hx-target="#transaction-table"
+            hx-swap="outerHTML"
+            class="btn btn-outline btn-xs">
+            Mês passado
+        </button>
+        <button
+            hx-get="{% url 'financial:transaction_list' %}?confirmed=false"
+            hx-target="#transaction-table"
+            hx-swap="outerHTML"
+            class="btn btn-outline btn-xs">
+            Pendentes
+        </button>
+        <button
+            hx-get="{% url 'financial:transaction_list' %}?type=EXPENSE&date_from={{ this_month_start }}&date_to={{ this_month_end }}"
+            hx-target="#transaction-table"
+            hx-swap="outerHTML"
+            class="btn btn-outline btn-xs">
+            Despesas do mês
+        </button>
+    </div>
+
     <!-- Filters -->
     <div class="bg-base-100 rounded-xl border border-base-300/40 p-4 mb-4">
         <form hx-get="{% url 'financial:transaction_list' %}" hx-target="#transaction-table" hx-trigger="change, submit">
@@ -86,5 +118,34 @@
         modal.deleteUrl = event.detail.url;
         modal.showModal = true;
     });
+
+    function getCsrfToken() {
+        var match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
+    }
+
+    async function toggleConfirmed(pk, btn) {
+        try {
+            var res = await fetch('/transacoes/' + pk + '/toggle-confirmed/', {
+                method: 'POST',
+                headers: {'X-CSRFToken': getCsrfToken()}
+            });
+            var data = await res.json();
+            if (data.success) {
+                var dot = btn.querySelector('div');
+                var label = btn.querySelector('span');
+                if (data.confirmed) {
+                    dot.className = 'w-1.5 h-1.5 rounded-full bg-success';
+                    label.textContent = 'Confirmada';
+                } else {
+                    dot.className = 'w-1.5 h-1.5 rounded-full bg-warning';
+                    label.textContent = 'Pendente';
+                }
+                btn.dataset.confirmed = data.confirmed;
+            }
+        } catch (e) {
+            showToast('Erro ao atualizar status', 'error');
+        }
+    }
 </script>
 {% endblock %}

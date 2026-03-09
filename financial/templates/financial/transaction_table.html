@@ -69,20 +69,33 @@
             <span class="text-sm text-base-content/50">{{ transaction.payment_method.name }}</span>
           </td>
           <td>
-            {% if transaction.confirmed %}
-            <div class="flex items-center gap-1.5">
+            <button
+              onclick="toggleConfirmed({{ transaction.pk }}, this)"
+              class="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+              title="Clique para alternar status"
+              data-confirmed="{{ transaction.confirmed|yesno:'true,false' }}"
+            >
+              {% if transaction.confirmed %}
               <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
               <span class="text-xs text-base-content/50">Confirmada</span>
-            </div>
-            {% else %}
-            <div class="flex items-center gap-1.5">
+              {% else %}
               <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
               <span class="text-xs text-base-content/50">Pendente</span>
-            </div>
-            {% endif %}
+              {% endif %}
+            </button>
           </td>
           <td class="text-right">
             <div class="flex gap-0.5 justify-end">
+              <button
+                hx-get="{% url 'financial:transaction_duplicate' transaction.pk %}"
+                hx-target="#modal-container"
+                hx-swap="innerHTML"
+                class="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-success"
+                title="Duplicar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
               <button
                 hx-get="{% url 'financial:transaction_update' transaction.pk %}"
                 hx-target="#modal-container"
