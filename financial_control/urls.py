@@ -11,4 +11,5 @@ urlpatterns = [
     path("", include("core.urls")),
     path("", include("accounts.urls")),
     path("", include("financial.urls")),
+    path("telegram/", include("telegram_bot.urls")),
 ]

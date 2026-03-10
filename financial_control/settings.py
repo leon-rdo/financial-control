@@ -29,7 +29,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
 
 # Application definition
 
@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'core',
     'accounts',
     'financial',
+    'telegram_bot',
 ]
 
 # TAILWIND_APP_NAME = 'theme'
@@ -168,3 +169,11 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_WEBHOOK_SECRET = os.environ.get('TELEGRAM_WEBHOOK_SECRET', '')
+TELEGRAM_ALLOWED_CHAT_IDS = os.environ.get('TELEGRAM_ALLOWED_CHAT_IDS', '')
+
+# OpenAI
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
