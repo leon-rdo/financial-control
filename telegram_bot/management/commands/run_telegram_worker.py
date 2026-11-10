@@ -11,7 +11,7 @@ import time
 import traceback
 
 from django.core.management.base import BaseCommand
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.db.models import F, Max
 from django.utils import timezone
 
@@ -51,7 +51,9 @@ class Command(BaseCommand):
         try:
             while True:
                 # Processo de longa duração: recicla conexões velhas com o banco
-                close_old_connections()
+                # (nunca no meio de uma transação, como nos testes)
+                if not connection.in_atomic_block:
+                    close_old_connections()
                 if options["poll"]:
                     has_pending = TelegramUpdate.objects.filter(status=TelegramUpdate.Status.PENDING).exists()
                     data = client.get_updates(offset, timeout=1 if has_pending else 20)

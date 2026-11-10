@@ -63,7 +63,7 @@ Publicar uma nova versão:
 deploy/deploy.sh
 ```
 
-O script copia o código (rsync), instala dependências, roda as migrações, coleta estáticos e reinicia os serviços. Não mexe no `.env`, em `data/` nem na configuração do nginx.
+O script copia o código (rsync), instala dependências, roda os testes no servidor (contra o PostgreSQL, no banco `test_confin`), aplica as migrações, coleta estáticos e reinicia os serviços. Se um teste falhar, ele para antes de migrar e de reiniciar. Não mexe no `.env`, em `data/` nem na configuração do nginx.
 
 Úteis no servidor:
 

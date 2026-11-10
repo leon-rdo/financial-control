@@ -18,10 +18,14 @@ rsync -az --delete \
     ./ "$HOST:$APP/"
 
 ssh "$HOST" bash -s <<'REMOTE'
-set -euo pipefail
+set -euo pipefail  # pipefail: falha de teste derruba o deploy mesmo passando pelo `tail`
 cd /var/www/confin
 uv sync --frozen --extra prod --no-install-project --python 3.12 --quiet
 set -a; . ./.env; set +a
+# Testes contra o PostgreSQL do servidor, no banco fixo `test_confin` (o usuário
+# do app não cria bancos). Se falharem, o deploy para aqui: nada é migrado nem reiniciado.
+.venv/bin/python manage.py test financial assistant telegram_bot --keepdb --noinput 2>&1 \
+    | grep -E "^(Ran |OK|FAILED|FAIL:|ERROR:)"
 .venv/bin/python manage.py migrate --noinput
 .venv/bin/python manage.py collectstatic --noinput --verbosity 0
 chown -R root:www-data . && chmod -R g-w,o-rwx .
