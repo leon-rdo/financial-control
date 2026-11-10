@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from .models import BankAccount, PaymentMethod
+from .models import BalanceSnapshot, BankAccount, PaymentMethod
 
 
 @admin.register(BankAccount)
@@ -15,7 +15,8 @@ class BankAccountAdmin(admin.ModelAdmin):
     list_per_page = 50
 
     fieldsets = (
-        (_("Basic Information"), {"fields": ("name", "bank", "type", "active")}),
+        (_("Basic Information"), {"fields": ("name", "bank", "type", "parent", "active")}),
+        (_("Balance"), {"fields": ("opening_balance", "opening_balance_date")}),
         (_("Visual"), {"fields": ("color",)}),
         (
             _("Statistics"),
@@ -88,7 +89,7 @@ class PaymentMethodAdmin(admin.ModelAdmin):
         (
             _("Credit Card Information"),
             {
-                "fields": ("credit_limit", "closing_day", "due_day"),
+                "fields": ("billing_card", "credit_limit", "closing_day", "due_day"),
                 "description": _("Fill these fields only for credit cards"),
                 "classes": ("collapse",),
             },
@@ -133,3 +134,10 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     def deactivate_payment_methods(self, request, queryset):
         updated = queryset.update(active=False)
         self.message_user(request, _("{} payment methods deactivated.").format(updated))
+
+
+@admin.register(BalanceSnapshot)
+class BalanceSnapshotAdmin(admin.ModelAdmin):
+    list_display = ["account", "date", "balance", "source", "notes"]
+    list_filter = ["account", "source"]
+    date_hierarchy = "date"
