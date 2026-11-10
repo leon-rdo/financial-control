@@ -1,3 +1,9 @@
+"""Fluxo ANTIGO do bot (comprovante -> PendingTransaction, via OpenAI).
+
+Usado apenas com AI_PROVIDER=openai e para botões de mensagens antigas.
+O fluxo novo fica em bot.py (assistente).
+"""
+
 import json
 import logging
 from datetime import date
@@ -153,12 +159,10 @@ def _build_confirmation_keyboard(pending):
 
 
 def is_allowed(chat_id):
-    """Verifica se o chat_id está na lista de permitidos."""
-    allowed = settings.TELEGRAM_ALLOWED_CHAT_IDS
-    if not allowed:
-        return True  # Se não configurado, permite todos
-    allowed_ids = [int(x.strip()) for x in allowed.split(",") if x.strip()]
-    return chat_id in allowed_ids
+    """Verifica se o chat_id está na lista de permitidos (vazia = ninguém)."""
+    from .client import is_allowed as _is_allowed
+
+    return _is_allowed(chat_id)
 
 
 def process_update(update):

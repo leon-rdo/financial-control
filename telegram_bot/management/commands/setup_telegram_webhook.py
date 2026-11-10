@@ -1,35 +1,29 @@
 import requests
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+
+from telegram_bot.client import webhook_secret_token
 
 
 class Command(BaseCommand):
-    help = "Configura o webhook do Telegram Bot"
+    help = "Configura (ou remove) o webhook do Telegram Bot"
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--url",
             type=str,
-            required=True,
             help="URL pública do webhook (ex: https://meudominio.com/telegram/webhook/<secret>/)",
         )
-        parser.add_argument(
-            "--delete",
-            action="store_true",
-            help="Remove o webhook atual",
-        )
+        parser.add_argument("--delete", action="store_true", help="Remove o webhook atual")
 
     def handle(self, *args, **options):
         token = settings.TELEGRAM_BOT_TOKEN
         if not token:
-            self.stderr.write(self.style.ERROR("TELEGRAM_BOT_TOKEN não configurado no .env"))
-            return
-
+            raise CommandError("TELEGRAM_BOT_TOKEN não configurado no .env")
         api = f"https://api.telegram.org/bot{token}"
 
         if options["delete"]:
-            resp = requests.post(f"{api}/deleteWebhook", timeout=10)
-            data = resp.json()
+            data = requests.post(f"{api}/deleteWebhook", timeout=10).json()
             if data.get("ok"):
                 self.stdout.write(self.style.SUCCESS("Webhook removido com sucesso"))
             else:
@@ -37,13 +31,22 @@ class Command(BaseCommand):
             return
 
         url = options["url"]
-        resp = requests.post(
+        if not url:
+            raise CommandError("Informe --url (ou use --delete).")
+        if not settings.TELEGRAM_WEBHOOK_SECRET:
+            raise CommandError("TELEGRAM_WEBHOOK_SECRET não configurado no .env")
+
+        data = requests.post(
             f"{api}/setWebhook",
-            json={"url": url, "allowed_updates": ["message", "callback_query"]},
+            json={
+                "url": url,
+                "allowed_updates": ["message", "callback_query"],
+                "secret_token": webhook_secret_token(),
+            },
             timeout=10,
-        )
-        data = resp.json()
+        ).json()
         if data.get("ok"):
             self.stdout.write(self.style.SUCCESS(f"Webhook configurado: {url}"))
+            self.stdout.write("Lembre de manter o worker rodando: python manage.py run_telegram_worker")
         else:
             self.stderr.write(self.style.ERROR(f"Erro: {data}"))
