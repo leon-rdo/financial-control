@@ -1,0 +1,22 @@
+# /etc/systemd/system/confin-digests.service (disparado pelo confin-digests.timer)
+# Avisos automáticos: vencimento de fatura, saldo projetado negativo, resumo mensal.
+
+[Unit]
+Description=Confin - avisos automáticos pelo Telegram
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=confin
+Group=www-data
+WorkingDirectory=/var/www/confin
+EnvironmentFile=/var/www/confin/.env
+ExecStart=/var/www/confin/.venv/bin/python manage.py send_digests
+SyslogIdentifier=confin-digests
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/confin/data

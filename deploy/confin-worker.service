@@ -1,0 +1,36 @@
+# /etc/systemd/system/confin-worker.service
+# Worker do bot: consome a fila de mensagens do Telegram e chama a IA.
+
+[Unit]
+Description=Confin - worker do bot do Telegram
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=confin
+Group=www-data
+WorkingDirectory=/var/www/confin
+EnvironmentFile=/var/www/confin/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/var/www/confin/.venv/bin/python manage.py run_telegram_worker
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=confin-worker
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+ReadWritePaths=/var/www/confin/data
+
+[Install]
+WantedBy=multi-user.target

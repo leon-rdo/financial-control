@@ -1,0 +1,41 @@
+# /etc/systemd/system/confin.service (instalado pelo deploy/provisionar.sh)
+# Site + webhook do Telegram (gunicorn). Roda como o usuário de sistema `confin`:
+# lê o .env e só escreve em data/. O código é de root e somente leitura para ele.
+
+[Unit]
+Description=Confin - controle financeiro (gunicorn)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=confin
+Group=www-data
+WorkingDirectory=/var/www/confin
+EnvironmentFile=/var/www/confin/.env
+ExecStart=/var/www/confin/.venv/bin/gunicorn financial_control.wsgi \
+    --bind 127.0.0.1:8030 \
+    --workers 2 --threads 4 \
+    --timeout 60 --graceful-timeout 20 \
+    --no-control-socket \
+    --access-logfile - --error-logfile -
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=confin
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+ReadWritePaths=/var/www/confin/data
+
+[Install]
+WantedBy=multi-user.target
