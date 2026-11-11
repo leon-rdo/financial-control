@@ -226,10 +226,14 @@ ANTHROPIC_EFFORT = os.environ.get('ANTHROPIC_EFFORT', 'medium')  # low | medium 
 #   direct = a mesma chamada, na hora
 #   agent  = agente interativo com o modelo principal (como antes)
 ASSISTANT_DOCUMENT_MODE = os.environ.get('ASSISTANT_DOCUMENT_MODE', 'batch')
-ANTHROPIC_EXTRACTION_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_MODEL', 'claude-haiku-5-5')
+# Medido numa fatura real de 199 linhas (nov/2026), custo em batch:
+#   claude-sonnet-5-5  ~US$ 0,17  idêntica ao PDF em 5 de 5 leituras   <- padrão (equilíbrio)
+#   claude-haiku-5-5   ~US$ 0,01  totais sempre certos, mas com desvios pequenos em parte das leituras
+#   agente com Opus    ~US$ 0,81  (sem batch)
+ANTHROPIC_EXTRACTION_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_MODEL', 'claude-sonnet-5-5')
 ANTHROPIC_EXTRACTION_EFFORT = os.environ.get('ANTHROPIC_EXTRACTION_EFFORT', '')  # vazio = padrão do modelo
-# Usado quando a extração barata falha nas conferências duas vezes (vazio = ir direto ao agente)
-ANTHROPIC_EXTRACTION_FALLBACK_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_FALLBACK_MODEL', 'claude-sonnet-5-5')
+# Usado quando a extração falha nas conferências duas vezes (vazio = ir direto ao agente)
+ANTHROPIC_EXTRACTION_FALLBACK_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_FALLBACK_MODEL', 'claude-opus-5-5')
 ASSISTANT_IDLE_HOURS = int(os.environ.get('ASSISTANT_IDLE_HOURS', '6'))
 ASSISTANT_MAX_STEPS = int(os.environ.get('ASSISTANT_MAX_STEPS', '15'))
 # Senhas tentadas automaticamente em PDFs protegidos (ex.: primeiros dígitos do CPF)
