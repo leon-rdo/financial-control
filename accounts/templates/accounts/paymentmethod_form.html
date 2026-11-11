@@ -60,6 +60,16 @@
           <p class="text-[11px] text-base-content/30 mt-1">Associe para debito ou PIX</p>
         </div>
 
+        <!-- Titular -->
+        <div class="form-control">
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Usado por (pessoa da familia)</label>
+          {{ form.holder }}
+          {% if form.holder.errors %}
+          <p class="text-xs text-error mt-1">{{ form.holder.errors.0 }}</p>
+          {% endif %}
+          <p class="text-[11px] text-base-content/30 mt-1">Em branco: o titular da conta ou do cartao principal</p>
+        </div>
+
         <!-- Credit Card Fields (conditional) -->
         <div x-show="showCreditFields" x-cloak>
           <div class="border-t border-base-300/30 my-4"></div>

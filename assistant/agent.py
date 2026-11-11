@@ -9,6 +9,8 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from core.models import FamilyMember
+
 from .models import ChatMessage, Conversation
 from .prompts import SYSTEM_PROMPT
 from .providers import Part, ProviderError, get_provider
@@ -97,9 +99,15 @@ def _extend(history, native):
         history.append(native)
 
 
-def _time_note():
+def _time_note(chat_id=None):
     now = timezone.localtime() if settings.USE_TZ else timezone.now()
-    return f"Agora: {now:%d/%m/%Y %H:%M} ({WEEKDAYS[now.weekday()]})."
+    note = f"Agora: {now:%d/%m/%Y %H:%M} ({WEEKDAYS[now.weekday()]})."
+    speaker = FamilyMember.objects.filter(telegram_chat_id=chat_id, active=True).first() if chat_id else None
+    if speaker:
+        note += f" Quem está falando: {speaker.name}."
+    elif FamilyMember.objects.filter(active=True).exists():
+        note += " Quem está falando: pessoa ainda não identificada."
+    return note
 
 
 def run_turn(chat_id, parts: list[Part], channel="telegram", provider=None) -> TurnResult:
@@ -118,7 +126,7 @@ def run_turn(chat_id, parts: list[Part], channel="telegram", provider=None) -> T
     except ProviderError as exc:
         return TurnResult(f"⚠️ {exc}", conv, error=True)
 
-    notes = [_time_note(), *conv.pending_notes]
+    notes = [_time_note(chat_id), *conv.pending_notes]
     saved_notes = list(conv.pending_notes)
     with transaction.atomic():
         user_msg = ChatMessage.objects.create(

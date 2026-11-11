@@ -86,6 +86,16 @@
           {% endif %}
         </div>
 
+        <!-- Titular -->
+        <div class="form-control">
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Titular (pessoa da família)</label>
+          {{ form.holder }}
+          <p class="text-[11px] text-base-content/40 mt-1">De quem é esta conta. Caixinhas herdam o titular da conta.</p>
+          {% if form.holder.errors %}
+          <p class="text-xs text-error mt-1">{{ form.holder.errors.0 }}</p>
+          {% endif %}
+        </div>
+
         <!-- Caixinha de outra conta -->
         <div class="form-control">
           <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Caixinha / cofrinho da conta</label>

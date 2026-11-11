@@ -22,6 +22,7 @@ MONTH_NAMES = {
 }
 
 REFUND_CATEGORY_NAME = "Estornos"
+NO_HOLDER_LABEL = "Sem titular"
 
 
 @dataclass(frozen=True)
@@ -370,7 +371,9 @@ def account_balances(as_of=None):
     accounts = []
     reserved_unknown = []
     grand_total = available = reserved = Decimal("0")
-    for acct in BankAccount.objects.filter(active=True).select_related("parent").order_by("name"):
+    by_holder = {}
+    for acct in BankAccount.objects.filter(active=True).select_related(
+            "parent__holder", "holder").order_by("name"):
         snapshot = acct.balance_snapshots.filter(date__lte=as_of).order_by("-date").first()
         if snapshot:
             anchor_date, base, anchor = snapshot.date, snapshot.balance, "snapshot"
@@ -394,6 +397,9 @@ def account_balances(as_of=None):
         transfers_out, transfers_in = total(out), total(into)
         balance = base + income - expense - transfers_out + transfers_in
         net_movements = income - expense - transfers_out + transfers_in
+        holder = acct.effective_holder
+        person = by_holder.setdefault(holder.name if holder else NO_HOLDER_LABEL,
+                                      {"available": Decimal("0"), "reserved": Decimal("0")})
         if acct.is_reserve and anchor is None:
             # Caixinha sem saldo informado: só conhecemos entradas e saídas, não o saldo
             balance = None
@@ -401,11 +407,14 @@ def account_balances(as_of=None):
         elif acct.is_reserve:
             reserved += balance
             grand_total += balance
+            person["reserved"] += balance
         else:
             available += balance
             grand_total += balance
+            person["available"] += balance
         accounts.append({
             "account_id": acct.pk, "account": acct.name, "type": acct.type, "balance": balance,
+            "holder": holder.name if holder else None,
             "net_movements_since_anchor": net_movements,
             "reserve": acct.is_reserve, "parent_account": acct.parent.name if acct.parent_id else None,
             "anchor": anchor, "anchor_date": anchor_date, "anchor_balance": base,
@@ -417,6 +426,8 @@ def account_balances(as_of=None):
     return {
         "as_of": as_of, "total": grand_total, "available": available, "reserved": reserved,
         "reserved_unknown": reserved_unknown,  # caixinhas ainda sem saldo informado (fora dos totais)
+        # Quanto está com cada pessoa da família (só aparece com mais de um grupo)
+        "by_holder": by_holder if len(by_holder) > 1 else {},
         "accounts": accounts,
         "all_anchored": bool(accounts) and all(a["anchor"] for a in accounts),
         # O dinheiro do dia a dia tem ponto de partida? (caixinhas à parte)
@@ -507,11 +518,13 @@ def spending_summary(start, end, group_by="category", include_unconfirmed=False,
     """
     from .models import Installment, Transaction
 
-    if group_by not in (*GROUP_FIELDS, "month"):
+    if group_by not in (*GROUP_FIELDS, "month", "holder"):
         raise ValueError(f"group_by inválido: {group_by}")
 
+    holder_paths = ("__holder", "__bank_account__holder", "__bank_account__parent__holder",
+                    "__billing_card__holder", "__billing_card__bank_account__holder")
     tx_qs = Transaction.objects.filter(date__gte=start, date__lte=end).select_related(
-        "category", "payment_method", "entity")
+        "category", "payment_method", "entity", *(f"payment_method{p}" for p in holder_paths))
     if not include_unconfirmed:
         tx_qs = tx_qs.filter(confirmed=True)
     if payment_method_ids:
@@ -520,7 +533,8 @@ def spending_summary(start, end, group_by="category", include_unconfirmed=False,
         tx_qs = tx_qs.filter(category_id__in=category_ids)
 
     inst_qs = Installment.objects.filter(due_date__gte=start, due_date__lte=end).select_related(
-        "purchase__category", "purchase__payment_method", "purchase__entity")
+        "purchase__category", "purchase__payment_method", "purchase__entity",
+        *(f"purchase__payment_method{p}" for p in holder_paths))
     if payment_method_ids:
         inst_qs = inst_qs.filter(family_q("purchase__payment_method", payment_method_ids))
     if category_ids:
@@ -531,10 +545,16 @@ def spending_summary(start, end, group_by="category", include_unconfirmed=False,
     def bucket(key, label):
         return groups.setdefault(key, {"key": key, "label": label, "total": Decimal("0"), "count": 0})
 
+    def holder_key(payment_method):
+        holder = payment_method.effective_holder
+        return (holder.pk, holder.name) if holder else (None, NO_HOLDER_LABEL)
+
     def key_for_tx(tx):
         if group_by == "month":
             k = f"{tx.date.year}-{tx.date.month:02d}"
             return k, k
+        if group_by == "holder":
+            return holder_key(tx.payment_method)
         obj = getattr(tx, group_by)
         return (obj.id if obj else None), (obj.name if obj else "(sem)")
 
@@ -542,6 +562,8 @@ def spending_summary(start, end, group_by="category", include_unconfirmed=False,
         if group_by == "month":
             k = f"{inst.due_date.year}-{inst.due_date.month:02d}"
             return k, k
+        if group_by == "holder":
+            return holder_key(inst.purchase.payment_method)
         obj = getattr(inst.purchase, group_by)
         return (obj.id if obj else None), (obj.name if obj else "(sem)")
 

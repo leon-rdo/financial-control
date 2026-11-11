@@ -84,7 +84,9 @@ def query_transactions(args, ctx):
 class SpendingSummaryInput(ToolInput):
     start_date: date
     end_date: date
-    group_by: Literal["category", "payment_method", "entity", "month"] = "category"
+    group_by: Literal["category", "payment_method", "entity", "month", "holder"] = Field(
+        default="category", description="holder = por pessoa da família (titular do cartão/conta usado)."
+    )
     include_unconfirmed: bool = Field(default=False, description="Incluir despesas não confirmadas (previstas).")
     category_ids: list[int] | None = None
     payment_method_ids: list[int] | None = None
@@ -127,7 +129,8 @@ class AccountBalancesInput(ToolInput):
 
 def get_account_balances(args, ctx):
     data = forecast.account_balances(args.as_of)
-    data["note"] = ("available = dinheiro do dia a dia (contas); reserved = guardado em caixinhas/cofrinhos e "
+    data["note"] = ("by_holder = quanto está com cada pessoa da família (vazio se as contas não têm titular). "
+                    "available = dinheiro do dia a dia (contas); reserved = guardado em caixinhas/cofrinhos e "
                     "investimentos (reserve=true). anchor = ponto de partida do cálculo (saldo informado, extrato "
                     "ou saldo inicial). Conta com anchor null não tem saldo de partida: o valor é só a soma dos "
                     "lançamentos registrados; peça ao usuário o saldo atual dela para registrar. Caixinha sem saldo "
@@ -162,8 +165,8 @@ TOOLS = [
     Tool(
         name="spending_summary",
         description=(
-            "Total de gastos do período agrupado por categoria, método de pagamento, entidade ou "
-            "mês. Despesas pela data e parcelas pelo vencimento; estornos são descontados."
+            "Total de gastos do período agrupado por categoria, método de pagamento, entidade, "
+            "mês ou pessoa da família. Despesas pela data e parcelas pelo vencimento; estornos são descontados."
         ),
         input_model=SpendingSummaryInput,
         handler=spending_summary,

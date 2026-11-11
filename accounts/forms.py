@@ -5,8 +5,10 @@ from .models import BankAccount, PaymentMethod
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
-        fields = ["name", "bank", "type", "parent", "color", "opening_balance", "opening_balance_date", "active"]
+        fields = ["name", "bank", "type", "holder", "parent", "color", "opening_balance",
+                  "opening_balance_date", "active"]
         widgets = {
+            "holder": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "parent": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "opening_balance": forms.NumberInput(
                 attrs={"class": "input input-bordered w-full", "step": "0.01"}
@@ -53,6 +55,7 @@ class PaymentMethodForm(forms.ModelForm):
             "name",
             "type",
             "bank_account",
+            "holder",
             "billing_card",
             "credit_limit",
             "closing_day",
@@ -60,6 +63,7 @@ class PaymentMethodForm(forms.ModelForm):
             "active",
         ]
         widgets = {
+            "holder": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "billing_card": forms.Select(attrs={"class": "select select-bordered w-full"}),
             "name": forms.TextInput(
                 attrs={
@@ -144,6 +148,8 @@ def _limit_choices(form):
             qs = qs.exclude(pk=form.instance.pk)
         form.fields["parent"].queryset = qs
         form.fields["parent"].empty_label = "Nenhuma (conta comum)"
+    if "holder" in form.fields:
+        form.fields["holder"].empty_label = "Não informado"
     if "billing_card" in form.fields:
         qs = PaymentMethod.objects.filter(type="CREDIT", billing_card__isnull=True)
         if form.instance.pk:

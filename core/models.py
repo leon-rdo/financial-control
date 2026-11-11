@@ -94,3 +94,35 @@ class Entity(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class FamilyMember(models.Model):
+    """Pessoa da família. As finanças são conjuntas: isto serve para saber de quem
+    é cada conta/cartão, quem está falando com o bot e quando um Pix é apenas
+    dinheiro mudando de mãos dentro da família."""
+
+    name = models.CharField(_("name"), max_length=100, unique=True)
+    aliases = models.TextField(
+        _("names on documents"),
+        blank=True,
+        help_text=_("How this person's name appears on statements and invoices, one per line"),
+    )
+    telegram_chat_id = models.BigIntegerField(
+        _("Telegram chat id"), null=True, blank=True, unique=True,
+        help_text=_("Chat this person uses to talk to the bot"),
+    )
+    active = models.BooleanField(_("active"), default=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("family member")
+        verbose_name_plural = _("family members")
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def alias_list(self):
+        return [a.strip() for a in self.aliases.splitlines() if a.strip()]
