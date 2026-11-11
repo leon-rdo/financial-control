@@ -173,6 +173,13 @@ class EvidenceTests(TestCase):
         self.assertEqual(self.check(source_text="01-10-2026 Pix enviado Fulano 181842759688 R$ -10,00 R$ 445,20"), [])
         self.assertEqual(self.check(), [])  # sem source_text não há o que conferir
 
+    def test_full_dates_are_not_read_as_installments(self):
+        # data completa no fim da linha (extrato do 99Pay): "06/11/2026" não é a parcela 6/11
+        self.assertEqual(self.check(amount="3.44", source_text="20261106001400101601000032485555 -3,44 06/11/2026 08:16:12"), [])
+        self.assertEqual(self.check(source_text="Pix enviado -10,00 06-11-2026 08:16:12"), [])
+        # a parcela de verdade continua sendo vista ao lado de uma data completa
+        self.assertIn("parcela 3/8", self.check(source_text="LOJA 03/08 10,00 24/08/2026")[0])
+
     def test_mismatches_are_reported(self):
         self.assertIn("parcela 3/8", self.check(source_text="24/08 MILHAS*Comp 03/08 BARUERI 10,00")[0])
         self.assertIn("sinal de crédito", self.check(source_text="14/10 LOJA Belem 10,00 -")[0])

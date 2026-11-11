@@ -166,6 +166,7 @@ def _diagnose(message, text=""):
 
 
 _LEADING_DATE = re.compile(r"^\s*\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\s*")
+_FULL_DATE = re.compile(r"(?<!\d)\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}(?!\d)")  # data em qualquer ponto: não é parcela
 _INSTALLMENT = re.compile(r"(?<!\d)(\d{1,2})\s*/\s*(\d{1,2})(?!\d)")
 _MONEY = re.compile(r"\d{1,3}(?:\.\d{3})*,\d{2}")
 
@@ -179,7 +180,7 @@ def evidence_problems(entries, limit=5):
         src = (entry.source_text or "").strip()
         if not src:
             continue
-        body = _LEADING_DATE.sub("", src)
+        body = _FULL_DATE.sub(" ", _LEADING_DATE.sub("", src))
         installments = [(int(k), int(n)) for k, n in _INSTALLMENT.findall(body)
                         if 1 <= int(k) <= int(n) and int(n) >= 2]
         if installments and entry.kind == "EXPENSE":
