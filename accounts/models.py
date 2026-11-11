@@ -29,6 +29,28 @@ class BankAccount(models.Model):
         blank=True,
         help_text=_("Hex color code (e.g., #FF5733)"),
     )
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="children",
+        verbose_name=_("parent account"),
+        null=True,
+        blank=True,
+        help_text=_("Fill in for a savings pot (caixinha/cofrinho) that lives inside another account"),
+    )
+    opening_balance = models.DecimalField(
+        _("opening balance"),
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        help_text=_("Balance at the end of the opening balance date"),
+    )
+    opening_balance_date = models.DateField(
+        _("opening balance date"),
+        null=True,
+        blank=True,
+        help_text=_("Only movements after this date change the balance. Blank: all movements count."),
+    )
     active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(_("created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("updated at"), auto_now=True)
@@ -42,7 +64,20 @@ class BankAccount(models.Model):
         ]
 
     def __str__(self):
+        if self.parent_id:
+            return f"{self.parent.name} › {self.name}"
         return f"{self.name} - {self.bank}"
+
+    @property
+    def is_reserve(self):
+        """Dinheiro guardado (caixinha/cofrinho/investimento), fora do saldo do dia a dia."""
+        return bool(self.parent_id) or self.type == self.TypeChoices.INVESTMENT
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.parent_id and (self.parent_id == self.pk or self.parent.parent_id):
+            raise ValidationError({"parent": _("A pot must belong to a regular account (one level only)")})
 
 
 class PaymentMethod(models.Model):
@@ -70,6 +105,17 @@ class PaymentMethod(models.Model):
         null=True,
         blank=True,
         help_text=_("Associated bank account (for debit/PIX)"),
+    )
+
+    billing_card = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="billed_cards",
+        verbose_name=_("billed with"),
+        null=True,
+        blank=True,
+        help_text=_("Additional/virtual card billed on another card's invoice. "
+                    "Closing and due days come from that card."),
     )
 
     # Credit card specific fields
@@ -112,8 +158,19 @@ class PaymentMethod(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_type_display()})"
 
+    @property
+    def invoice_card(self):
+        """Cartão em cuja fatura este cartão é cobrado (ele mesmo, se for o principal)."""
+        return self.billing_card if self.billing_card_id else self
+
     def clean(self):
         from django.core.exceptions import ValidationError
+
+        if self.billing_card_id:
+            if self.billing_card_id == self.pk or self.billing_card.billing_card_id:
+                raise ValidationError({"billing_card": _("Choose the main card of the invoice")})
+            if self.type != self.TypeChoices.CREDIT or self.billing_card.type != self.TypeChoices.CREDIT:
+                raise ValidationError({"billing_card": _("Only credit cards can share an invoice")})
 
         # Validate credit card fields
         if self.type == self.TypeChoices.CREDIT:
@@ -125,3 +182,39 @@ class PaymentMethod(models.Model):
                 raise ValidationError(
                     {"due_day": _("Due day must be between 1 and 31")}
                 )
+
+
+class BalanceSnapshot(models.Model):
+    """Saldo conhecido de uma conta no fim de um dia (de extrato ou informado).
+
+    O saldo atual é calculado a partir do snapshot mais recente + movimentos
+    posteriores (ver financial.forecast.account_balances)."""
+
+    class SourceChoices(models.TextChoices):
+        MANUAL = "MANUAL", _("Manual")
+        STATEMENT = "STATEMENT", _("Statement")
+        ASSISTANT = "ASSISTANT", _("Assistant")
+
+    account = models.ForeignKey(
+        BankAccount,
+        on_delete=models.CASCADE,
+        related_name="balance_snapshots",
+        verbose_name=_("bank account"),
+    )
+    date = models.DateField(_("date"))
+    balance = models.DecimalField(_("balance"), max_digits=12, decimal_places=2)
+    source = models.CharField(
+        _("source"), max_length=10, choices=SourceChoices.choices, default=SourceChoices.MANUAL
+    )
+    notes = models.CharField(_("notes"), max_length=200, blank=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("balance snapshot")
+        verbose_name_plural = _("balance snapshots")
+        ordering = ["-date"]
+        unique_together = [["account", "date"]]
+
+    def __str__(self):
+        return f"{self.account.name} {self.date:%d/%m/%Y}: {self.balance}"

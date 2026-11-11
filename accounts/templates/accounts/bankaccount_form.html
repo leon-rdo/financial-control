@@ -86,6 +86,33 @@
           {% endif %}
         </div>
 
+        <!-- Caixinha de outra conta -->
+        <div class="form-control">
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Caixinha / cofrinho da conta</label>
+          {{ form.parent }}
+          <p class="text-[11px] text-base-content/40 mt-1">Preencha se este é um dinheiro guardado dentro de outra conta. Ele fica fora do saldo disponível.</p>
+          {% if form.parent.errors %}
+          <p class="text-xs text-error mt-1">{{ form.parent.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Saldo inicial -->
+        <div class="form-control">
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Saldo inicial (R$)</label>
+          {{ form.opening_balance }}
+          {% if form.opening_balance.errors %}
+          <p class="text-xs text-error mt-1">{{ form.opening_balance.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div class="form-control">
+          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Data do saldo inicial</label>
+          {{ form.opening_balance_date }}
+          <p class="text-[11px] text-base-content/40 mt-1">Só lançamentos depois desta data alteram o saldo. Em branco: todos contam.</p>
+          {% if form.opening_balance_date.errors %}
+          <p class="text-xs text-error mt-1">{{ form.opening_balance_date.errors.0 }}</p>
+          {% endif %}
+        </div>
+
         <!-- Active -->
         <div class="form-control">
           <label class="flex items-center gap-3 cursor-pointer">

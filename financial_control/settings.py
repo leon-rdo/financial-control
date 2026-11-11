@@ -28,8 +28,24 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
+if not DEBUG:
+    # Atrás do nginx com HTTPS
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Cache compartilhado entre processos (django-select2 precisa); padrão: memória local
+if os.environ.get('CACHE_DIR'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+            'LOCATION': os.environ['CACHE_DIR'],
+        }
+    }
 
 # Application definition
 
@@ -53,6 +69,7 @@ INSTALLED_APPS = [
     'accounts',
     'financial',
     'telegram_bot',
+    'assistant',
 ]
 
 # TAILWIND_APP_NAME = 'theme'
@@ -64,6 +81,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.HTMXMiddleware',
@@ -95,22 +113,40 @@ WSGI_APPLICATION = 'financial_control.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'sqlite': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    'mysql': {
+DB_USED = os.environ.get('DB_USED', 'sqlite')  # sqlite | mysql | postgres
+
+if DB_USED == 'mysql':
+    _default_db = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.environ.get('DB_DATABASE'),
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT')
+        'PORT': os.environ.get('DB_PORT'),
     }
-}
+elif DB_USED == 'postgres':
+    _default_db = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_DATABASE'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 60,
+    }
+else:
+    _default_db = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+        # WAL + IMMEDIATE: webhook e worker do Telegram gravam ao mesmo tempo
+        'OPTIONS': {
+            'timeout': 20,
+            'transaction_mode': 'IMMEDIATE',
+            'init_command': 'PRAGMA journal_mode=WAL;',
+        },
+    }
 
-DATABASES['default'] = DATABASES[os.environ.get('DB_USED', 'sqlite')]
+DATABASES = {'default': _default_db}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -131,8 +167,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Login/Logout URLs
-LOGIN_URL = 'accounts:login'
-LOGOUT_REDIRECT_URL = 'accounts:logout'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'financial:dashboard'
+LOGOUT_REDIRECT_URL = 'login'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -177,3 +214,41 @@ TELEGRAM_ALLOWED_CHAT_IDS = os.environ.get('TELEGRAM_ALLOWED_CHAT_IDS', '')
 
 # OpenAI
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o')
+
+# Assistente de IA (app `assistant`)
+AI_PROVIDER = os.environ.get('AI_PROVIDER', 'anthropic')  # anthropic | openai
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-opus-5-5')
+ANTHROPIC_EFFORT = os.environ.get('ANTHROPIC_EFFORT', 'medium')  # low | medium | high | xhigh | max
+# Leitura de documentos (PDF, CSV, OFX) em chamada única, por um modelo mais barato:
+#   batch  = API de batches (metade do preço, resposta em minutos)
+#   direct = a mesma chamada, na hora
+#   agent  = agente interativo com o modelo principal (como antes)
+ASSISTANT_DOCUMENT_MODE = os.environ.get('ASSISTANT_DOCUMENT_MODE', 'batch')
+ANTHROPIC_EXTRACTION_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_MODEL', 'claude-haiku-5-5')
+ANTHROPIC_EXTRACTION_EFFORT = os.environ.get('ANTHROPIC_EXTRACTION_EFFORT', '')  # vazio = padrão do modelo
+# Usado quando a extração barata falha nas conferências duas vezes (vazio = ir direto ao agente)
+ANTHROPIC_EXTRACTION_FALLBACK_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_FALLBACK_MODEL', 'claude-sonnet-5-5')
+ASSISTANT_IDLE_HOURS = int(os.environ.get('ASSISTANT_IDLE_HOURS', '6'))
+ASSISTANT_MAX_STEPS = int(os.environ.get('ASSISTANT_MAX_STEPS', '15'))
+# Senhas tentadas automaticamente em PDFs protegidos (ex.: primeiros dígitos do CPF)
+PDF_PASSWORDS = [x.strip() for x in os.environ.get('PDF_PASSWORDS', '').split(',') if x.strip()]
+# Arquivos recebidos pelo bot ficam fora de MEDIA_ROOT (não são servidos pela web)
+ASSISTANT_STORAGE_DIR = Path(os.environ.get('ASSISTANT_STORAGE_DIR', BASE_DIR / 'private' / 'assistant'))
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {'format': '{asctime} {levelname} {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'simple'},
+    },
+    'root': {'handlers': ['console'], 'level': 'WARNING'},
+    'loggers': {
+        'assistant': {'level': os.environ.get('ASSISTANT_LOG_LEVEL', 'INFO')},
+        'telegram_bot': {'level': os.environ.get('ASSISTANT_LOG_LEVEL', 'INFO')},
+    },
+}

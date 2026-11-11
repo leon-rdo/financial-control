@@ -6,7 +6,7 @@
 <div class="space-y-5" x-data="bulkInstallments()">
     <div>
         <h1 class="text-xl font-semibold">Previsão de Faturas</h1>
-        <p class="text-sm text-base-content/40 mt-0.5">Parcelas futuras agrupadas por mês e método de pagamento</p>
+        <p class="text-sm text-base-content/40 mt-0.5">Parcelas, compras à vista no crédito e recorrências no cartão, por mês de vencimento</p>
     </div>
 
     <div class="bg-base-100 rounded-xl border border-base-300/40 p-4">
@@ -42,23 +42,28 @@
     </div>
 
     <div class="space-y-4">
-        {% for month_key, month_data in months_data.items %}
+        {% for month_data in months_data %}
         <div class="bg-base-100 rounded-xl border border-base-300/40">
             <div class="flex justify-between items-center px-5 py-3.5 border-b border-base-300/30">
                 <h2 class="text-sm font-semibold">{{ month_data.month_name }} {{ month_data.year|stringformat:"d" }}</h2>
                 <span class="text-sm font-semibold tabular-nums text-error">R$ {{ month_data.total|floatformat:2 }}</span>
             </div>
 
-            {% for pm_id, pm_data in month_data.methods.items %}
+            {% for pm_data in month_data.methods %}
             <div x-data="{ open: false }">
                 <div @click="open = !open" class="flex justify-between items-center px-5 py-2.5 cursor-pointer hover:bg-base-200/30 transition-colors {% if not forloop.last %}border-b border-base-300/20{% endif %}">
                     <div class="flex items-center gap-2">
                         <svg class="w-3 h-3 transition-transform duration-150" :class="open ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-                        <span class="text-sm font-medium">{{ pm_data.payment_method.name }}</span>
-                        <span class="text-[11px] text-base-content/30">{{ pm_data.installments|length }} parcela{{ pm_data.installments|length|pluralize:"s" }}</span>
+                        <span class="text-sm font-medium">{{ pm_data.payment_method }}</span>
+                        <span class="text-[11px] text-base-content/30">{{ pm_data.count }} lançamento{{ pm_data.count|pluralize:"s" }}</span>
                     </div>
                     <span class="text-sm font-semibold tabular-nums">R$ {{ pm_data.total|floatformat:2 }}</span>
                 </div>
+                {% if pm_data.cards %}
+                <div class="px-5 pb-2 -mt-1 text-[11px] text-base-content/40">
+                    {% for c in pm_data.cards %}{{ c.card }}: R$ {{ c.total|floatformat:2 }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                </div>
+                {% endif %}
 
                 <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
                     <div class="overflow-x-auto border-t border-base-300/20">
@@ -74,27 +79,37 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for inst in pm_data.installments %}
+                                {% for item in pm_data.items %}
                                 <tr class="hover:bg-base-200/30">
                                     <td @click.stop>
-                                        <input type="checkbox" value="{{ inst.pk }}" x-model="selected" class="checkbox checkbox-xs">
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'financial:purchase_detail' inst.purchase.pk %}" class="text-sm font-medium hover:underline">{{ inst.purchase.description }}</a>
-                                        {% if inst.purchase.entity %}
-                                        <div class="text-[11px] text-base-content/30">{{ inst.purchase.entity.name }}</div>
+                                        {% if item.kind == "installment" %}
+                                        <input type="checkbox" value="{{ item.installment_id }}" x-model="selected" class="checkbox checkbox-xs">
                                         {% endif %}
                                     </td>
-                                    <td><span class="text-sm tabular-nums text-base-content/60">{{ inst.installment_number }}/{{ inst.purchase.number_of_installments }}</span></td>
-                                    <td><span class="text-sm text-base-content/60">{{ inst.due_date|date:"d/m/Y" }}</span></td>
                                     <td>
-                                        {% if inst.purchase.category.color %}
-                                        <span class="text-xs px-2 py-0.5 rounded" style="background-color: {{ inst.purchase.category.color }}20; color: {{ inst.purchase.category.color }}">{{ inst.purchase.category.name }}</span>
+                                        {% if item.kind == "installment" %}
+                                        <a href="{% url 'financial:purchase_detail' item.purchase_id %}" class="text-sm font-medium hover:underline">{{ item.description }}</a>
                                         {% else %}
-                                        <span class="text-xs px-2 py-0.5 rounded bg-base-content/5 text-base-content/60">{{ inst.purchase.category.name }}</span>
+                                        <span class="text-sm font-medium">{{ item.description }}</span>
+                                        {% endif %}
+                                        {% if item.entity or pm_data.cards %}
+                                        <div class="text-[11px] text-base-content/30">{% if pm_data.cards %}{{ item.card }}{% if item.entity %} · {% endif %}{% endif %}{{ item.entity|default:"" }}</div>
                                         {% endif %}
                                     </td>
-                                    <td class="text-right"><span class="text-sm font-semibold tabular-nums">R$ {{ inst.amount|floatformat:2 }}</span></td>
+                                    <td>
+                                        <span class="text-sm tabular-nums text-base-content/60">
+                                            {% if item.kind == "installment" %}{{ item.installment }}{% elif item.kind == "recurrence" %}recorrência{% elif item.kind == "refund" %}estorno{% else %}à vista{% endif %}
+                                        </span>
+                                    </td>
+                                    <td><span class="text-sm text-base-content/60">{{ item.due_date|date:"d/m/Y" }}</span></td>
+                                    <td>
+                                        {% if item.category_color %}
+                                        <span class="text-xs px-2 py-0.5 rounded" style="background-color: {{ item.category_color }}20; color: {{ item.category_color }}">{{ item.category }}</span>
+                                        {% else %}
+                                        <span class="text-xs px-2 py-0.5 rounded bg-base-content/5 text-base-content/60">{{ item.category }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right"><span class="text-sm font-semibold tabular-nums">R$ {{ item.amount|floatformat:2 }}</span></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -107,7 +122,7 @@
         {% empty %}
         <div class="bg-base-100 rounded-xl border border-base-300/40 text-center py-12">
             <svg class="w-10 h-10 mx-auto text-base-content/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="text-sm text-base-content/30 mt-2">Nenhuma parcela pendente encontrada</p>
+            <p class="text-sm text-base-content/30 mt-2">Nenhuma fatura pendente encontrada</p>
         </div>
         {% endfor %}
     </div>

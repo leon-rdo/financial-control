@@ -18,6 +18,7 @@ from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
 from django_filters.views import FilterView
 
+from financial import forecast
 from financial.models import Recurrence, Transaction, Purchase, Installment
 from financial.forms import RecurrenceForm, TransactionForm, PurchaseForm
 from financial.filters import RecurrenceFilter, TransactionFilter, PurchaseFilter
@@ -52,16 +53,10 @@ class DashboardView(TemplateView):
         # Balanço do mês
         balance_month = income_month - expense_month
 
-        # Saldo total (todas as transações confirmadas)
-        total_income = Transaction.objects.filter(
-            type="INCOME", confirmed=True
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-
-        total_expense = Transaction.objects.filter(
-            type="EXPENSE", confirmed=True
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
-
-        total_balance = total_income - total_expense
+        # Saldo total: soma dos saldos das contas (último saldo conhecido +
+        # movimentos posteriores; gastos no cartão só saem no pagamento da fatura)
+        balances = forecast.account_balances(today)
+        total_balance = balances["available"]  # caixinhas/investimentos aparecem à parte
 
         # Transações recentes (últimas 5)
         recent_transactions = Transaction.objects.select_related(
@@ -102,6 +97,8 @@ class DashboardView(TemplateView):
             {
                 # Valores principais
                 "total_balance": total_balance,
+                "reserved_balance": balances["reserved"],
+                "account_balances": balances["accounts"],
                 "income_month": income_month,
                 "expense_month": expense_month,
                 "balance_month": balance_month,
@@ -502,69 +499,32 @@ class InvoiceForecastView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        qs = Installment.objects.filter(paid=False).select_related(
-            "purchase__payment_method",
-            "purchase__category",
-            "purchase__entity",
-        )
-
-        payment_method_ids = self.request.GET.getlist("payment_method")
-        payment_method_ids = [pid for pid in payment_method_ids if pid]
-        if payment_method_ids:
-            qs = qs.filter(purchase__payment_method_id__in=payment_method_ids)
-
+        payment_method_ids = [pid for pid in self.request.GET.getlist("payment_method") if pid]
         month_from = self.request.GET.get("month_from")
-        if month_from:
-            year, month = map(int, month_from.split("-"))
-            qs = qs.filter(
-                Q(reference_year__gt=year)
-                | Q(reference_year=year, reference_month__gte=month)
-            )
-
         month_to = self.request.GET.get("month_to")
+
+        today = timezone.now().date()
+        current = (today.year, today.month)
+        unpaid = Installment.objects.filter(paid=False).order_by("reference_year", "reference_month")
+        first = unpaid.values_list("reference_year", "reference_month").first()
+        last = unpaid.values_list("reference_year", "reference_month").last()
+
+        if month_from:
+            range_from = tuple(map(int, month_from.split("-")))
+        else:
+            # Inclui parcelas vencidas e não pagas de meses anteriores
+            range_from = min(first, current) if first else current
         if month_to:
-            year, month = map(int, month_to.split("-"))
-            qs = qs.filter(
-                Q(reference_year__lt=year)
-                | Q(reference_year=year, reference_month__lte=month)
-            )
+            range_to = tuple(map(int, month_to.split("-")))
+        else:
+            range_to = max(last, forecast.add_months(*current, 2)) if last else forecast.add_months(*current, 2)
 
-        qs = qs.order_by(
-            "reference_year",
-            "reference_month",
-            "purchase__payment_method__name",
-            "due_date",
+        months_data = forecast.invoice_forecast(
+            range_from, range_to, payment_method_ids or None, include_items=True, today=today
         )
-
-        months_data = OrderedDict()
-        grand_total = Decimal("0")
-
-        for inst in qs:
-            key = (inst.reference_year, inst.reference_month)
-            pm = inst.purchase.payment_method
-
-            if key not in months_data:
-                months_data[key] = {
-                    "month_name": MONTH_NAMES[key[1]],
-                    "year": key[0],
-                    "methods": OrderedDict(),
-                    "total": Decimal("0"),
-                }
-
-            if pm.id not in months_data[key]["methods"]:
-                months_data[key]["methods"][pm.id] = {
-                    "payment_method": pm,
-                    "installments": [],
-                    "total": Decimal("0"),
-                }
-
-            months_data[key]["methods"][pm.id]["installments"].append(inst)
-            months_data[key]["methods"][pm.id]["total"] += inst.amount
-            months_data[key]["total"] += inst.amount
-            grand_total += inst.amount
 
         context["months_data"] = months_data
-        context["grand_total"] = grand_total
+        context["grand_total"] = sum((m["total"] for m in months_data), Decimal("0"))
         context["payment_methods"] = PaymentMethod.objects.filter(active=True)
         context["selected_payment_methods"] = payment_method_ids
         context["selected_month_from"] = month_from or ""
@@ -717,6 +677,22 @@ class MonthlyReportView(TemplateView):
                 expense_categories[cat_name]["months"][mk] = total
                 if mk in expense_totals:
                     expense_totals[mk] += total
+
+        # Parcelas de compras parceladas entram como despesa no mês do vencimento
+        inst_qs = (
+            Installment.objects.filter(due_date__gte=start_date, due_date__lte=end_date)
+            .values("due_date__year", "due_date__month", "purchase__category__name", "purchase__category__color")
+            .annotate(total=Sum("amount"))
+        )
+        for row in inst_qs:
+            mk = f"{row['due_date__year']}-{row['due_date__month']:02d}"
+            cat_name = row["purchase__category__name"]
+            cat = expense_categories.setdefault(
+                cat_name, {"color": row["purchase__category__color"] or "", "months": {}}
+            )
+            cat["months"][mk] = cat["months"].get(mk, Decimal("0")) + row["total"]
+            if mk in expense_totals:
+                expense_totals[mk] += row["total"]
 
         balance_totals = {
             mk: income_totals[mk] - expense_totals[mk] for mk in month_keys

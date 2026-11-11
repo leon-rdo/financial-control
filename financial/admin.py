@@ -499,3 +499,15 @@ class InstallmentAdmin(admin.ModelAdmin):
     def mark_as_unpaid(self, request, queryset):
         updated = queryset.update(paid=False)
         self.message_user(request, _("{} installments marked as unpaid.").format(updated))
+
+
+from .models import Transfer  # noqa: E402
+
+
+@admin.register(Transfer)
+class TransferAdmin(admin.ModelAdmin):
+    list_display = ["date", "amount", "description", "from_account", "to_account", "to_card",
+                    "invoice_month", "invoice_year"]
+    list_filter = ["from_account", "to_card"]
+    search_fields = ["description"]
+    date_hierarchy = "date"
