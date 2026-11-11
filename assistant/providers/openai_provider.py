@@ -26,6 +26,8 @@ FINISH_REASONS = {"stop": "end_turn", "tool_calls": "tool_use", "function_call":
                   "length": "max_tokens", "content_filter": "refusal"}
 
 
+FILE_TTL_SECONDS = 7 * 24 * 3600  # arquivos enviados à OpenAI expiram em 7 dias
+
 class OpenAIProvider:
     name = "openai"
 
@@ -66,8 +68,11 @@ class OpenAIProvider:
             return attachment.provider_file_id
         data = Path(attachment.storage_path).read_bytes()
         try:
+            # Expira sozinho: a conversa que usa o arquivo dura horas, e sem isso ele ficaria
+            # guardado na OpenAI para sempre (na Anthropic os arquivos também somem em dias).
             uploaded = self.client.files.create(
-                file=(attachment.filename, data, attachment.mime), purpose="user_data")
+                file=(attachment.filename, data, attachment.mime), purpose="user_data",
+                expires_after={"anchor": "created_at", "seconds": FILE_TTL_SECONDS})
         except openai.APIError as exc:
             raise ProviderError(f"Falha ao enviar arquivo para a OpenAI: {exc}") from exc
         attachment.provider = self.name

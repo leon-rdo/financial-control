@@ -68,6 +68,7 @@ class Entity(models.Model):
         SUPPLIER = "SUPPLIER", _("Supplier")
         EMPLOYER = "EMPLOYER", _("Employer")
         CLIENT = "CLIENT", _("Client")
+        PERSON = "PERSON", _("Person")
         OTHER = "OTHER", _("Other")
 
     name = models.CharField(_("name"), max_length=200)

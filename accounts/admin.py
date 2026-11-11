@@ -79,7 +79,7 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     list_editable = ["active"]
     list_per_page = 50
     list_select_related = ["bank_account"]
-    autocomplete_fields = ["bank_account"]
+    autocomplete_fields = ["bank_account", "lent_to"]
 
     fieldsets = (
         (
@@ -89,7 +89,7 @@ class PaymentMethodAdmin(admin.ModelAdmin):
         (
             _("Credit Card Information"),
             {
-                "fields": ("holder", "billing_card", "credit_limit", "closing_day", "due_day"),
+                "fields": ("holder", "billing_card", "lent_to", "credit_limit", "closing_day", "due_day"),
                 "description": _("Fill these fields only for credit cards"),
                 "classes": ("collapse",),
             },

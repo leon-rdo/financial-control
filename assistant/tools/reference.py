@@ -5,6 +5,8 @@ from accounts.models import BankAccount, PaymentMethod
 from core.models import Category, Entity
 
 from .family import members_view
+from .rules import rules_view
+from .third_party import people_view
 from .registry import Tool, ToolInput
 
 
@@ -27,6 +29,10 @@ def get_reference_data(args, ctx):
     return {
         # Finanças conjuntas: quem é da família e quem está falando/enviou o documento
         "family_members": members_view(chat_id),
+        # Regras permanentes ditas pelo usuário: seguir sem perguntar de novo
+        "user_rules": rules_view(),
+        # Pessoas de fora da família que usam um cartão da família (cartão emprestado)
+        "third_parties": people_view(),
         "categories": list(Category.objects.filter(active=True).values("id", "name", "type")),
         "payment_methods": [
             {
@@ -36,10 +42,12 @@ def get_reference_data(args, ctx):
                 "holder": pm.effective_holder.name if pm.effective_holder else None,
                 # cartão adicional/virtual: cobrado na fatura deste outro cartão
                 "billed_on_invoice_of": pm.billing_card.name if pm.billing_card_id else None,
+                # cartão que fica com alguém de fora da família: as compras nele são dessa pessoa
+                "lent_to": pm.lent_to.name if pm.lent_to_id else None,
             }
             for pm in PaymentMethod.objects.filter(active=True).select_related(
                 "holder", "bank_account__holder", "bank_account__parent__holder", "billing_card__holder",
-                "billing_card__bank_account__holder")
+                "billing_card__bank_account__holder", "lent_to")
         ],
         "bank_accounts": [
             {
@@ -58,7 +66,8 @@ TOOLS = [
     Tool(
         name="get_reference_data",
         description=(
-            "Lista as pessoas da família, categorias, métodos de pagamento (com tipo, dia de fechamento e vencimento "
+            "Lista as pessoas da família, as regras permanentes do usuário (user_rules), as pessoas de fora que "
+            "usam cartão da família (third_parties), categorias, métodos de pagamento (com tipo, dia de fechamento e vencimento "
             "dos cartões, e de qual fatura cada cartão adicional faz parte), contas bancárias com "
             "suas caixinhas e entidades cadastradas, com seus IDs. Chame antes de montar "
             "lançamentos ou filtrar consultas; nunca invente IDs."

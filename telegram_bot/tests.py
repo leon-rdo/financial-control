@@ -1,4 +1,6 @@
 import json
+from datetime import date
+from decimal import Decimal
 from unittest import mock
 
 from django.test import TestCase, override_settings
@@ -256,3 +258,89 @@ class DocumentRoutingTests(TestCase):
             bot.process_chat_updates(CHAT, self.document())
         self.assertEqual(ExtractionJob.objects.count(), 0)
         self.assertIn("Li o arquivo.", self.texts())
+
+
+@override_settings(TELEGRAM_ALLOWED_CHAT_IDS="111")
+class CommandTests(TestCase):
+    """Comandos sem IA e o teto de gasto."""
+
+    def setUp(self):
+        self.sent = []
+
+        def fake_call(method, payload=None, timeout=15):
+            self.sent.append((method, payload))
+            return {"ok": True, "result": {"message_id": 1}}
+
+        patcher = mock.patch("telegram_bot.client.call", side_effect=fake_call)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def texts(self):
+        return [p.get("text", "") for m, p in self.sent if m == "sendMessage"]
+
+    def message(self, text):
+        return [{"update_id": 1, "message": {"message_id": 1, "chat": {"id": CHAT}, "text": text}}]
+
+    def test_terceiros_lists_who_owes(self):
+        from core.models import Category, Entity
+
+        bot.process_chat_updates(CHAT, self.message("/terceiros"))
+        self.assertIn("Nenhuma compra de terceiros", self.texts()[-1])
+
+        joao = Entity.objects.create(name="João", type="PERSON")
+        pix = PaymentMethod.objects.create(name="Pix", type="PIX")
+        cat = Category.objects.create(name="Outros", type="BOTH")
+        for kind, amount in (("EXPENSE", "300"), ("INCOME", "120")):
+            Transaction.objects.create(type=kind, description="x", amount=Decimal(amount), date=date(2026, 1, 5),
+                                       category=cat, payment_method=pix, confirmed=True, on_behalf_of=joao)
+        bot.process_chat_updates(CHAT, self.message("/terceiros"))
+        self.assertIn("João: deve R$ 180,00", self.texts()[-1])
+        self.assertIn("devolveu R$ 120,00", self.texts()[-1])
+
+    def test_custo_reports_month_spend(self):
+        bot.process_chat_updates(CHAT, self.message("/custo"))
+        self.assertIn("Gasto com IA", self.texts()[-1])
+        self.assertIn("US$ 0.00", self.texts()[-1])
+
+    @override_settings(AI_MONTHLY_LIMIT_USD=Decimal("0.01"), AI_MONTHLY_BUDGET_USD=Decimal("0"))
+    def test_over_limit_stops_ai_calls_but_not_commands(self):
+        from django.utils import timezone
+
+        from assistant.models import ChatMessage, Conversation
+
+        conv = Conversation.objects.create(chat_id=CHAT, provider="anthropic", model="claude-opus-5-5",
+                                           prompt_hash="x", last_activity_at=timezone.now(), closed_at=timezone.now())
+        ChatMessage.objects.create(conversation=conv, role="assistant", native_content={}, model="claude-opus-5-5",
+                                   usage={"input_tokens": 10_000, "output_tokens": 1000})
+        provider = mock.Mock()
+        with mock.patch("telegram_bot.bot.get_provider", return_value=provider), \
+                mock.patch("assistant.agent.run_turn") as run_turn:
+            bot.process_chat_updates(CHAT, self.message("quanto gastei este mês?"))
+            run_turn.assert_not_called()
+            self.assertIn("teto de gasto com IA", self.texts()[-1])
+            bot.process_chat_updates(CHAT, self.message("/custo"))
+            self.assertIn("Gasto com IA", self.texts()[-1])
+
+    def test_old_bot_button_is_answered(self):
+        bot.handle_callback({"id": "cb", "data": "confirm:12", "message": {"message_id": 5, "chat": {"id": CHAT}}})
+        method, payload = self.sent[-1]
+        self.assertEqual(method, "answerCallbackQuery")
+        self.assertIn("versão antiga", payload["text"])
+
+
+class ThirdPartyDigestTests(TestCase):
+    def test_invoice_reminder_says_how_much_belongs_to_others(self):
+        from core.models import Category, Entity
+        from telegram_bot import digests
+
+        card = PaymentMethod.objects.create(name="Nubank", type="CREDIT", closing_day=6, due_day=13)
+        cat = Category.objects.create(name="Outros", type="BOTH")
+        joao = Entity.objects.create(name="João", type="PERSON")
+        for amount, person in (("400", None), ("100", joao)):
+            Transaction.objects.create(type="EXPENSE", description="x", amount=Decimal(amount), date=date(2026, 11, 1),
+                                       category=cat, payment_method=card, confirmed=True, on_behalf_of=person,
+                                       invoice_month=date(2026, 11, 1))
+        texts = [d.text for d in digests.invoice_due_digests(date(2026, 11, 11))]
+        self.assertEqual(len(texts), 1)
+        self.assertIn("R$ 500,00", texts[0])
+        self.assertIn("é de terceiros: João R$ 100,00", texts[0])

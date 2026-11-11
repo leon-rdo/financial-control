@@ -75,7 +75,7 @@ class TransactionAdmin(admin.ModelAdmin):
     list_per_page = 50
     list_select_related = ["category", "entity", "payment_method", "recurrence", "purchase"]
     inlines = [TransactionTagInline]
-    autocomplete_fields = ["category", "entity", "payment_method", "recurrence", "purchase"]
+    autocomplete_fields = ["category", "entity", "payment_method", "recurrence", "purchase", "on_behalf_of"]
 
     fieldsets = (
         (
@@ -84,7 +84,7 @@ class TransactionAdmin(admin.ModelAdmin):
         ),
         (
             _("Categorization"),
-            {"fields": ("category", "entity", "payment_method")},
+            {"fields": ("category", "entity", "payment_method", "on_behalf_of")},
         ),
         (
             _("Links"),
@@ -312,7 +312,7 @@ class PurchaseAdmin(admin.ModelAdmin):
     list_per_page = 50
     list_select_related = ["category", "entity", "payment_method"]
     inlines = [InstallmentInline]
-    autocomplete_fields = ["category", "entity", "payment_method"]
+    autocomplete_fields = ["category", "entity", "payment_method", "on_behalf_of"]
 
     fieldsets = (
         (
@@ -326,7 +326,7 @@ class PurchaseAdmin(admin.ModelAdmin):
                 )
             },
         ),
-        (_("Categorization"), {"fields": ("category", "entity", "payment_method")}),
+        (_("Categorization"), {"fields": ("category", "entity", "payment_method", "on_behalf_of")}),
         (
             _("Payment Status"),
             {

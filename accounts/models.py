@@ -142,6 +142,16 @@ class PaymentMethod(models.Model):
         help_text=_("Additional/virtual card billed on another card's invoice. "
                     "Closing and due days come from that card."),
     )
+    lent_to = models.ForeignKey(
+        "core.Entity",
+        on_delete=models.PROTECT,
+        related_name="lent_cards",
+        verbose_name=_("lent to"),
+        null=True,
+        blank=True,
+        help_text=_("Someone outside the family who uses this card. Purchases imported on it are "
+                    "attributed to that person by default."),
+    )
 
     # Credit card specific fields
     credit_limit = models.DecimalField(

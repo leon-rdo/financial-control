@@ -41,13 +41,18 @@ def invoice_due_digests(today):
             due = _due_date(pm, bucket["year"], bucket["month"])
             days = (due - today).days
             base = f"invoice:{pm.pk}:{bucket['year']}-{bucket['month']:02d}"
+            # Parte da fatura que é de terceiros (cartão emprestado): boa hora de cobrar
+            others = ""
+            if method.get("third_party"):
+                people = ", ".join(f"{p['person']} {brl(p['total'])}" for p in method["third_party"])
+                others = f"\n👥 Desse total, é de terceiros: {people}."
             if days == 0:
                 digests.append(Digest(f"{base}:today",
-                                      f"💳 A fatura do {pm.name} vence hoje ({due:%d/%m}): {brl(method['total'])}."))
+                                      f"💳 A fatura do {pm.name} vence hoje ({due:%d/%m}): {brl(method['total'])}.{others}"))
             elif 0 < days <= INVOICE_SOON_DAYS:
                 when = "amanhã" if days == 1 else f"em {days} dias"
                 digests.append(Digest(f"{base}:soon",
-                                      f"💳 A fatura do {pm.name} vence {when} ({due:%d/%m}): {brl(method['total'])}."))
+                                      f"💳 A fatura do {pm.name} vence {when} ({due:%d/%m}): {brl(method['total'])}.{others}"))
     return digests
 
 
@@ -102,6 +107,13 @@ def monthly_summary_digests(today):
         lines.append(f"Faturas que vencem em {forecast.MONTH_NAMES[today.month].lower()}: {brl(invoices[0]['total'])}")
         for method in invoices[0]["methods"]:
             lines.append(f"• {method['payment_method']}: {brl(method['total'])}")
+    owed = forecast.third_party_balances(today=today)
+    debtors = [p for p in owed["people"] if p["balance"] > 0]
+    if debtors:
+        lines.append("")
+        lines.append(f"👥 A receber de terceiros (cartão emprestado): {brl(owed['total_due'])}")
+        for person in debtors:
+            lines.append(f"• {person['person']}: {brl(person['balance'])}")
     return [Digest(f"monthly:{py}-{pm:02d}", "\n".join(lines))]
 
 

@@ -36,9 +36,10 @@ class DashboardView(TemplateView):
         today = timezone.now().date()
         first_day_month = today.replace(day=1)
 
-        # Transações do mês atual
+        # Transações do mês atual. Compras de terceiros no cartão emprestado e as
+        # devoluções delas (on_behalf_of) não são gasto nem receita da família.
         transactions_month = Transaction.objects.filter(
-            date__gte=first_day_month, date__lte=today
+            date__gte=first_day_month, date__lte=today, on_behalf_of__isnull=True
         )
 
         # Receitas e Despesas do mês
@@ -649,7 +650,8 @@ class MonthlyReportView(TemplateView):
 
         # Query transactions grouped by month, category, type
         qs = (
-            Transaction.objects.filter(confirmed=True, date__gte=start_date, date__lte=end_date)
+            Transaction.objects.filter(confirmed=True, date__gte=start_date, date__lte=end_date,
+                                       on_behalf_of__isnull=True)  # terceiros ficam de fora
             .values("date__year", "date__month", "category__name", "category__color", "type")
             .annotate(total=Sum("amount"))
             .order_by("date__year", "date__month", "category__name")
@@ -681,7 +683,8 @@ class MonthlyReportView(TemplateView):
 
         # Parcelas de compras parceladas entram como despesa no mês do vencimento
         inst_qs = (
-            Installment.objects.filter(due_date__gte=start_date, due_date__lte=end_date)
+            Installment.objects.filter(due_date__gte=start_date, due_date__lte=end_date,
+                                       purchase__on_behalf_of__isnull=True)
             .values("due_date__year", "due_date__month", "purchase__category__name", "purchase__category__color")
             .annotate(total=Sum("amount"))
         )

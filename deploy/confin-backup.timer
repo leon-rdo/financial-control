@@ -1,0 +1,11 @@
+# /etc/systemd/system/confin-backup.timer
+
+[Unit]
+Description=Confin - backup diário (3h30 de Brasília)
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 America/Sao_Paulo
+Persistent=true
+
+[Install]
+WantedBy=timers.target
