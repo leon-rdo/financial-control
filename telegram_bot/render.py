@@ -3,7 +3,7 @@
 from decimal import Decimal
 from html import escape
 
-from accounts.models import BankAccount
+from accounts.models import BankAccount, PaymentMethod
 from assistant import batch_service
 from assistant.models import StagedEntry
 from financial.forecast import MONTH_NAMES
@@ -48,6 +48,11 @@ def batch_summary(batch):
     if batch.additional_new_cards:
         names = ", ".join(escape(c["name"]) for c in batch.additional_new_cards)
         lines.append(f"🆕 Outros cartões desta fatura a cadastrar: {names}")
+    if batch.link_cards:
+        names = ", ".join(escape(n) for n in PaymentMethod.objects.filter(pk__in=batch.link_cards)
+                          .values_list("name", flat=True))
+        main = batch.payment_method.name if batch.payment_method_id else "o cartão principal"
+        lines.append(f"🔗 Ao confirmar, ligo à fatura de {escape(main)}: {names}")
     pots = sorted({n for e in batch.entries.all() for n in (e.from_account_name, e.to_account_name) if n}
                   | {b["account_name"] for b in batch.other_balances or [] if b.get("account_name")})
     if pots:

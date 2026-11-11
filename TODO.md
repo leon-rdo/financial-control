@@ -12,6 +12,8 @@ Revisado em 11/11/2026. O guia de uso está em [docs/GUIA.md](docs/GUIA.md).
 - [x] Orçamento e teto mensal de gasto com IA, avisos por e-mail e comando `/custo`
 - [x] Fluxo antigo de comprovantes (`PendingTransaction`) e `import_csv` removidos
 - [x] Arquivos enviados à OpenAI passam a expirar sozinhos em 7 dias
+- [x] O bot liga cartões já cadastrados ao principal da fatura ("Cobrado na fatura de") a partir da fatura enviada, na confirmação do lote
+- [x] Fechamento real de cada fatura (`InvoiceClosing`) corrige o mês das compras em vez de depender só do dia cadastrado
 
 ## Retirado
 
@@ -25,7 +27,7 @@ Revisado em 11/11/2026. O guia de uso está em [docs/GUIA.md](docs/GUIA.md).
 
 ## Produto
 
-- [ ] Telas no site (sessão dedicada, ainda não começada): transferências, saldos informados, caixinhas, pessoas da família, compras de terceiros (campo "por conta de" nos formulários e quem deve quanto), regras do usuário e gasto com IA. Hoje tudo isso existe só no bot e no admin.
+- [ ] Telas no site (sessão dedicada, ainda não começada): fechamentos de fatura e cartões ligados, transferências, saldos informados, caixinhas, pessoas da família, compras de terceiros (campo "por conta de" nos formulários e quem deve quanto), regras do usuário e gasto com IA. Hoje tudo isso existe só no bot e no admin.
 - [ ] Dividir um item entre a família e outra pessoa
 - [ ] Sugerir recorrências a partir de cobranças que se repetem
 - [ ] Orçamento por categoria e metas para caixinhas

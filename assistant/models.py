@@ -131,6 +131,8 @@ class ImportBatch(models.Model):
     # Outros cartões da mesma fatura ainda não cadastrados: [{name}], criados na
     # confirmação como cartões cobrados na fatura do cartão principal do lote.
     additional_new_cards = models.JSONField(default=list, blank=True)
+    # Cartões JÁ cadastrados que a fatura mostra como adicionais do principal: ids a ligar na confirmação
+    link_cards = models.JSONField(default=list, blank=True)
 
     # Saldo informado (extrato ou chat): vira BalanceSnapshot na confirmação
     balance_account = models.ForeignKey(

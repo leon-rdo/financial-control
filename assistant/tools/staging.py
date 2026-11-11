@@ -67,6 +67,12 @@ class BatchMeta(ToolInput):
         description=("Fatura com vários cartões: os outros cartões ainda não cadastrados. São criados na "
                      "confirmação, cobrados na fatura do cartão principal do lote."),
     )
+    link_existing_card_ids: list[int] | None = Field(
+        default=None,
+        description=("Fatura com vários cartões: IDs de cartões JÁ cadastrados que são adicionais/virtuais do cartão "
+                     "principal desta fatura (billed_on_invoice_of vazio nos cadastros). São ligados ao principal "
+                     "('Cobrado na fatura de') quando o usuário confirmar o lote."),
+    )
     invoice_month: str | None = Field(default=None, description="Fatura: mês de VENCIMENTO, AAAA-MM.")
     invoice_total: str | None = Field(default=None, description="Fatura: valor total a pagar, ex.: 3250.10.")
     invoice_due_date: dt.date | None = Field(default=None, description="Fatura: data de vencimento.")
@@ -213,6 +219,28 @@ def _check_card(pk):
     return card
 
 
+def _check_linkable(pk, batch):
+    """Cartão já cadastrado que pode virar adicional do principal do lote. Devolve o cartão,
+    ou None se já está ligado a ele (nada a fazer)."""
+    card = _check_card(pk)
+    main = batch.payment_method
+    if main is None:
+        return card
+    if card.pk == main.pk:
+        raise ToolError(f"'{card.name}' é o cartão principal do lote; ligue só os outros cartões.")
+    if main.billing_card_id:
+        raise ToolError(f"'{main.name}' já é adicional de '{main.billing_card.name}': use o cartão principal "
+                        "como payment_method_id.")
+    if card.billed_cards.exists():
+        raise ToolError(f"Outros cartões já são cobrados na fatura de '{card.name}': ele é um cartão principal "
+                        "e não pode virar adicional.")
+    if card.billing_card_id == main.pk:
+        return None
+    if card.billing_card_id:
+        raise ToolError(f"'{card.name}' já é cobrado na fatura de '{card.billing_card.name}'.")
+    return card
+
+
 def _apply_meta(batch, meta):
     batch.kind = meta.kind
     if meta.title:
@@ -240,6 +268,9 @@ def _apply_meta(batch, meta):
             if not PaymentMethod.objects.filter(name__iexact=card.name.strip()).exists():
                 cards.append({"name": card.name.strip(), "holder_id": card.holder_id})
         batch.additional_new_cards = cards
+    if meta.link_existing_card_ids is not None:
+        batch.link_cards = sorted({card.pk for card in (_check_linkable(pk, batch)
+                                                        for pk in meta.link_existing_card_ids) if card})
     if meta.invoice_month:
         batch.invoice_year, batch.invoice_month = parse_month(meta.invoice_month)
     if meta.invoice_total:
@@ -277,6 +308,11 @@ def _apply_meta(batch, meta):
         raise ToolError("Saldo informado precisa de account_id (a conta bancária).")
     if batch.additional_new_cards and not (batch.payment_method_id or batch.new_payment_method):
         raise ToolError("additional_new_cards precisa do cartão principal: payment_method_id ou new_payment_method.")
+    if batch.link_cards:
+        if not batch.payment_method_id:
+            raise ToolError("link_existing_card_ids precisa do cartão principal já cadastrado (payment_method_id).")
+        for pk in batch.link_cards:
+            _check_linkable(pk, batch)
     if batch.kind == ImportBatch.Kind.INVOICE and not (batch.payment_method_id or batch.new_payment_method):
         raise ToolError("Lote de fatura precisa de payment_method_id (o cartão) ou new_payment_method.")
 
@@ -376,6 +412,9 @@ def _batch_view(batch, entries):
         view["new_payment_method_on_confirm"] = batch.new_payment_method
     if batch.additional_new_cards:
         view["additional_new_cards_on_confirm"] = [c["name"] for c in batch.additional_new_cards]
+    if batch.link_cards:
+        view["cards_to_link_on_confirm"] = list(PaymentMethod.objects.filter(
+            pk__in=batch.link_cards).values_list("name", flat=True))
     new_pots = sorted({n for e in batch.entries.all() for n in (e.from_account_name, e.to_account_name) if n}
                       | {b["account_name"] for b in batch.other_balances or [] if b.get("account_name")})
     if new_pots:
