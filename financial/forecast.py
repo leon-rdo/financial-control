@@ -22,6 +22,8 @@ MONTH_NAMES = {
 }
 
 REFUND_CATEGORY_NAME = "Estornos"
+# Receita marcada com `on_behalf_of`: a pessoa devolvendo o que gastou no cartão emprestado
+REPAYMENT_CATEGORY_NAME = "Devoluções de terceiros"
 NO_HOLDER_LABEL = "Sem titular"
 
 
@@ -248,11 +250,16 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
         mb = bucket["methods"].setdefault(root.id, {"payment_method_id": root.id,
                                                     "payment_method": root.name,
                                                     "total": Decimal("0"), "count": 0,
-                                                    "cards": OrderedDict(), "items": []})
+                                                    "cards": OrderedDict(), "third_party": OrderedDict(),
+                                                    "items": []})
         mb["total"] += item["amount"]
         mb["count"] += 1
         mb["cards"][pm.name] = mb["cards"].get(pm.name, Decimal("0")) + item["amount"]
         bucket["total"] += item["amount"]
+        person = item.get("on_behalf_of")
+        if person:
+            # Compra de terceiro (cartão emprestado): está na fatura, mas a pessoa devolve
+            mb["third_party"][person] = mb["third_party"].get(person, Decimal("0")) + item["amount"]
         if include_items:
             item["card"] = pm.name
             mb["items"].append(item)
@@ -269,7 +276,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
     ).filter(
         Q(reference_year__lt=month_to[0]) | Q(reference_year=month_to[0], reference_month__lte=month_to[1])
     ).select_related("purchase__payment_method__billing_card", "purchase__category",
-                     "purchase__entity").order_by("due_date", "purchase__description")
+                     "purchase__entity", "purchase__on_behalf_of").order_by("due_date", "purchase__description")
     if not include_paid:
         inst_qs = inst_qs.filter(paid=False)
     if payment_method_ids:
@@ -288,6 +295,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
             "category": purchase.category.name,
             "category_color": purchase.category.color,
             "entity": purchase.entity.name if purchase.entity else None,
+            "on_behalf_of": purchase.on_behalf_of.name if purchase.on_behalf_of_id else None,
         })
 
     # 2) Compras à vista no crédito (e estornos, que abatem a fatura)
@@ -295,7 +303,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
         Q(invoice_month__gte=range_start, invoice_month__lte=range_end)
         | Q(invoice_month__isnull=True, date__gte=range_start - relativedelta(months=2), date__lte=range_end)
     ).filter(Q(type="EXPENSE") | Q(type="INCOME", category__name=REFUND_CATEGORY_NAME)).select_related(
-        "payment_method__billing_card", "category", "entity").order_by("date")
+        "payment_method__billing_card", "category", "entity", "on_behalf_of").order_by("date")
     if payment_method_ids:
         tx_qs = tx_qs.filter(family_q("payment_method", payment_method_ids))
     for tx in tx_qs:
@@ -313,6 +321,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
             "category": tx.category.name,
             "category_color": tx.category.color,
             "entity": tx.entity.name if tx.entity else None,
+            "on_behalf_of": tx.on_behalf_of.name if tx.on_behalf_of_id else None,
         })
 
     # 3) Recorrências no cartão ainda não geradas (de hoje em diante)
@@ -343,6 +352,11 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
             cards = method.pop("cards")
             if len(cards) > 1:
                 method["cards"] = [{"card": name, "total": total} for name, total in cards.items()]
+            # Quanto desta fatura é de terceiros (só aparece quando há)
+            people = method.pop("third_party")
+            if people:
+                method["third_party"] = [{"person": name, "total": total} for name, total in people.items()]
+                method["third_party_total"] = sum(people.values(), Decimal("0"))
         result.append(bucket)
     return result
 
@@ -469,7 +483,7 @@ def monthly_cash_flow(months_ahead=3, today=None):
                 expenses += rec.amount
 
         invoices = []
-        invoices_total = Decimal("0")
+        invoices_total = third_party_total = Decimal("0")
         for bucket in invoice_forecast((year, month), (year, month), include_items=True, today=today):
             for method in bucket["methods"]:
                 due_items = [it for it in method["items"] if it["due_date"] >= start]
@@ -478,6 +492,8 @@ def monthly_cash_flow(months_ahead=3, today=None):
                     invoices.append({"payment_method": method["payment_method"], "amount": amount,
                                      "due_date": max(it["due_date"] for it in due_items)})
                     invoices_total += amount
+                    third_party_total += sum((it["amount"] for it in due_items if it.get("on_behalf_of")),
+                                             Decimal("0"))
 
         net = income - expenses - invoices_total
         running += net
@@ -485,6 +501,9 @@ def monthly_cash_flow(months_ahead=3, today=None):
             "year": year, "month": month, "month_name": MONTH_NAMES[month], "from": start, "to": end,
             "expected_income": income, "expected_expenses": expenses,
             "card_invoices": invoices_total, "invoices": invoices,
+            # Parte das faturas que é de terceiros (cartão emprestado). A família paga o banco de
+            # qualquer jeito; o que a pessoa devolver entra a mais, e não está contado no saldo.
+            "third_party_in_invoices": third_party_total,
             "net": net, "projected_end_balance": running,
         })
     return {
@@ -509,17 +528,23 @@ GROUP_FIELDS = {
 
 
 def spending_summary(start, end, group_by="category", include_unconfirmed=False,
-                     payment_method_ids=None, category_ids=None):
+                     payment_method_ids=None, category_ids=None, third_party="exclude"):
     """Gastos no período, agrupados.
 
     Regime: despesas (Transaction EXPENSE) pela data; parcelas de compras
     parceladas pelo vencimento. Estornos (receita na categoria "Estornos")
     são descontados.
+
+    Compras de terceiros (`on_behalf_of`, cartão emprestado) não são gasto da
+    família: por padrão ficam fora dos grupos e do total, e somam à parte em
+    `third_party_total`. `third_party="only"` mostra só elas; `"include"`, tudo junto.
     """
     from .models import Installment, Transaction
 
     if group_by not in (*GROUP_FIELDS, "month", "holder"):
         raise ValueError(f"group_by inválido: {group_by}")
+    if third_party not in ("exclude", "only", "include"):
+        raise ValueError(f"third_party inválido: {third_party}")
 
     holder_paths = ("__holder", "__bank_account__holder", "__bank_account__parent__holder",
                     "__billing_card__holder", "__billing_card__bank_account__holder")
@@ -569,18 +594,36 @@ def spending_summary(start, end, group_by="category", include_unconfirmed=False,
 
     total = Decimal("0")
     refunds = Decimal("0")
+    third_party_total = Decimal("0")
+
+    def counts(is_third_party):
+        """Este lançamento entra nos grupos? (terceiros: conforme `third_party`)"""
+        if third_party == "include":
+            return True
+        return is_third_party == (third_party == "only")
+
     for tx in tx_qs:
-        if tx.type == "EXPENSE":
-            b = bucket(*key_for_tx(tx))
-            b["total"] += tx.amount
-            b["count"] += 1
-            total += tx.amount
-        elif tx.category and tx.category.name == REFUND_CATEGORY_NAME:
-            b = bucket(*key_for_tx(tx))
-            b["total"] -= tx.amount
+        is_refund = tx.type == "INCOME" and tx.category and tx.category.name == REFUND_CATEGORY_NAME
+        if tx.type != "EXPENSE" and not is_refund:
+            continue  # receitas (inclusive devoluções de terceiros) não são gasto
+        signed = -tx.amount if is_refund else tx.amount
+        if tx.on_behalf_of_id:
+            third_party_total += signed
+        if not counts(bool(tx.on_behalf_of_id)):
+            continue
+        b = bucket(*key_for_tx(tx))
+        b["total"] += signed
+        total += signed
+        if is_refund:
             refunds += tx.amount
-            total -= tx.amount
+        else:
+            b["count"] += 1
     for inst in inst_qs:
+        is_third_party = bool(inst.purchase.on_behalf_of_id)
+        if is_third_party:
+            third_party_total += inst.amount
+        if not counts(is_third_party):
+            continue
         b = bucket(*key_for_inst(inst))
         b["total"] += inst.amount
         b["count"] += 1
@@ -588,4 +631,93 @@ def spending_summary(start, end, group_by="category", include_unconfirmed=False,
 
     rows = sorted(groups.values(), key=lambda r: (r["key"] if group_by == "month" else -r["total"]))
     return {"start": start, "end": end, "group_by": group_by, "total": total,
-            "refunds": refunds, "rows": rows}
+            "refunds": refunds, "third_party": third_party, "third_party_total": third_party_total,
+            "rows": rows}
+
+
+# ---------------------------------------------------------------------------
+# Terceiros (cartão emprestado)
+# ---------------------------------------------------------------------------
+
+def third_party_balances(today=None, person_ids=None, include_items=False):
+    """Conta corrente de cada pessoa de fora da família que usa um cartão (ou
+    conta) da família: o que ela gastou, o que já devolveu e quanto deve.
+
+    - Gasto: despesas e parcelas marcadas com `on_behalf_of` (menos estornos).
+      Compra no crédito conta no mês de vencimento da fatura em que cai; o resto,
+      na própria data.
+    - Devolvido: receitas confirmadas marcadas com a mesma pessoa.
+    - `due` = o que já venceu ou vence até o fim do mês atual; `upcoming` = faturas
+      dos meses seguintes (parcelas futuras). `balance` = due - devolvido (negativo:
+      a pessoa adiantou); `balance_with_upcoming` soma o que ainda vai vencer.
+    """
+    from .models import Installment, Transaction
+
+    today = today or date.today()
+    current = (today.year, today.month)
+    people = {}
+
+    def entry(entity):
+        return people.setdefault(entity.pk, {
+            "person_id": entity.pk, "person": entity.name,
+            "charged_total": Decimal("0"), "due": Decimal("0"), "upcoming": Decimal("0"),
+            "repaid": Decimal("0"), "by_month": {}, "items": [], "repayments": [],
+        })
+
+    def charge(entity, year, month, amount, item):
+        p = entry(entity)
+        p["charged_total"] += amount
+        p["due" if (year, month) <= current else "upcoming"] += amount
+        key = f"{year}-{month:02d}"
+        p["by_month"][key] = p["by_month"].get(key, Decimal("0")) + amount
+        if include_items:
+            p["items"].append({"month": key, "amount": amount, **item})
+
+    tx_qs = Transaction.objects.filter(on_behalf_of__isnull=False).select_related(
+        "on_behalf_of", "category", "payment_method__billing_card").order_by("date")
+    inst_qs = Installment.objects.filter(purchase__on_behalf_of__isnull=False).select_related(
+        "purchase__on_behalf_of", "purchase__payment_method").order_by("due_date")
+    if person_ids:
+        tx_qs = tx_qs.filter(on_behalf_of_id__in=person_ids)
+        inst_qs = inst_qs.filter(purchase__on_behalf_of_id__in=person_ids)
+
+    for tx in tx_qs:
+        is_refund = tx.type == "INCOME" and tx.category.name == REFUND_CATEGORY_NAME
+        if tx.type == "INCOME" and not is_refund:
+            if tx.confirmed:
+                p = entry(tx.on_behalf_of)
+                p["repaid"] += tx.amount
+                if include_items:
+                    p["repayments"].append({"date": tx.date, "amount": tx.amount, "description": tx.description,
+                                            "transaction_id": tx.pk})
+            continue
+        if tx.payment_method.type == "CREDIT":
+            period = transaction_invoice_period(tx)
+            year, month = period.year, period.month
+        else:
+            year, month = tx.date.year, tx.date.month
+        charge(tx.on_behalf_of, year, month, -tx.amount if is_refund else tx.amount, {
+            "kind": "refund" if is_refund else "purchase", "date": tx.date, "description": tx.description,
+            "payment_method": tx.payment_method.name, "transaction_id": tx.pk,
+        })
+    for inst in inst_qs:
+        purchase = inst.purchase
+        charge(purchase.on_behalf_of, inst.reference_year, inst.reference_month, inst.amount, {
+            "kind": "installment", "date": purchase.purchase_date,
+            "description": f"{purchase.description} ({inst.installment_number}/{purchase.number_of_installments})",
+            "payment_method": purchase.payment_method.name, "purchase_id": purchase.pk,
+        })
+
+    result = []
+    for p in sorted(people.values(), key=lambda p: p["person"].lower()):
+        p["balance"] = p["due"] - p["repaid"]
+        p["balance_with_upcoming"] = p["charged_total"] - p["repaid"]
+        p["by_month"] = [{"month": k, "amount": v} for k, v in sorted(p["by_month"].items())]
+        if not include_items:
+            del p["items"], p["repayments"]
+        result.append(p)
+    return {
+        "as_of": today, "people": result,
+        "total_due": sum((p["balance"] for p in result), Decimal("0")),
+        "total_with_upcoming": sum((p["balance_with_upcoming"] for p in result), Decimal("0")),
+    }

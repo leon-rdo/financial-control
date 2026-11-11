@@ -109,6 +109,12 @@ class EntryIn(ToolInput):
     installment_number: int | None = Field(default=None, description="k em 'parcela k/N'.")
     installments_total: int | None = Field(default=None, description="N (total de parcelas).")
     notes: str | None = Field(default=None, description="Observação curta, se ajudar o usuário.")
+    on_behalf_of_name: str | None = Field(
+        default=None,
+        description=("Cartão emprestado: nome da pessoa de FORA da família que fez esta compra e vai devolver o "
+                     "valor. Use também na receita (INCOME) em que ela devolve. A compra continua na fatura, mas "
+                     "não conta como gasto da família. Nunca use para pessoas da família."),
+    )
     external_ref: str | None = Field(
         default=None, description="Identificador do lançamento no banco, se houver (FITID do OFX)."
     )
@@ -157,6 +163,9 @@ class EntryEdit(ToolInput):
     installment_number: int | None = None
     installments_total: int | None = None
     notes: str | None = None
+    on_behalf_of_name: str | None = Field(
+        default=None, description="Pessoa de fora da família dona da compra (cartão emprestado). \"\" tira a marcação."
+    )
     from_account_id: int | None = None
     to_account_id: int | None = None
     from_account_name: str | None = None
@@ -278,6 +287,8 @@ def _validate_entry(entry, batch):
         raise ToolError("INSTALLMENT_CHARGE precisa de installment_number (k) e installments_total (N), com 1 <= k <= N.")
     if entry.kind == "INSTALLMENT_PURCHASE" and not (n and n >= 2):
         raise ToolError("INSTALLMENT_PURCHASE precisa de installments_total >= 2.")
+    if entry.kind == "TRANSFER" and (entry.on_behalf_of_id or entry.on_behalf_of_name):
+        raise ToolError("on_behalf_of_name não se aplica a TRANSFER: a devolução de um terceiro é INCOME.")
     if entry.kind == "TRANSFER":
         # Em lote de fatura o destino padrão é o cartão do lote (resolvido na confirmação)
         implied_card = batch.kind == ImportBatch.Kind.INVOICE
@@ -288,11 +299,31 @@ def _validate_entry(entry, batch):
             raise ToolError("TRANSFER com a mesma conta na origem e no destino.")
 
 
+def _resolve_person(name):
+    """(Entity | None, nome pendente) da pessoa de fora da família (cartão emprestado)."""
+    name = (name or "").strip()
+    if not name:
+        return None, ""
+    for member in FamilyMember.objects.filter(active=True):
+        if name.lower() in {member.name.lower(), *(a.lower() for a in member.alias_list)}:
+            raise ToolError(f"'{name}' é da família: as compras dela são gasto da família. on_behalf_of_name "
+                            "é só para pessoas de fora.")
+    qs = Entity.objects.filter(name__iexact=name, active=True)
+    existing = qs.filter(type=Entity.TypeChoices.PERSON).first() or qs.first()
+    return (existing, "") if existing else (None, name[:200])
+
+
+def _person_of(e):
+    return e.on_behalf_of.name if e.on_behalf_of_id else (e.on_behalf_of_name or None)
+
+
 def _entry_out(e):
     out = {
         "position": e.position, "kind": e.kind, "description": e.description, "amount": e.amount,
         "date": e.date, "match_status": e.match_status, "include": e.include,
     }
+    if _person_of(e):
+        out["on_behalf_of"] = _person_of(e)
     if e.installments_total:
         out["installment"] = f"{e.installment_number}/{e.installments_total}"
     if e.match_note:
@@ -418,6 +449,12 @@ def _build_entry(batch, item, position):
     method, method_name = _resolve_method(batch, item.payment_method_id, item.payment_method_name)
     from_account, from_name = _resolve_account(batch, item.from_account_id, item.from_account_name, "Conta de origem")
     to_account, to_name = _resolve_account(batch, item.to_account_id, item.to_account_name, "Conta de destino")
+    person, person_name = _resolve_person(item.on_behalf_of_name)
+    if not (person or person_name) and item.kind in ("EXPENSE", "REFUND", "INSTALLMENT_PURCHASE", "INSTALLMENT_CHARGE"):
+        # Cartão que fica com alguém de fora da família: as compras nele são dessa pessoa
+        card = method or batch.payment_method
+        if card is not None and card.lent_to_id:
+            person = card.lent_to
     entry = StagedEntry(
         batch=batch, position=position, kind=item.kind,
         description=item.description.strip()[:200], amount=parse_amount(item.amount), date=item.date,
@@ -427,6 +464,7 @@ def _build_entry(batch, item, position):
         from_account_name=from_name, to_account_name=to_name,
         entity=_check_fk(Entity, item.entity_id, "Entidade"),
         entity_name=(item.entity_name or "").strip()[:200],
+        on_behalf_of=person, on_behalf_of_name=person_name,
         installment_number=item.installment_number, installments_total=item.installments_total,
         notes=(item.notes or "").strip()[:200], external_ref=(item.external_ref or "").strip()[:100],
         from_account=from_account, to_account=to_account,
@@ -506,6 +544,8 @@ def edit_staged_entries(args, ctx):
                     batch, edit.payment_method_id, edit.payment_method_name)
             if edit.entity_id is not None:
                 entry.entity = _check_fk(Entity, edit.entity_id, "Entidade")
+            if edit.on_behalf_of_name is not None:
+                entry.on_behalf_of, entry.on_behalf_of_name = _resolve_person(edit.on_behalf_of_name)
             if edit.from_account_id is not None or edit.from_account_name is not None:
                 entry.from_account, entry.from_account_name = _resolve_account(
                     batch, edit.from_account_id, edit.from_account_name, "Conta de origem")
@@ -558,7 +598,7 @@ def get_batch(args, ctx):
     if batch is None:
         raise ToolError(f"Lote #{args.batch_id} não encontrado.")
     entries = []
-    for e in batch.entries.select_related("category").all():
+    for e in batch.entries.select_related("category", "on_behalf_of").all():
         out = _entry_out(e)
         out["category"] = e.category.name if e.category_id else (e.category_name or None)
         entries.append(out)
@@ -585,7 +625,8 @@ TOOLS = [
         name="edit_staged_entries",
         description=(
             "Altera, inclui/ignora ou remove itens de um lote ainda não confirmado (pelo número do item), "
-            "e opcionalmente corrige os dados do lote. Use para ajustes pedidos pelo usuário."
+            "e opcionalmente corrige os dados do lote. Use para ajustes pedidos pelo usuário, inclusive "
+            "'os itens 12 e 40 são do João' (on_behalf_of_name), mesmo em itens já registrados."
         ),
         input_model=EditStagedEntriesInput,
         handler=edit_staged_entries,

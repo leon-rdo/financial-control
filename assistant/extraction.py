@@ -132,19 +132,37 @@ def build_params(attachment, caption, model=None, effort=None, chat_id=None):
 def parse_output(message):
     """Mensagem do modelo -> ExtractionOutput validado."""
     if message.stop_reason in ("refusal", "max_tokens"):
-        raise ExtractionFailed(f"o modelo parou antes de terminar ({message.stop_reason})")
+        raise ExtractionFailed(f"o modelo parou antes de terminar ({_diagnose(message)})")
     text = "".join(b.text for b in message.content if b.type == "text").strip()
+    raw = text
     if text.startswith("```"):
         text = text.strip("`").strip()
         if text.lower().startswith("json"):
             text = text[4:]
     start, end = text.find("{"), text.rfind("}")
     if start < 0 or end <= start:
-        raise ExtractionFailed("a resposta não trouxe um objeto JSON")
+        raise ExtractionFailed(f"a resposta não trouxe um objeto JSON ({_diagnose(message, raw)})")
     try:
         return ExtractionOutput.model_validate(json.loads(text[start:end + 1]))
     except (ValueError, ValidationError) as exc:
-        raise ExtractionFailed(f"JSON fora do formato: {str(exc)[:300]}") from exc
+        raise ExtractionFailed(f"JSON fora do formato: {str(exc)[:300]} ({_diagnose(message, raw)})") from exc
+
+
+def _diagnose(message, text=""):
+    """O que dá para saber de uma resposta que não serviu. Fica em ExtractionJob.error,
+    para a causa não se perder (uma resposta vazia e uma cortada pedem correções diferentes)."""
+    usage = message.usage
+    parts = [f"stop_reason={message.stop_reason}",
+             f"blocos={[b.type for b in message.content]}",
+             f"tokens_saida={getattr(usage, 'output_tokens', '?')}"]
+    details = getattr(message, "stop_details", None)
+    if details is not None:
+        parts.append(f"detalhe={getattr(details, 'category', None) or getattr(details, 'type', '')}")
+    if text:
+        parts.append(f"inicio={text[:120]!r}")
+        if len(text) > 240:
+            parts.append(f"fim={text[-120:]!r}")
+    return "; ".join(parts)
 
 
 _LEADING_DATE = re.compile(r"^\s*\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\s*")

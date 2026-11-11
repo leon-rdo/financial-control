@@ -200,6 +200,11 @@ class StagedEntry(models.Model):
         "core.Entity", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     entity_name = models.CharField(max_length=200, blank=True)
+    # Compra de alguém de fora da família (cartão emprestado) ou a devolução dela
+    on_behalf_of = models.ForeignKey(
+        "core.Entity", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    on_behalf_of_name = models.CharField(max_length=200, blank=True)
     installment_number = models.PositiveSmallIntegerField(null=True, blank=True)
     installments_total = models.PositiveSmallIntegerField(null=True, blank=True)
     external_id = models.CharField(max_length=120, blank=True)
@@ -297,3 +302,38 @@ class ExtractionJob(models.Model):
 
     def __str__(self):
         return f"Extração #{self.pk} ({self.mode}, {self.status})"
+
+
+class UserRule(models.Model):
+    """Regra permanente dita pelo usuário ("Pix para a empresa X é gasto"). Vai
+    junto com os cadastros para o agente e para o extrator, para não perguntarem
+    de novo o que já foi respondido."""
+
+    text = models.CharField(max_length=300)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "Regra do usuário"
+        verbose_name_plural = "Regras do usuário"
+
+    def __str__(self):
+        return self.text
+
+
+class SpendAlert(models.Model):
+    """Aviso de gasto com IA já enviado (um por nível e por mês)."""
+
+    month = models.DateField()  # primeiro dia do mês
+    level = models.CharField(max_length=20)
+    amount = models.DecimalField(max_digits=10, decimal_places=4)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [["month", "level"]]
+        verbose_name = "Aviso de gasto com IA"
+        verbose_name_plural = "Avisos de gasto com IA"
+
+    def __str__(self):
+        return f"{self.month:%m/%Y} {self.level}"

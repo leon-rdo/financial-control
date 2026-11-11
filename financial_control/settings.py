@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
+from decimal import Decimal
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
@@ -241,6 +242,27 @@ PDF_PASSWORDS = [x.strip() for x in os.environ.get('PDF_PASSWORDS', '').split(',
 # Arquivos recebidos pelo bot ficam fora de MEDIA_ROOT (não são servidos pela web)
 ASSISTANT_STORAGE_DIR = Path(os.environ.get('ASSISTANT_STORAGE_DIR', BASE_DIR / 'private' / 'assistant'))
 
+# Teto e avisos de gasto com IA (assistant/costs.py), em dólares por mês. 0 desliga.
+AI_MONTHLY_BUDGET_USD = Decimal(os.environ.get('AI_MONTHLY_BUDGET_USD', '20'))  # avisa aos 80% e 100%
+AI_MONTHLY_LIMIT_USD = Decimal(os.environ.get('AI_MONTHLY_LIMIT_USD', '40'))    # o bot para de usar IA
+AI_PRICES_JSON = os.environ.get('AI_PRICES_JSON', '')  # preços de modelos fora da tabela padrão
+
+# E-mail (avisos operacionais: gasto com IA, falha de backup). Sem EMAIL_HOST, vai para o console.
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_TIMEOUT = 20
+EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST
+                 else 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@localhost')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+ALERT_EMAIL = os.environ.get('ALERT_EMAIL', '')  # destinatário(s) dos avisos, separados por vírgula
+
+# Backups (python manage.py backup_data)
+BACKUP_DIR = Path(os.environ.get('BACKUP_DIR', BASE_DIR / 'private' / 'backups'))
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -254,5 +276,6 @@ LOGGING = {
     'loggers': {
         'assistant': {'level': os.environ.get('ASSISTANT_LOG_LEVEL', 'INFO')},
         'telegram_bot': {'level': os.environ.get('ASSISTANT_LOG_LEVEL', 'INFO')},
+        'core': {'level': 'INFO'},
     },
 }

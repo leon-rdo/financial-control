@@ -147,6 +147,16 @@ class Transaction(models.Model):
         verbose_name=_("tags"),
         blank=True,
     )
+    on_behalf_of = models.ForeignKey(
+        "core.Entity",
+        on_delete=models.PROTECT,
+        related_name="third_party_transactions",
+        verbose_name=_("on behalf of"),
+        null=True,
+        blank=True,
+        help_text=_("Someone outside the family who owes this purchase back (lent card), or who "
+                    "paid it back (income). Left out of the family's spending and income."),
+    )
     invoice_month = models.DateField(
         _("invoice month"),
         null=True,
@@ -234,6 +244,16 @@ class Purchase(models.Model):
         on_delete=models.PROTECT,
         related_name="purchases",
         verbose_name=_("payment method"),
+    )
+    on_behalf_of = models.ForeignKey(
+        "core.Entity",
+        on_delete=models.PROTECT,
+        related_name="third_party_purchases",
+        verbose_name=_("on behalf of"),
+        null=True,
+        blank=True,
+        help_text=_("Someone outside the family who owes this purchase back (lent card). "
+                    "Left out of the family's spending."),
     )
     notes = models.TextField(_("notes"), blank=True)
     first_invoice_month = models.DateField(

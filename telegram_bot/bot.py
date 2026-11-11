@@ -15,9 +15,11 @@ from pathlib import Path
 from django.conf import settings
 from django.utils import timezone
 
-from assistant import agent, batch_service, documents, extraction
+from assistant import agent, batch_service, costs, documents, extraction
 from assistant.models import Attachment, ImportBatch
 from assistant.providers import Part, ProviderNotAvailable, get_provider
+
+from financial import forecast
 
 from . import client, render
 from .models import TelegramUpdate
@@ -32,8 +34,41 @@ HELP_TEXT = (
     "• Texto: \"almoço 45 reais no pix\", \"TV 2400 em 12x no Nubank\"\n"
     "• Perguntas: \"quanto vou pagar de fatura em dezembro?\", \"quanto gastei com mercado este mês?\"\n\n"
     "Eu monto um lote com os lançamentos e você confirma com um toque. Nada é gravado sem sua confirmação.\n\n"
-    "Comandos: /novo (nova conversa), /desfazer (desfaz o último lote confirmado), /cancelar"
+    "Cartão emprestado: diga de quem é a compra (\"os itens 12 e 40 são do João\") e ela sai dos seus gastos "
+    "e entra na conta da pessoa.\n\n"
+    "Comandos: /novo (nova conversa), /desfazer (desfaz o último lote confirmado), /terceiros (quem deve "
+    "quanto), /custo (gasto com IA no mês), /cancelar"
 )
+
+
+def third_parties_text():
+    """Quem deve quanto (cartão emprestado), sem IA."""
+    data = forecast.third_party_balances()
+    if not data["people"]:
+        return ("Nenhuma compra de terceiros registrada. Para marcar, diga de quem é a compra, por exemplo: "
+                "\"os itens 12 e 40 são do João\".")
+    lines = ["👥 Cartão emprestado: quem deve quanto"]
+    for person in data["people"]:
+        if person["balance"] < 0:
+            lines.append(f"• {person['person']}: adiantou {render.brl(-person['balance'])}")
+        else:
+            lines.append(f"• {person['person']}: deve {render.brl(person['balance'])}")
+        details = [f"nas faturas até este mês {render.brl(person['due'])}", f"devolveu {render.brl(person['repaid'])}"]
+        if person["upcoming"]:
+            details.append(f"nas próximas faturas {render.brl(person['upcoming'])}")
+            details.append(f"falta ao todo {render.brl(person['balance_with_upcoming'])}")
+        lines.append("   " + " · ".join(details))
+    lines.append(f"Total a receber agora: {render.brl(data['total_due'])}")
+    lines.append("Para o detalhe ou um texto de cobrança, peça no chat: \"monte a cobrança do João\".")
+    return "\n".join(lines)
+
+
+def _notify_spend():
+    """Avisos de gasto com IA (e-mail). Nunca atrapalha a resposta ao usuário."""
+    try:
+        costs.send_alerts()
+    except Exception:
+        logger.exception("Falha ao conferir o gasto com IA")
 
 
 def _chat_id_of(update):
@@ -87,10 +122,8 @@ def handle_callback(cq):
         return
 
     if not data.startswith("b:"):
-        # Botões do fluxo antigo (PendingTransaction)
-        from .handlers import handle_callback as legacy_handle_callback
-
-        legacy_handle_callback(cq)
+        # Botão de uma mensagem do bot antigo (fluxo de comprovantes, removido)
+        client.answer_callback(cb_id, "Esta mensagem é de uma versão antiga do bot. Envie o comprovante de novo.")
         return
 
     try:
@@ -183,6 +216,10 @@ def _handle_command(chat_id, text):
         client.send_message(chat_id, ("↩️ " if result.ok else "⚠️ ") + result.message)
         if result.ok:
             agent.add_note(chat_id, f"O usuário desfez o lote #{last.pk} (registros removidos).")
+    elif command == "/custo":
+        client.send_message(chat_id, "💰 " + costs.describe(costs.month_spend()))
+    elif command == "/terceiros":
+        client.send_message(chat_id, third_parties_text())
     else:
         client.send_message(chat_id, "Comando desconhecido. Use /ajuda.")
 
@@ -290,6 +327,18 @@ def process_chat_updates(chat_id, payloads):
     if not parts:
         return
 
+    if costs.over_limit():
+        spend = costs.month_spend()
+        client.send_message(
+            chat_id,
+            f"🚫 O teto de gasto com IA deste mês foi atingido ({costs.usd(spend['total'])} de "
+            f"{costs.usd(spend['limit'])}), então não vou ler esta mensagem. Botões e comandos continuam "
+            "funcionando. Volto no mês que vem, ou antes se o teto for aumentado no servidor "
+            "(AI_MONTHLY_LIMIT_USD). Detalhes: /custo",
+        )
+        _notify_spend()
+        return
+
     # Documentos (PDF, CSV, OFX) vão para a extração em chamada única, mais barata
     documents_parts = [p for p in parts if p.kind == "attachment" and extraction.handles(p.attachment)]
     if documents_parts and extraction.available():
@@ -324,6 +373,7 @@ def _run_agent(chat_id, parts, provider=None):
     with typing(chat_id):
         result = agent.run_turn(chat_id, parts, provider=provider)
     _deliver(chat_id, result.text, result.batches_to_present)
+    _notify_spend()
 
 
 def _extract_document(chat_id, attachment, caption, immediately):
@@ -361,6 +411,7 @@ def _handle_extraction_result(result):
         return
     header = f"📄 Li {job.attachment.filename}."
     _deliver(job.chat_id, f"{header}\n{result.text}".strip(), result.batches_to_present)
+    _notify_spend()
 
 
 def deliver_finished_extractions():

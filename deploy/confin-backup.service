@@ -1,0 +1,24 @@
+# /etc/systemd/system/confin-backup.service (disparado pelo confin-backup.timer)
+# Backup do banco (pg_dump) e dos arquivos recebidos pelo bot em /var/backups/confin.
+# Mantém 14 diários e o do dia 1 de cada mês por 12 meses; avisa por e-mail se falhar.
+# Restaurar: pg_restore --clean --if-exists --no-owner -d <banco> /var/backups/confin/db-<data>.dump
+
+[Unit]
+Description=Confin - backup do banco e dos arquivos
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=confin
+Group=www-data
+WorkingDirectory=/var/www/confin
+EnvironmentFile=/var/www/confin/.env
+Environment=BACKUP_DIR=/var/backups/confin
+ExecStart=/var/www/confin/.venv/bin/python manage.py backup_data
+SyslogIdentifier=confin-backup
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/confin/data /var/backups/confin

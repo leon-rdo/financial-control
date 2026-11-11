@@ -18,6 +18,9 @@ class QueryTransactionsInput(ToolInput):
     category_ids: list[int] | None = Field(default=None, description="IDs de categoria.")
     payment_method_ids: list[int] | None = Field(default=None, description="IDs de método de pagamento.")
     text: str | None = Field(default=None, description="Trecho da descrição ou nome da entidade.")
+    on_behalf_of: str | None = Field(
+        default=None, description="Só compras/devoluções desta pessoa de fora da família (cartão emprestado)."
+    )
     include_installments: bool = Field(
         default=True, description="Incluir parcelas de compras parceladas (pelo vencimento)."
     )
@@ -29,8 +32,18 @@ def query_transactions(args, ctx):
         raise ToolError("end_date anterior a start_date.")
     limit = max(1, min(args.limit, 200))
 
+    person = None
+    if args.on_behalf_of:
+        from .third_party import find_person
+
+        person = find_person(args.on_behalf_of)
+        if person is None:
+            raise ToolError(f"Não há lançamentos em nome de '{args.on_behalf_of}'.")
+
     tx_qs = Transaction.objects.filter(date__gte=args.start_date, date__lte=args.end_date).select_related(
-        "category", "payment_method", "entity")
+        "category", "payment_method", "entity", "on_behalf_of")
+    if person:
+        tx_qs = tx_qs.filter(on_behalf_of=person)
     if args.type:
         tx_qs = tx_qs.filter(type=args.type)
     if args.category_ids:
@@ -42,13 +55,19 @@ def query_transactions(args, ctx):
 
     items = []
     totals = {"income": Decimal("0"), "expense": Decimal("0"), "installments": Decimal("0"),
-              "unconfirmed": Decimal("0")}
+              "unconfirmed": Decimal("0"),
+              # de terceiros (cartão emprestado): fora de income/expense/installments
+              "third_party_expense": Decimal("0"), "third_party_repaid": Decimal("0")}
     for tx in tx_qs.order_by("-date"):
-        key = "income" if tx.type == "INCOME" else "expense"
+        if tx.on_behalf_of_id:
+            key = "third_party_repaid" if tx.type == "INCOME" else "third_party_expense"
+        else:
+            key = "income" if tx.type == "INCOME" else "expense"
         totals[key] += tx.amount
         if not tx.confirmed:
             totals["unconfirmed"] += tx.amount
         items.append({
+            **({"on_behalf_of": tx.on_behalf_of.name} if tx.on_behalf_of_id else {}),
             "kind": "transaction", "id": tx.id, "type": tx.type, "date": tx.date,
             "description": tx.description, "amount": tx.amount,
             "category": tx.category.name, "payment_method": tx.payment_method.name,
@@ -58,7 +77,10 @@ def query_transactions(args, ctx):
     if args.include_installments and args.type != "INCOME":
         inst_qs = Installment.objects.filter(
             due_date__gte=args.start_date, due_date__lte=args.end_date
-        ).select_related("purchase__category", "purchase__payment_method", "purchase__entity")
+        ).select_related("purchase__category", "purchase__payment_method", "purchase__entity",
+                         "purchase__on_behalf_of")
+        if person:
+            inst_qs = inst_qs.filter(purchase__on_behalf_of=person)
         if args.category_ids:
             inst_qs = inst_qs.filter(purchase__category_id__in=args.category_ids)
         if args.payment_method_ids:
@@ -67,10 +89,11 @@ def query_transactions(args, ctx):
             inst_qs = inst_qs.filter(Q(purchase__description__icontains=args.text)
                                      | Q(purchase__entity__name__icontains=args.text))
         for inst in inst_qs.order_by("-due_date"):
-            totals["installments"] += inst.amount
             p = inst.purchase
+            totals["third_party_expense" if p.on_behalf_of_id else "installments"] += inst.amount
             items.append({
-                "kind": "installment", "id": inst.id, "type": "EXPENSE", "date": inst.due_date,
+                **({"on_behalf_of": p.on_behalf_of.name} if p.on_behalf_of_id else {}),
+                "kind": "installment", "id": inst.id, "purchase_id": p.id, "type": "EXPENSE", "date": inst.due_date,
                 "description": f"{p.description} ({inst.installment_number}/{p.number_of_installments})",
                 "amount": inst.amount, "category": p.category.name, "payment_method": p.payment_method.name,
                 "entity": p.entity.name if p.entity else None, "paid": inst.paid,
@@ -90,6 +113,11 @@ class SpendingSummaryInput(ToolInput):
     include_unconfirmed: bool = Field(default=False, description="Incluir despesas não confirmadas (previstas).")
     category_ids: list[int] | None = None
     payment_method_ids: list[int] | None = None
+    third_party: Literal["exclude", "only", "include"] = Field(
+        default="exclude",
+        description=("Compras de pessoas de fora da família no cartão emprestado: exclude = fora dos gastos "
+                     "(padrão; o total delas vem em third_party_total), only = só elas, include = tudo junto."),
+    )
 
 
 def spending_summary(args, ctx):
@@ -99,6 +127,7 @@ def spending_summary(args, ctx):
         args.start_date, args.end_date, group_by=args.group_by,
         include_unconfirmed=args.include_unconfirmed,
         payment_method_ids=args.payment_method_ids, category_ids=args.category_ids,
+        third_party=args.third_party,
     )
 
 
@@ -120,7 +149,9 @@ def get_invoice_forecast(args, ctx):
                                        include_items=args.include_items, include_paid=args.include_paid)
     return {"months": months, "note": "Mês = mês de vencimento da fatura. Inclui parcelas, compras à vista "
                                       "no crédito (menos estornos) e recorrências no cartão. Sem include_paid, "
-                                      "só o que falta pagar."}
+                                      "só o que falta pagar. third_party = parte da fatura que é de pessoas de "
+                                      "fora da família (cartão emprestado): entra no total a pagar ao banco, mas "
+                                      "a pessoa devolve."}
 
 
 class AccountBalancesInput(ToolInput):
@@ -145,7 +176,9 @@ class CashFlowInput(ToolInput):
 def get_cash_flow_forecast(args, ctx):
     data = forecast.monthly_cash_flow(max(0, min(args.months_ahead, 12)))
     data["note"] = ("Saldo projetado = saldo disponível nas contas (sem caixinhas) + receitas previstas - despesas "
-                    "previstas - faturas de cartão a vencer. `reserved` é o que está guardado em caixinhas e pode "
+                    "previstas - faturas de cartão a vencer. third_party_in_invoices = parte das faturas que é de "
+                    "terceiros (cartão emprestado): a devolução deles não está contada no saldo projetado. "
+                    "`reserved` é o que está guardado em caixinhas e pode "
                     "cobrir um mês negativo. Previsto = lançamentos não confirmados e recorrências ativas. "
                     "Se all_anchored for false, o saldo inicial é incompleto: avise o usuário.")
     return data
@@ -157,7 +190,8 @@ TOOLS = [
         description=(
             "Lista lançamentos de um período com totais: transações (receitas e despesas) e, "
             "opcionalmente, parcelas de compras parceladas pelo vencimento. Use para perguntas "
-            "como 'quanto gastei no iFood em outubro' ou para conferir se algo já foi registrado."
+            "como 'quanto gastei no iFood em outubro' ou para conferir se algo já foi registrado. Itens de "
+            "terceiros (cartão emprestado) vêm com on_behalf_of e somam à parte nos totais."
         ),
         input_model=QueryTransactionsInput,
         handler=query_transactions,

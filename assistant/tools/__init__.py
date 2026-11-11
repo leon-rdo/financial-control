@@ -1,10 +1,11 @@
 """Conjunto FIXO de ferramentas do assistente. Não variar por conversa: o Claude
 valida o histórico (e o cache) contra o mesmo conjunto de ferramentas."""
 
-from . import family, queries, reference, staging
+from . import family, queries, reference, rules, staging, third_party
 from .registry import Tool, ToolCall, ToolContext, ToolResult, execute as _execute
 
-TOOLS: list[Tool] = [*reference.TOOLS, *queries.TOOLS, *staging.TOOLS, *family.TOOLS]
+TOOLS: list[Tool] = [*reference.TOOLS, *queries.TOOLS, *staging.TOOLS, *family.TOOLS,
+                     *third_party.TOOLS, *rules.TOOLS]
 TOOLS_BY_NAME = {t.name: t for t in TOOLS}
 
 

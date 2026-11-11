@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from .models import Attachment, ChatMessage, Conversation, ImportBatch, StagedEntry
+from .models import (Attachment, ChatMessage, Conversation, ImportBatch, SpendAlert, StagedEntry,
+                     UserRule)
 
 
 class ChatMessageInline(admin.TabularInline):
@@ -61,3 +62,14 @@ class ExtractionJobAdmin(admin.ModelAdmin):
     list_display = ["id", "attachment", "mode", "model", "status", "import_batch", "created_at", "finished_at"]
     list_filter = ["mode", "status", "model"]
     readonly_fields = ["usage", "error", "provider_batch_id", "created_at", "finished_at"]
+
+
+@admin.register(UserRule)
+class UserRuleAdmin(admin.ModelAdmin):
+    list_display = ["id", "text", "active", "created_at"]
+    list_filter = ["active"]
+
+
+@admin.register(SpendAlert)
+class SpendAlertAdmin(admin.ModelAdmin):
+    list_display = ["month", "level", "amount", "sent_at"]

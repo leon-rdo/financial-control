@@ -30,7 +30,7 @@ class FakeOpenAI:
         self.responses = list(responses)
         self.requests = []
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create))
-        self.files = SimpleNamespace(create=lambda file, purpose: SimpleNamespace(id="file-123"))
+        self.files = SimpleNamespace(create=lambda file, purpose, expires_after: SimpleNamespace(id="file-123"))
 
     def _create(self, **kwargs):
         self.requests.append(json.loads(json.dumps(kwargs["messages"])))

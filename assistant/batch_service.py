@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from accounts.models import BalanceSnapshot, BankAccount, PaymentMethod
 from core.models import Category, Entity
-from financial.forecast import REFUND_CATEGORY_NAME, invoice_card
+from financial.forecast import REFUND_CATEGORY_NAME, REPAYMENT_CATEGORY_NAME, invoice_card
 from financial.models import Installment, Purchase, Transaction, Transfer
 
 from .dedup import assign_external_ids, first_invoice_month_for, installment_purchase_external_id
@@ -46,6 +46,13 @@ def _category_for(entry):
         return cat
     if entry.category_id:
         return entry.category
+    if entry.kind == StagedEntry.Kind.INCOME and (entry.on_behalf_of_id or entry.on_behalf_of_name) \
+            and not entry.category_name:
+        # Terceiro devolvendo o que gastou no cartão emprestado: não é receita da família
+        cat, _ = Category.objects.get_or_create(
+            name=REPAYMENT_CATEGORY_NAME, defaults={"type": Category.TypeChoices.INCOME, "active": True}
+        )
+        return cat
     if entry.category_name:
         existing = Category.objects.filter(name__iexact=entry.category_name.strip(), active=True).first()
         if existing:
@@ -68,6 +75,43 @@ def _entity_for(entry):
     if existing:
         return existing
     return Entity.objects.create(name=name[:200], type=Entity.TypeChoices.SUPPLIER, active=True)
+
+
+def _person_for(entry):
+    """Pessoa de fora da família dona da compra (ou que está devolvendo), se houver."""
+    if entry.on_behalf_of_id:
+        return entry.on_behalf_of
+    name = (entry.on_behalf_of_name or "").strip()
+    if not name:
+        return None
+    qs = Entity.objects.filter(name__iexact=name)
+    existing = qs.filter(type=Entity.TypeChoices.PERSON).first() or qs.first()
+    if existing:
+        return existing
+    return Entity.objects.create(name=name[:200], type=Entity.TypeChoices.PERSON, active=True)
+
+
+def _mark_existing_third_party(entry):
+    """Item que não vira lançamento novo (já registrado, ou confirma um previsto) mas
+    foi marcado como de um terceiro: anota a pessoa no lançamento ou na compra que
+    já existe. É assim que 'o item 12 é do João' vale para parcelas já cadastradas."""
+    person = _person_for(entry)
+    if person is None or entry.match_status not in (StagedEntry.Match.DUPLICATE,
+                                                    StagedEntry.Match.CONFIRM_EXISTING):
+        return
+    if entry.matched_installment_id:
+        target, key = entry.matched_installment.purchase, "purchase_id"
+    elif entry.matched_transaction_id:
+        target, key = entry.matched_transaction, "transaction_id"
+    else:
+        return
+    if target.on_behalf_of_id == person.pk:
+        return
+    state = dict(entry.previous_state or {})
+    state["third_party"] = {key: target.pk, "previous": target.on_behalf_of_id}
+    entry.previous_state = state
+    entry.save(update_fields=["previous_state"])
+    type(target).objects.filter(pk=target.pk).update(on_behalf_of=person)
 
 
 def planned_card_updates(batch):
@@ -276,11 +320,13 @@ def _commit_entry(batch, entry, result):
         tx.date = entry.date
         tx.save(update_fields=["confirmed", "amount", "date", "updated_at"])
         entry.save(update_fields=["previous_state"])
+        _mark_existing_third_party(entry)
         result.confirmed_existing += 1
         return
 
     category = _category_for(entry)
     entity = _entity_for(entry)
+    person = _person_for(entry)
 
     if entry.kind in (StagedEntry.Kind.EXPENSE, StagedEntry.Kind.INCOME, StagedEntry.Kind.REFUND):
         tx = Transaction.objects.create(
@@ -291,6 +337,7 @@ def _commit_entry(batch, entry, result):
             category=category,
             payment_method=pm,
             entity=entity,
+            on_behalf_of=person,
             confirmed=True,
             invoice_month=_batch_invoice_month(batch) if pm.type == "CREDIT" else None,
             external_id=_free_external_id(Transaction, entry.external_id),
@@ -311,6 +358,7 @@ def _commit_entry(batch, entry, result):
             category=category,
             payment_method=pm,
             entity=entity,
+            on_behalf_of=person,
             notes=_notes(batch, entry),
         )
         entry.committed_purchase = purchase
@@ -332,6 +380,7 @@ def _commit_entry(batch, entry, result):
             category=category,
             payment_method=pm,
             entity=entity,
+            on_behalf_of=person,
             first_invoice_month=fim,
             external_id=_free_external_id(Purchase, ext),
             notes=_notes(batch, entry, f"Fatura: parcela {k}/{n}"),
@@ -371,13 +420,14 @@ def commit(batch_id, version):
             if undo_data.get("created_payment_methods"):
                 assign_external_ids(batch)  # as chaves das linhas dependem do id do cartão
             entries = batch.entries.select_related(
-                "payment_method", "category", "entity", "matched_transaction__payment_method", "matched_transfer",
-                "from_account", "to_account", "to_card",
+                "payment_method", "category", "entity", "on_behalf_of", "matched_transaction__payment_method",
+                "matched_installment__purchase", "matched_transfer", "from_account", "to_account", "to_card",
             ).order_by("position")
             for entry in entries:
                 if not entry.include:
                     result.skipped += 1
                     _stamp_existing(batch, entry)
+                    _mark_existing_third_party(entry)
                     continue
                 _resolve_entry_refs(batch, entry, undo_data)
                 _commit_entry(batch, entry, result)
@@ -464,6 +514,11 @@ def undo(batch_id):
                 tx = entry.matched_transaction
                 tx.invoice_month = date.fromisoformat(state["invoice_month"]) if state["invoice_month"] else None
                 tx.save(update_fields=["invoice_month", "updated_at"])
+            if "third_party" in state:
+                marked = state["third_party"]
+                model, pk = ((Transaction, marked["transaction_id"]) if "transaction_id" in marked
+                             else (Purchase, marked["purchase_id"]))
+                model.objects.filter(pk=pk).update(on_behalf_of_id=marked["previous"])
             if "transfer" in state and entry.matched_transfer_id:
                 tr = entry.matched_transfer
                 for attr, value in state["transfer"].items():
@@ -503,10 +558,27 @@ def undo(batch_id):
     return CommitResult(True, f"Lote #{batch.pk} desfeito: {removed} registro(s) removido(s).")
 
 
+def entry_person(entry):
+    """Nome da pessoa de fora da família a quem o item pertence: a marcada no item
+    ou, em item já registrado, a da compra/lançamento existente."""
+    if entry.on_behalf_of_id:
+        return entry.on_behalf_of.name
+    if entry.on_behalf_of_name:
+        return entry.on_behalf_of_name
+    if entry.match_status in (StagedEntry.Match.DUPLICATE, StagedEntry.Match.CONFIRM_EXISTING):
+        if entry.matched_installment_id and entry.matched_installment.purchase.on_behalf_of_id:
+            return entry.matched_installment.purchase.on_behalf_of.name
+        if entry.matched_transaction_id and entry.matched_transaction.on_behalf_of_id:
+            return entry.matched_transaction.on_behalf_of.name
+    return None
+
+
 def batch_totals(batch):
     """Números do resumo: novos, duplicados, estornos e as conferências (soma da
     fatura, subtotal por cartão, saldo do extrato)."""
-    entries = list(batch.entries.select_related("payment_method"))
+    entries = list(batch.entries.select_related(
+        "payment_method", "on_behalf_of", "matched_transaction__on_behalf_of",
+        "matched_installment__purchase__on_behalf_of"))
     K = StagedEntry.Kind
     included = [e for e in entries if e.include]
     excluded = [e for e in entries if not e.include]
@@ -535,6 +607,23 @@ def batch_totals(batch):
             if e.kind != K.TRANSFER
             and not (e.payment_method_id or e.payment_method_name or has_default_method)],
     }
+
+    # Compras de terceiros (cartão emprestado) e devoluções: por pessoa
+    third_party, repayments = {}, {}
+    for e in entries:
+        name = entry_person(e)
+        if not name or e.kind == K.TRANSFER:
+            continue
+        amount = Decimal(e.amount)
+        if e.kind == K.INCOME:
+            repayments[name] = repayments.get(name, Decimal("0")) + amount
+        else:
+            third_party[name] = third_party.get(name, Decimal("0")) + (-amount if e.kind == K.REFUND else amount)
+    if third_party:
+        totals["third_party"] = third_party
+        totals["third_party_total"] = sum(third_party.values(), Decimal("0"))
+    if repayments:
+        totals["third_party_repayments"] = repayments
 
     if batch.kind == ImportBatch.Kind.INVOICE:
         if batch.invoice_total is not None:

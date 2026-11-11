@@ -72,6 +72,12 @@ def batch_summary(batch):
         lines.append(f"• ⚠️ Possíveis duplicados: {t['weak']} (veja em Ver itens)")
     if t["refunds"]:
         lines.append(f"• Estornos: {brl(t['refunds'])}")
+    if t.get("third_party"):
+        people = ", ".join(f"{escape(name)} {brl(amount)}" for name, amount in t["third_party"].items())
+        lines.append(f"• 👥 De terceiros (cartão emprestado, não conta como gasto da família): {people}")
+    if t.get("third_party_repayments"):
+        people = ", ".join(f"{escape(name)} {brl(amount)}" for name, amount in t["third_party_repayments"].items())
+        lines.append(f"• 👥 Devolução de terceiros (não conta como receita): {people}")
     if "invoice_difference" in t:
         diff = t["invoice_difference"]
         status = "✅ bate" if abs(diff) < Decimal("0.01") else f"diferença de {brl(diff)}"
@@ -120,7 +126,9 @@ STATUS_MARK = {
 def batch_items(batch):
     """Lista de itens (texto simples, pode ser longa: o cliente quebra em blocos)."""
     lines = [f"Itens do lote #{batch.pk}:"]
-    for e in batch.entries.select_related("category", "from_account", "to_account").order_by("position"):
+    for e in batch.entries.select_related(
+            "category", "from_account", "to_account", "on_behalf_of", "matched_transaction__on_behalf_of",
+            "matched_installment__purchase__on_behalf_of").order_by("position"):
         mark = "✓" if e.include else "✗"
         inst = f" {e.installment_number}/{e.installments_total}" if e.installments_total else ""
         cat = e.category.name if e.category_id else (e.category_name or "sem categoria")
@@ -136,8 +144,10 @@ def batch_items(batch):
         elif e.kind == StagedEntry.Kind.INCOME:
             cat = f"receita, {cat}"
         sign = "-" if e.kind == StagedEntry.Kind.REFUND else ""
+        person = batch_service.entry_person(e)
+        owner = f" · 👥 {person}" if person else ""
         lines.append(f"{mark} {e.position}. {e.date:%d/%m} {e.description}{inst} — {sign}{brl(e.amount)} "
-                     f"({cat}){STATUS_MARK.get(e.match_status, '')}")
+                     f"({cat}){owner}{STATUS_MARK.get(e.match_status, '')}")
         if e.match_note and e.match_status != StagedEntry.Match.NEW:
             lines.append(f"     {e.match_note}")
     lines.append("")

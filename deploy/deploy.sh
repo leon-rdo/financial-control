@@ -24,18 +24,21 @@ uv sync --frozen --extra prod --no-install-project --python 3.12 --quiet
 set -a; . ./.env; set +a
 # Testes contra o PostgreSQL do servidor, no banco fixo `test_confin` (o usuário
 # do app não cria bancos). Se falharem, o deploy para aqui: nada é migrado nem reiniciado.
-.venv/bin/python manage.py test financial assistant telegram_bot --keepdb --noinput 2>&1 \
+.venv/bin/python manage.py test core financial assistant telegram_bot --keepdb --noinput 2>&1 \
     | grep -E "^(Ran |OK|FAILED|FAIL:|ERROR:)"
 .venv/bin/python manage.py migrate --noinput
 .venv/bin/python manage.py collectstatic --noinput --verbosity 0
 chown -R root:www-data . && chmod -R g-w,o-rwx .
 chown -R confin:www-data data && chown confin:www-data .env && chmod 600 .env
-for unit in confin.service confin-worker.service confin-digests.service confin-digests.timer; do
+install -d -o confin -g www-data -m 700 /var/backups/confin
+for unit in confin.service confin-worker.service confin-digests.service confin-digests.timer \
+            confin-backup.service confin-backup.timer; do
     install -m 644 "deploy/$unit" "/etc/systemd/system/$unit"
 done
 systemctl daemon-reload
+systemctl enable --now confin-backup.timer >/dev/null
 systemctl restart confin confin-worker
 sleep 3
-systemctl is-active confin confin-worker confin-digests.timer
+systemctl is-active confin confin-worker confin-digests.timer confin-backup.timer
 REMOTE
 echo "Publicado em $HOST."
