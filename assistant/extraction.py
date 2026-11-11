@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from types import SimpleNamespace
 
 import anthropic
 from django.conf import settings
@@ -99,9 +100,9 @@ def system_prompt():
     return EXTRACTION_PROMPT + schema + "\n"
 
 
-def build_params(attachment, caption, model=None, effort=None):
+def build_params(attachment, caption, model=None, effort=None, chat_id=None):
     """Parâmetros da chamada (iguais nos modos direct e batch)."""
-    reference = get_reference_data(GetReferenceDataInput(), None)
+    reference = get_reference_data(GetReferenceDataInput(), SimpleNamespace(chat_id=chat_id))
     reference.pop("entities", None)  # nomes de estabelecimentos vão em entity_name
     now = timezone.localtime() if settings.USE_TZ else timezone.now()
 
@@ -287,7 +288,7 @@ def _finish(job, message=None, error=""):
 
 def run_direct(chat_id, attachment, caption="", model=None):
     """Extrai agora (sem o desconto de batch)."""
-    params = build_params(attachment, caption, model=model)
+    params = build_params(attachment, caption, model=model, chat_id=chat_id)
     job = ExtractionJob.objects.create(chat_id=chat_id, attachment=attachment, caption=caption,
                                        mode=ExtractionJob.Mode.DIRECT, model=params["model"])
     try:
@@ -300,7 +301,7 @@ def run_direct(chat_id, attachment, caption="", model=None):
 
 def submit_batch(chat_id, attachment, caption=""):
     """Envia para a API de batches. O resultado sai em `poll()`."""
-    params = build_params(attachment, caption)
+    params = build_params(attachment, caption, chat_id=chat_id)
     job = ExtractionJob.objects.create(chat_id=chat_id, attachment=attachment, caption=caption,
                                        mode=ExtractionJob.Mode.BATCH, model=params["model"])
     try:

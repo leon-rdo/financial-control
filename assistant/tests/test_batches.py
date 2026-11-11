@@ -25,8 +25,8 @@ class BatchTestCase(TestCase):
         self.pix = PaymentMethod.objects.create(name="Pix Itaú", type="PIX")
         self.food = Category.objects.create(name="Mercado", type="EXPENSE")
 
-    def call(self, name, **args):
-        result = execute(ToolCall(id="t1", name=name, input=args), self.ctx)
+    def call(self, tool_name, /, **args):
+        result = execute(ToolCall(id="t1", name=tool_name, input=args), self.ctx)
         import json
 
         data = json.loads(result.content) if not result.is_error else result.content

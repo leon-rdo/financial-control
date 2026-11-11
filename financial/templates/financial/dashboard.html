@@ -21,6 +21,9 @@
             <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Saldo Total</p>
             <p class="text-xl font-semibold mt-1.5 {% if total_balance >= 0 %}text-success{% else %}text-error{% endif %}">R$ {{ total_balance|floatformat:2 }}</p>
             <p class="text-[11px] text-base-content/25 mt-1">Disponível nas contas{% if reserved_balance %} · R$ {{ reserved_balance|floatformat:2 }} em caixinhas{% endif %}</p>
+            {% if balance_by_holder %}
+            <p class="text-[11px] text-base-content/40 mt-1">{% for name, amounts in balance_by_holder.items %}{{ name }}: R$ {{ amounts.available|floatformat:2 }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+            {% endif %}
         </div>
         <div class="bg-base-100 rounded-xl p-4 border border-base-300/40">
             <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Receitas</p>

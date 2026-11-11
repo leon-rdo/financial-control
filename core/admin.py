@@ -207,3 +207,12 @@ class EntityAdmin(admin.ModelAdmin):
     def deactivate_entities(self, request, queryset):
         updated = queryset.update(active=False)
         self.message_user(request, _("{} entities deactivated.").format(updated))
+
+
+from .models import FamilyMember  # noqa: E402
+
+
+@admin.register(FamilyMember)
+class FamilyMemberAdmin(admin.ModelAdmin):
+    list_display = ["name", "telegram_chat_id", "active"]
+    search_fields = ["name", "aliases"]

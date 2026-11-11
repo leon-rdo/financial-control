@@ -98,6 +98,7 @@ class DashboardView(TemplateView):
                 # Valores principais
                 "total_balance": total_balance,
                 "reserved_balance": balances["reserved"],
+                "balance_by_holder": balances["by_holder"],
                 "account_balances": balances["accounts"],
                 "income_month": income_month,
                 "expense_month": expense_month,

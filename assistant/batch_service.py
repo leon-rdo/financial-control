@@ -94,7 +94,8 @@ def _create_payment_method(batch, undo_data):
         name = spec["new_bank_account_name"].strip()[:100]
         account = BankAccount.objects.filter(name__iexact=name).first()
         if account is None:
-            account = BankAccount.objects.create(name=name, bank=name, type=BankAccount.TypeChoices.CHECKING)
+            account = BankAccount.objects.create(name=name, bank=name, type=BankAccount.TypeChoices.CHECKING,
+                                                 holder_id=spec.get("holder_id"))
             undo_data.setdefault("created_bank_accounts", []).append(account.pk)
     closing_day, due_day = spec.get("closing_day"), spec.get("due_day")
     if spec.get("type") == "CREDIT":
@@ -102,7 +103,7 @@ def _create_payment_method(batch, undo_data):
         due_day = due_day or (batch.invoice_due_date.day if batch.invoice_due_date else None)
     pm = PaymentMethod.objects.create(
         name=spec["name"].strip()[:100], type=spec.get("type") or "CREDIT", bank_account=account,
-        closing_day=closing_day, due_day=due_day,
+        closing_day=closing_day, due_day=due_day, holder_id=spec.get("holder_id"),
     )
     undo_data.setdefault("created_payment_methods", []).append(pm.pk)
     batch.payment_method = pm
@@ -119,6 +120,7 @@ def _create_additional_cards(batch, undo_data):
             continue
         pm = PaymentMethod.objects.create(
             name=name, type=PaymentMethod.TypeChoices.CREDIT, bank_account=main.bank_account, billing_card=main,
+            holder_id=spec.get("holder_id"),
         )
         undo_data.setdefault("created_payment_methods", []).append(pm.pk)
 

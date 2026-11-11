@@ -15,7 +15,7 @@ class BankAccountAdmin(admin.ModelAdmin):
     list_per_page = 50
 
     fieldsets = (
-        (_("Basic Information"), {"fields": ("name", "bank", "type", "parent", "active")}),
+        (_("Basic Information"), {"fields": ("name", "bank", "type", "holder", "parent", "active")}),
         (_("Balance"), {"fields": ("opening_balance", "opening_balance_date")}),
         (_("Visual"), {"fields": ("color",)}),
         (
@@ -89,7 +89,7 @@ class PaymentMethodAdmin(admin.ModelAdmin):
         (
             _("Credit Card Information"),
             {
-                "fields": ("billing_card", "credit_limit", "closing_day", "due_day"),
+                "fields": ("holder", "billing_card", "credit_limit", "closing_day", "due_day"),
                 "description": _("Fill these fields only for credit cards"),
                 "classes": ("collapse",),
             },

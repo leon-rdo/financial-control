@@ -10,7 +10,7 @@ from django.db.models import Max
 from pydantic import Field
 
 from accounts.models import BankAccount, PaymentMethod
-from core.models import Category, Entity
+from core.models import Category, Entity, FamilyMember
 
 from .. import batch_service, dedup
 from ..models import Attachment, ImportBatch, StagedEntry
@@ -28,10 +28,16 @@ class NewPaymentMethod(ToolInput):
     new_bank_account_name: str | None = Field(
         default=None, description="Se a conta/banco também não existe: nome para criá-la, ex.: 'Banco X'."
     )
+    holder_id: int | None = Field(
+        default=None, description="Pessoa da família titular do cartão/método (e da conta nova, se houver)."
+    )
 
 
 class NewCard(ToolInput):
     name: str = Field(description="Nome do cartão, no padrão dos já cadastrados, ex.: 'Final 1234 (adicional)'.")
+    holder_id: int | None = Field(
+        default=None, description="Pessoa da família que usa o cartão, se o documento mostrar o portador."
+    )
 
 
 class BalanceIn(ToolInput):
@@ -211,6 +217,7 @@ def _apply_meta(batch, meta):
             if day is not None and not 1 <= day <= 31:
                 raise ToolError("closing_day e due_day devem estar entre 1 e 31.")
         _check_fk(BankAccount, new_pm.bank_account_id, "Conta bancária")
+        _check_fk(FamilyMember, new_pm.holder_id, "Pessoa da família")
         existing = PaymentMethod.objects.filter(name__iexact=new_pm.name.strip(), active=True).first()
         if existing:
             raise ToolError(f"Já existe um método chamado '{existing.name}' (id={existing.pk}). "
@@ -218,9 +225,12 @@ def _apply_meta(batch, meta):
         batch.payment_method = None
         batch.new_payment_method = new_pm.model_dump()
     if meta.additional_new_cards is not None:
-        names = [c.name.strip() for c in meta.additional_new_cards]
-        batch.additional_new_cards = [
-            {"name": n} for n in names if not PaymentMethod.objects.filter(name__iexact=n).exists()]
+        cards = []
+        for card in meta.additional_new_cards:
+            _check_fk(FamilyMember, card.holder_id, "Pessoa da família")
+            if not PaymentMethod.objects.filter(name__iexact=card.name.strip()).exists():
+                cards.append({"name": card.name.strip(), "holder_id": card.holder_id})
+        batch.additional_new_cards = cards
     if meta.invoice_month:
         batch.invoice_year, batch.invoice_month = parse_month(meta.invoice_month)
     if meta.invoice_total:

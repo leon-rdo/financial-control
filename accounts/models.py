@@ -29,6 +29,15 @@ class BankAccount(models.Model):
         blank=True,
         help_text=_("Hex color code (e.g., #FF5733)"),
     )
+    holder = models.ForeignKey(
+        "core.FamilyMember",
+        on_delete=models.SET_NULL,
+        related_name="bank_accounts",
+        verbose_name=_("holder"),
+        null=True,
+        blank=True,
+        help_text=_("Family member who owns this account (pots inherit from their account)"),
+    )
     parent = models.ForeignKey(
         "self",
         on_delete=models.PROTECT,
@@ -69,6 +78,13 @@ class BankAccount(models.Model):
         return f"{self.name} - {self.bank}"
 
     @property
+    def effective_holder(self):
+        """Titular desta conta; a caixinha herda o da conta em que fica."""
+        if self.holder_id:
+            return self.holder
+        return self.parent.holder if self.parent_id else None
+
+    @property
     def is_reserve(self):
         """Dinheiro guardado (caixinha/cofrinho/investimento), fora do saldo do dia a dia."""
         return bool(self.parent_id) or self.type == self.TypeChoices.INVESTMENT
@@ -107,6 +123,15 @@ class PaymentMethod(models.Model):
         help_text=_("Associated bank account (for debit/PIX)"),
     )
 
+    holder = models.ForeignKey(
+        "core.FamilyMember",
+        on_delete=models.SET_NULL,
+        related_name="payment_methods",
+        verbose_name=_("holder"),
+        null=True,
+        blank=True,
+        help_text=_("Family member who uses this card/method. Blank: the holder of its account or main card."),
+    )
     billing_card = models.ForeignKey(
         "self",
         on_delete=models.PROTECT,
@@ -157,6 +182,18 @@ class PaymentMethod(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_type_display()})"
+
+    @property
+    def effective_holder(self):
+        """Quem usa este método: o titular informado, senão o da conta, senão o do
+        cartão principal da fatura."""
+        if self.holder_id:
+            return self.holder
+        if self.bank_account_id and self.bank_account.effective_holder:
+            return self.bank_account.effective_holder
+        if self.billing_card_id:
+            return self.billing_card.effective_holder
+        return None
 
     @property
     def invoice_card(self):

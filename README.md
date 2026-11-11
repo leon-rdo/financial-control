@@ -10,11 +10,14 @@ Como os documentos são lidos:
 - PDF, CSV e OFX são lidos por um modelo mais barato, numa chamada só. O servidor confere o resultado (soma da fatura, saldo do extrato e cada item contra a linha original) antes de mostrar o lote. Se algo não fechar, ele tenta de novo, depois usa um modelo mais forte e, por último, o assistente completo.
 - `ASSISTANT_DOCUMENT_MODE=batch` (padrão): a leitura vai para a fila de batches da Anthropic, pela metade do preço, e o bot avisa quando o lote fica pronto (em geral alguns minutos). Para ler na hora, envie o arquivo com a legenda `agora`, ou use `direct` no `.env`. `agent` volta ao fluxo antigo, em que o assistente completo lê o documento.
 - Fotos de comprovante, texto e perguntas continuam sendo respondidos na hora pelo assistente.
+- Custo medido numa fatura real de 199 linhas, em batch: Sonnet 5.5 (padrão) cerca de US$ 0,17, idêntica ao PDF em todas as leituras; Haiku 5.5 cerca de US$ 0,01, com os totais sempre certos mas pequenos desvios em parte das leituras (`ANTHROPIC_EXTRACTION_MODEL=claude-haiku-5-5` para priorizar custo). O fluxo antigo, com o assistente completo, custava US$ 0,81.
 
 Como os dados ficam organizados:
 
 - **Fatura com vários cartões** (titular, adicional, virtual): cada compra fica no cartão que a fez; os cartões adicionais são ligados ao principal ("Cobrado na fatura de"), então a fatura, o vencimento e o pagamento continuam únicos.
 - **Caixinhas / cofrinhos**: são subcontas ("Caixinha / cofrinho da conta"). Guardar e retirar dinheiro vira transferência, não gasto. O saldo disponível mostra só as contas; o guardado aparece à parte. Como o extrato da conta não traz o saldo da caixinha, informe-o ao bot ("tenho 8.000 na caixinha Emergências").
+
+- **Casal / família**: as finanças são conjuntas e todos veem tudo. Cadastre as pessoas dizendo ao bot ("sou o João, nos documentos apareço como JOAO DA SILVA; cadastre minha esposa Maria") e de quem é cada conta ("o Inter é da Maria"), ou pelo admin e pelos formulários de conta e de método de pagamento. Com isso o bot sabe quem está falando, trata Pix entre vocês como transferência (não como gasto de um e receita do outro) e mostra gastos e saldos por pessoa.
 
 Comandos no chat: `/novo` (nova conversa), `/desfazer` (desfaz o último lote confirmado), `/cancelar`, `/ajuda`.
 
@@ -29,8 +32,8 @@ ANTHROPIC_API_KEY=...
 ANTHROPIC_MODEL=claude-opus-5-5      # opcional
 ANTHROPIC_EFFORT=medium              # opcional: low | medium | high
 ASSISTANT_DOCUMENT_MODE=batch        # opcional: batch | direct | agent (ver abaixo)
-ANTHROPIC_EXTRACTION_MODEL=claude-haiku-5-5            # opcional: modelo que lê os documentos
-ANTHROPIC_EXTRACTION_FALLBACK_MODEL=claude-sonnet-5-5  # opcional: usado se as conferências falharem
+ANTHROPIC_EXTRACTION_MODEL=claude-sonnet-5-5         # opcional: modelo que lê os documentos
+ANTHROPIC_EXTRACTION_FALLBACK_MODEL=claude-opus-5-5  # opcional: usado se as conferências falharem
 OPENAI_API_KEY=...                   # só com AI_PROVIDER=openai
 PDF_PASSWORDS=12345                  # opcional: senhas tentadas em PDFs protegidos
 ```
