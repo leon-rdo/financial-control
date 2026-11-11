@@ -13,7 +13,7 @@ from django.utils import timezone
 from accounts.models import BalanceSnapshot, BankAccount, PaymentMethod
 from core.models import Category, Entity
 from financial.forecast import REFUND_CATEGORY_NAME, REPAYMENT_CATEGORY_NAME, invoice_card
-from financial.models import Installment, Purchase, Transaction, Transfer
+from financial.models import Installment, InvoiceClosing, Purchase, Transaction, Transfer
 
 from .dedup import assign_external_ids, first_invoice_month_for, installment_purchase_external_id
 from .models import ImportBatch, StagedEntry
@@ -167,6 +167,39 @@ def _create_additional_cards(batch, undo_data):
             holder_id=spec.get("holder_id"),
         )
         undo_data.setdefault("created_payment_methods", []).append(pm.pk)
+
+
+def _link_existing_cards(batch, undo_data):
+    """Liga cartões já cadastrados ao cartão principal da fatura ('Cobrado na fatura de')."""
+    main = invoice_card(batch.payment_method)
+    for card in PaymentMethod.objects.filter(pk__in=batch.link_cards or []).exclude(pk=main.pk):
+        if card.billing_card_id == main.pk:
+            continue
+        if card.billing_card_id or card.billed_cards.exists() or card.type != PaymentMethod.TypeChoices.CREDIT:
+            raise CommitError(f"Não dá para ligar '{card.name}' à fatura de '{main.name}': o cadastro mudou "
+                              "depois do resumo. Refaça o lote.")
+        undo_data.setdefault("linked_cards", []).append({"id": card.pk, "previous": None})
+        card.billing_card = main
+        card.save(update_fields=["billing_card", "updated_at"])
+
+
+def _record_invoice_closing(batch, undo_data):
+    """Guarda o fechamento real desta fatura: a data de cada fechamento melhora o mês
+    em que as compras (inclusive as já registradas) caem."""
+    if not (batch.kind == ImportBatch.Kind.INVOICE and batch.invoice_year and batch.invoice_month
+            and batch.invoice_closing_date and batch.payment_method_id):
+        return
+    card = invoice_card(batch.payment_method)
+    previous = InvoiceClosing.objects.filter(card=card, year=batch.invoice_year, month=batch.invoice_month).first()
+    undo_data["invoice_closing"] = {
+        "card_id": card.pk, "year": batch.invoice_year, "month": batch.invoice_month,
+        "previous": ({"closing_date": previous.closing_date.isoformat(),
+                      "due_date": previous.due_date.isoformat() if previous.due_date else None}
+                     if previous else None),
+    }
+    InvoiceClosing.objects.update_or_create(
+        card=card, year=batch.invoice_year, month=batch.invoice_month,
+        defaults={"closing_date": batch.invoice_closing_date, "due_date": batch.invoice_due_date})
 
 
 def _resolve_account_name(batch, name, undo_data):
@@ -417,6 +450,8 @@ def commit(batch_id, version):
                 _create_payment_method(batch, undo_data)
             if batch.additional_new_cards and batch.payment_method_id:
                 _create_additional_cards(batch, undo_data)
+            if batch.link_cards and batch.payment_method_id:
+                _link_existing_cards(batch, undo_data)
             if undo_data.get("created_payment_methods"):
                 assign_external_ids(batch)  # as chaves das linhas dependem do id do cartão
             entries = batch.entries.select_related(
@@ -432,6 +467,7 @@ def commit(batch_id, version):
                 _resolve_entry_refs(batch, entry, undo_data)
                 _commit_entry(batch, entry, result)
 
+            _record_invoice_closing(batch, undo_data)
             updates = planned_card_updates(batch)
             if updates:
                 undo_data["card_fields"] = list(updates.keys())
@@ -542,6 +578,18 @@ def undo(batch_id):
             for attr in undo_data["card_fields"]:
                 setattr(card, attr, None)
             card.save(update_fields=[*undo_data["card_fields"], "updated_at"])
+        for link in undo_data.get("linked_cards", []):
+            PaymentMethod.objects.filter(pk=link["id"]).update(billing_card_id=link["previous"])
+        closing = undo_data.get("invoice_closing")
+        if closing:
+            key = {"card_id": closing["card_id"], "year": closing["year"], "month": closing["month"]}
+            if closing["previous"]:
+                InvoiceClosing.objects.filter(**key).update(
+                    closing_date=date.fromisoformat(closing["previous"]["closing_date"]),
+                    due_date=(date.fromisoformat(closing["previous"]["due_date"])
+                              if closing["previous"]["due_date"] else None))
+            else:
+                InvoiceClosing.objects.filter(**key).delete()
         # Cartões/contas criados pelo lote: remove (do mais novo para o mais antigo)
         # se nada mais passou a usá-los
         for model, key in ((PaymentMethod, "created_payment_methods"), (BankAccount, "created_bank_accounts")):

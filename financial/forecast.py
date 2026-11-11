@@ -69,8 +69,36 @@ def family_q(prefix, ids):
     return Q(**{f"{prefix}_id__in": ids}) | Q(**{f"{prefix}__billing_card_id__in": ids})
 
 
-def invoice_period_for(payment_method, d):
+def load_closings(card_ids=None):
+    """Fechamentos reais conhecidos: {cartão principal: {(ano, mês de vencimento): (fechamento, vencimento)}}."""
+    from .models import InvoiceClosing
+
+    qs = InvoiceClosing.objects.all()
+    if card_ids is not None:
+        qs = qs.filter(card_id__in=card_ids)
+    result = {}
+    for card_id, year, month, closing, due in qs.values_list("card_id", "year", "month", "closing_date", "due_date"):
+        result.setdefault(card_id, {})[(year, month)] = (closing, due)
+    return result
+
+
+def _known_closings(card, closings):
+    if closings is not None:
+        return closings.get(card.pk, {})
+    if not getattr(card, "pk", None):
+        return {}
+    return load_closings([card.pk]).get(card.pk, {})
+
+
+def invoice_period_for(payment_method, d, closings=None):
     """Em qual fatura (mês de vencimento) cai uma compra feita na data `d`.
+
+    `closings` (de `load_closings`) evita uma consulta por chamada em laços; sem
+    ele, os fechamentos reais do cartão são buscados na hora.
+
+    Estimativa: pelo `closing_day` do cartão. Onde há fechamento REAL conhecido
+    (fatura já importada), ele vale mais: a compra vai para a fatura cujo
+    fechamento ela ainda não passou, e a anterior já fechou.
 
     - Cartão com `closing_day`: compra no dia do fechamento ou depois vai para a
       fatura seguinte. O vencimento é `due_day` no mês do fechamento (se
@@ -81,8 +109,12 @@ def invoice_period_for(payment_method, d):
     card = invoice_card(payment_method)  # fechamento e vencimento são os da fatura
     closing_day = getattr(card, "closing_day", None)
     is_credit = getattr(payment_method, "type", None) == "CREDIT"
-    if not is_credit or not closing_day:
+    known = _known_closings(card, closings) if is_credit else {}
+    if not is_credit or not (closing_day or known):
         return InvoicePeriod(d.year, d.month, d)
+    if not closing_day:
+        # Sem dia de fechamento cadastrado, mas com faturas importadas: parte do mês da compra
+        closing_day = next(iter(known.values()))[0].day
 
     closing_this_month = date(d.year, d.month, _clamp_day(d.year, d.month, closing_day))
     if d >= closing_this_month:
@@ -100,10 +132,29 @@ def invoice_period_for(payment_method, d):
         due_date = date(dy, dm, _clamp_day(dy, dm, due_day))
     else:
         due_date = closing_date + timedelta(days=7)
+    year, month = due_date.year, due_date.month
+    if known:
+        moved = False
+        for _ in range(3):  # a estimativa erra no máximo uma fatura; 3 é folga
+            previous = known.get(add_months(year, month, -1))
+            current = known.get((year, month))
+            if previous and d < previous[0]:
+                year, month = add_months(year, month, -1)
+            elif current and d >= current[0]:
+                year, month = add_months(year, month, 1)
+            else:
+                break
+            moved = True
+        real_due = known.get((year, month), (None, None))[1]
+        if real_due:
+            due_date = real_due
+        elif moved:
+            day = getattr(card, "due_day", None) or due_date.day
+            due_date = date(year, month, _clamp_day(year, month, day))
     return InvoicePeriod(due_date.year, due_date.month, due_date)
 
 
-def transaction_invoice_period(tx):
+def transaction_invoice_period(tx, closings=None):
     """Fatura de uma compra à vista no cartão: a fatura em que ela realmente veio
     (`invoice_month`, gravado ao importar a fatura) ou, se não se sabe, a calculada
     pelo dia de fechamento do cartão."""
@@ -111,7 +162,7 @@ def transaction_invoice_period(tx):
         year, month = tx.invoice_month.year, tx.invoice_month.month
         due_day = invoice_card(tx.payment_method).due_day or 1
         return InvoicePeriod(year, month, date(year, month, _clamp_day(year, month, due_day)))
-    return invoice_period_for(tx.payment_method, tx.date)
+    return invoice_period_for(tx.payment_method, tx.date, closings)
 
 
 def first_installment_due_date(payment_method, purchase_date, first_invoice_month=None):
@@ -236,6 +287,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
     range_start = month_start(*month_from)
     range_end = month_end(*month_to)
     paid = set() if include_paid else paid_invoices()
+    closings = load_closings()
 
     months = {}
 
@@ -307,7 +359,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
     if payment_method_ids:
         tx_qs = tx_qs.filter(family_q("payment_method", payment_method_ids))
     for tx in tx_qs:
-        period = transaction_invoice_period(tx)
+        period = transaction_invoice_period(tx, closings)
         if not open_invoice(invoice_card(tx.payment_method).pk, period.year, period.month):
             continue
         is_refund = tx.type == "INCOME"
@@ -329,7 +381,7 @@ def invoice_forecast(month_from=None, month_to=None, payment_method_ids=None, in
     for rec, d in projected_recurrences(rec_start, range_end, payment_method_ids, credit_only=True):
         if rec.type != "EXPENSE":
             continue
-        period = invoice_period_for(rec.payment_method, d)
+        period = invoice_period_for(rec.payment_method, d, closings)
         if not open_invoice(invoice_card(rec.payment_method).pk, period.year, period.month):
             continue
         add(period.year, period.month, rec.payment_method, {
@@ -655,6 +707,7 @@ def third_party_balances(today=None, person_ids=None, include_items=False):
 
     today = today or date.today()
     current = (today.year, today.month)
+    closings = load_closings()
     people = {}
 
     def entry(entity):
@@ -692,7 +745,7 @@ def third_party_balances(today=None, person_ids=None, include_items=False):
                                             "transaction_id": tx.pk})
             continue
         if tx.payment_method.type == "CREDIT":
-            period = transaction_invoice_period(tx)
+            period = transaction_invoice_period(tx, closings)
             year, month = period.year, period.month
         else:
             year, month = tx.date.year, tx.date.month

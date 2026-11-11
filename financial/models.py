@@ -393,6 +393,35 @@ class Installment(models.Model):
         return f"{self.purchase.description} - {self.installment_number}/{self.purchase.number_of_installments}"
 
 
+class InvoiceClosing(models.Model):
+    """Fechamento REAL de uma fatura, guardado quando a fatura é importada.
+
+    O banco desloca o fechamento (fins de semana, feriados), então o `closing_day`
+    do cartão é só uma estimativa. Com as datas reais, uma compra cai na fatura
+    certa pela janela entre o fechamento anterior e este (ver
+    `financial.forecast.invoice_period_for`)."""
+
+    card = models.ForeignKey(
+        "accounts.PaymentMethod", on_delete=models.CASCADE, related_name="invoice_closings",
+        verbose_name=_("card"), help_text=_("Main card of the invoice"),
+    )
+    year = models.PositiveSmallIntegerField(_("year"), help_text=_("Due year of the invoice"))
+    month = models.PositiveSmallIntegerField(_("month"), help_text=_("Due month of the invoice"))
+    closing_date = models.DateField(_("closing date"))
+    due_date = models.DateField(_("due date"), null=True, blank=True)
+    created_at = models.DateTimeField(_("created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("invoice closing")
+        verbose_name_plural = _("invoice closings")
+        ordering = ["card", "-year", "-month"]
+        unique_together = [["card", "year", "month"]]
+
+    def __str__(self):
+        return f"{self.card} {self.month:02d}/{self.year}: fecha {self.closing_date:%d/%m/%Y}"
+
+
 class Transfer(models.Model):
     """Movimento que não é receita nem despesa: pagamento de fatura de cartão
     ou transferência entre contas próprias.

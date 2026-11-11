@@ -59,7 +59,7 @@ Depois de um ajuste chega um resumo novo. Use sempre os botões do resumo mais r
 
 ## Cartões
 
-- **Fatura com vários cartões** (titular, adicional, virtual): é uma fatura só, mas cada compra fica no cartão que a fez. Os cartões adicionais ficam ligados ao principal pelo campo "Cobrado na fatura de". Quando o bot encontra um cartão novo numa fatura, ele propõe o cadastro no próprio lote.
+- **Fatura com vários cartões** (titular, adicional, virtual): é uma fatura só, mas cada compra fica no cartão que a fez. Os cartões adicionais ficam ligados ao principal pelo campo "Cobrado na fatura de". Você não precisa configurar isso à mão: quando a fatura traz um cartão novo, o bot propõe o cadastro já ligado; quando traz um cartão que você já cadastrou solto, o resumo avisa "Ao confirmar, ligo à fatura de X: ..." e a ligação é feita no Confirmar (o `/desfazer` desfaz).
 - **Parcelas:** a linha "PARCELA 03/10" vira uma compra parcelada com as dez parcelas; nas faturas seguintes cada parcela já aparece como registrada.
 - **Pagamento da fatura:** não é gasto. No extrato da conta, vira uma transferência para o cartão e marca aquela fatura como paga.
 
@@ -147,7 +147,7 @@ Para gastar menos: prefira o envio normal ao `agora`, mande o arquivo original e
 - **OFX é melhor que PDF** para extratos, quando o banco oferece: cada linha traz um identificador, e reimportar nunca duplica.
 - **Não reenvie por garantia.** Reenviar uma fatura já confirmada não duplica nada (tudo aparece como "já registrado"), mas custa uma leitura.
 - **Documento de outro mês ou de outra pessoa:** diga na legenda. O bot identifica a conta pelo banco e pelo titular impressos; se você tem duas contas no mesmo banco, a legenda evita a pergunta.
-- **Compras recentes no cartão** entram na fatura prevista pelo dia de fechamento cadastrado. Quando a fatura real chega, o mês é corrigido (o fechamento real varia um ou dois dias).
+- **Dia de fechamento:** o dia cadastrado no cartão é só uma estimativa, porque o banco desloca o fechamento (fins de semana, feriados). Cada fatura que você confirma guarda a data real de fechamento e vencimento daquele mês, e a partir daí as compras, inclusive as que você lançou antes sem fatura, são encaixadas na fatura certa pela janela real. Para os meses ainda sem fatura importada, vale a estimativa.
 - **O site e o bot mostram os mesmos números.** Correções pontuais (categoria, valor, data) podem ser feitas no site.
 - **Fotos:** uma por comprovante, legível e sem cortes. Fotos enviadas juntas são lidas na mesma resposta.
 - **O bot não lê:** áudio, vídeo e links.

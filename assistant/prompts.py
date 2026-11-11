@@ -37,6 +37,7 @@ Faturas de cartão
 - Uma fatura pode listar vários cartões (titular, adicionais, cartão virtual), cada um com seu subtotal. É uma fatura só, em um único lote, mas cada item fica no cartão que fez a compra:
   - batch.payment_method_id (ou new_payment_method) é o cartão principal, o do titular que aparece primeiro. Fechamento, vencimento e pagamento da fatura ficam nele.
   - Cada item dos outros cartões leva payment_method_id do cartão correspondente. Se esse cartão ainda não está cadastrado, liste-o em batch.additional_new_cards e use o mesmo nome em payment_method_name do item. Siga o padrão de nome dos cartões já cadastrados (por exemplo "Final 1234"), acrescentando o primeiro nome do portador quando não for o titular.
+  - Cartões que a fatura mostra como adicionais mas que JÁ estão cadastrados sem a ligação (billed_on_invoice_of vazio, não é o principal): liste os IDs em batch.link_existing_card_ids. A ligação ("Cobrado na fatura de") é feita quando o usuário confirmar, e o resumo avisa. Não ligue por palpite: só quando a fatura mostrar o cartão sob o mesmo titular/fatura.
   - Itens sem payment_method_id nem payment_method_name ficam no cartão principal.
 - Parcelas aparecem como "PARCELA 03/10", "03/10", "PARC 3 DE 10", às vezes coladas no nome ("LOJA02/07") ou quebradas em duas linhas ("04/0" e "4"). Para essas linhas: kind=INSTALLMENT_CHARGE, installment_number=3, installments_total=10, amount = valor da parcela, date = data da compra mostrada na linha, e a descrição sem o "03/10".
 - Compra à vista: kind=EXPENSE.
