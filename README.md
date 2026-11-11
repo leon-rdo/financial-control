@@ -5,6 +5,12 @@
 
 Envie ao bot comprovantes (foto), faturas de cartão e extratos (PDF, CSV, OFX) ou texto livre. O assistente monta um **lote** com os lançamentos, marca o que já está registrado e mostra um resumo com o botão **Confirmar**. Nada é gravado sem essa confirmação. Ele também responde perguntas ("quanto vou pagar de fatura em dezembro?", "qual meu saldo previsto em janeiro?") e manda avisos automáticos (fatura vencendo, saldo projetado negativo, resumo mensal).
 
+Como os documentos são lidos:
+
+- PDF, CSV e OFX são lidos por um modelo mais barato, numa chamada só. O servidor confere o resultado (soma da fatura, saldo do extrato e cada item contra a linha original) antes de mostrar o lote. Se algo não fechar, ele tenta de novo, depois usa um modelo mais forte e, por último, o assistente completo.
+- `ASSISTANT_DOCUMENT_MODE=batch` (padrão): a leitura vai para a fila de batches da Anthropic, pela metade do preço, e o bot avisa quando o lote fica pronto (em geral alguns minutos). Para ler na hora, envie o arquivo com a legenda `agora`, ou use `direct` no `.env`. `agent` volta ao fluxo antigo, em que o assistente completo lê o documento.
+- Fotos de comprovante, texto e perguntas continuam sendo respondidos na hora pelo assistente.
+
 Como os dados ficam organizados:
 
 - **Fatura com vários cartões** (titular, adicional, virtual): cada compra fica no cartão que a fez; os cartões adicionais são ligados ao principal ("Cobrado na fatura de"), então a fatura, o vencimento e o pagamento continuam únicos.
@@ -22,6 +28,9 @@ AI_PROVIDER=anthropic                # ou openai
 ANTHROPIC_API_KEY=...
 ANTHROPIC_MODEL=claude-opus-5-5      # opcional
 ANTHROPIC_EFFORT=medium              # opcional: low | medium | high
+ASSISTANT_DOCUMENT_MODE=batch        # opcional: batch | direct | agent (ver abaixo)
+ANTHROPIC_EXTRACTION_MODEL=claude-haiku-5-5            # opcional: modelo que lê os documentos
+ANTHROPIC_EXTRACTION_FALLBACK_MODEL=claude-sonnet-5-5  # opcional: usado se as conferências falharem
 OPENAI_API_KEY=...                   # só com AI_PROVIDER=openai
 PDF_PASSWORDS=12345                  # opcional: senhas tentadas em PDFs protegidos
 ```

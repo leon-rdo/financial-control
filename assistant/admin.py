@@ -51,3 +51,13 @@ class ImportBatchAdmin(admin.ModelAdmin):
     list_filter = ["kind", "status"]
     readonly_fields = ["version", "warnings", "created_at", "updated_at", "committed_at"]
     inlines = [StagedEntryInline]
+
+
+from .models import ExtractionJob  # noqa: E402
+
+
+@admin.register(ExtractionJob)
+class ExtractionJobAdmin(admin.ModelAdmin):
+    list_display = ["id", "attachment", "mode", "model", "status", "import_batch", "created_at", "finished_at"]
+    list_filter = ["mode", "status", "model"]
+    readonly_fields = ["usage", "error", "provider_batch_id", "created_at", "finished_at"]

@@ -259,3 +259,41 @@ class StagedEntry(models.Model):
 
     def __str__(self):
         return f"{self.position}. {self.description} R$ {self.amount}"
+
+
+class ExtractionJob(models.Model):
+    """Leitura de um documento em chamada única (assistant/extraction.py), feita
+    na hora ("direct") ou pela API de batches ("batch", mais barata, assíncrona)."""
+
+    class Mode(models.TextChoices):
+        BATCH = "batch", "Batch (segundo plano)"
+        DIRECT = "direct", "Na hora"
+
+    class Status(models.TextChoices):
+        SUBMITTED = "submitted", "Enviado"
+        DONE = "done", "Concluído"
+        FALLBACK = "fallback", "Refeito pelo agente"
+        FAILED = "failed", "Falhou"
+
+    chat_id = models.BigIntegerField(db_index=True)
+    attachment = models.ForeignKey(Attachment, on_delete=models.CASCADE, related_name="extraction_jobs")
+    caption = models.TextField(blank=True)
+    mode = models.CharField(max_length=10, choices=Mode.choices)
+    model = models.CharField(max_length=100)
+    provider_batch_id = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.SUBMITTED)
+    error = models.TextField(blank=True)
+    usage = models.JSONField(default=dict, blank=True)
+    import_batch = models.ForeignKey(
+        ImportBatch, on_delete=models.SET_NULL, null=True, blank=True, related_name="extraction_jobs"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Extração de documento"
+        verbose_name_plural = "Extrações de documentos"
+
+    def __str__(self):
+        return f"Extração #{self.pk} ({self.mode}, {self.status})"

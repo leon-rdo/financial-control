@@ -176,3 +176,83 @@ class DigestTests(TestCase):
         self.assertEqual(first, 2)
         self.assertEqual(call.call_count, 2)  # segunda rodada não reenvia
         self.assertEqual(DigestLog.objects.count(), 2)
+
+
+@override_settings(TELEGRAM_ALLOWED_CHAT_IDS="111", AI_PROVIDER="anthropic",
+                   ANTHROPIC_EXTRACTION_MODEL="cheap", ANTHROPIC_EXTRACTION_FALLBACK_MODEL="")
+class DocumentRoutingTests(TestCase):
+    """PDF enviado ao bot: vai para a extração (batch por padrão, na hora com "agora")."""
+
+    def setUp(self):
+        import tempfile
+
+        from assistant.tests.test_documents import make_pdf
+        from assistant.tests.test_extraction import GOOD, FakeClient, invoice, message
+
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        override = override_settings(ASSISTANT_STORAGE_DIR=tmp.name)
+        override.enable()
+        self.addCleanup(override.disable)
+
+        self.fake = FakeClient(direct=[message(invoice(GOOD))], batch_result=message(invoice(GOOD)))
+        self.sent = []
+
+        def fake_call(method, payload=None, timeout=15):
+            self.sent.append((method, payload))
+            return {"ok": True, "result": {"message_id": 5}}
+
+        for target, kwargs in (
+            ("telegram_bot.client.call", {"side_effect": fake_call}),
+            ("telegram_bot.client.download_file", {"return_value": (make_pdf(), "documents/fatura.pdf")}),
+            ("assistant.extraction.get_client", {"return_value": self.fake}),
+        ):
+            patcher = mock.patch(target, **kwargs)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def document(self, caption=None):
+        msg = {"message_id": 3, "chat": {"id": CHAT},
+               "document": {"file_id": "f1", "file_name": "fatura.pdf", "mime_type": "application/pdf"}}
+        if caption:
+            msg["caption"] = caption
+        return [{"update_id": 40, "message": msg}]
+
+    def texts(self):
+        return [p.get("text", "") for m, p in self.sent if m == "sendMessage"]
+
+    @override_settings(ASSISTANT_DOCUMENT_MODE="batch")
+    def test_document_goes_to_batch_and_is_delivered_by_the_worker(self):
+        from assistant.models import ExtractionJob
+
+        bot.process_chat_updates(CHAT, self.document())
+        self.assertEqual(ExtractionJob.objects.get().mode, "batch")
+        self.assertIn("segundo plano", self.texts()[0])
+        self.assertEqual(ImportBatch.objects.count(), 0)
+
+        bot.deliver_finished_extractions()
+        self.assertTrue(any("Li fatura.pdf" in t for t in self.texts()))
+        summary = next(p for m, p in self.sent if m == "sendMessage" and "reply_markup" in p)
+        self.assertIn("Confirmar", summary["reply_markup"])
+        self.assertEqual(ImportBatch.objects.get().telegram_message_id, 5)
+        self.assertEqual(Transaction.objects.count(), 0)
+
+    @override_settings(ASSISTANT_DOCUMENT_MODE="batch")
+    def test_caption_agora_reads_immediately(self):
+        from assistant.models import ExtractionJob
+
+        bot.process_chat_updates(CHAT, self.document(caption="agora, fatura de novembro"))
+        job = ExtractionJob.objects.get()
+        self.assertEqual((job.mode, job.caption), ("direct", "fatura de novembro"))
+        self.assertEqual(ImportBatch.objects.count(), 1)
+
+    @override_settings(ASSISTANT_DOCUMENT_MODE="agent")
+    def test_agent_mode_keeps_the_interactive_flow(self):
+        from assistant.models import ExtractionJob
+        from assistant.tests.test_agent import FakeProvider
+
+        provider = FakeProvider([("Li o arquivo.", [])])
+        with mock.patch("telegram_bot.bot.get_provider", return_value=provider):
+            bot.process_chat_updates(CHAT, self.document())
+        self.assertEqual(ExtractionJob.objects.count(), 0)
+        self.assertIn("Li o arquivo.", self.texts())

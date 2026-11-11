@@ -12,9 +12,10 @@ from contextlib import contextmanager
 from html import escape
 from pathlib import Path
 
+from django.conf import settings
 from django.utils import timezone
 
-from assistant import agent, batch_service, documents
+from assistant import agent, batch_service, documents, extraction
 from assistant.models import Attachment, ImportBatch
 from assistant.providers import Part, ProviderNotAvailable, get_provider
 
@@ -284,20 +285,89 @@ def process_chat_updates(chat_id, payloads):
         if not parts:
             return
 
-    parts.extend(Part("text", text=t) for t in texts if locked_pdf is None)
+    if locked_pdf is None:
+        parts.extend(Part("text", text=t) for t in texts)
     if not parts:
         return
 
-    with typing(chat_id):
-        result = agent.run_turn(chat_id, parts, provider=provider)
+    # Documentos (PDF, CSV, OFX) vão para a extração em chamada única, mais barata
+    documents_parts = [p for p in parts if p.kind == "attachment" and extraction.handles(p.attachment)]
+    if documents_parts and extraction.available():
+        caption = "\n".join(p.text for p in parts if p.kind == "text").strip()
+        now = caption.lower().startswith("agora")
+        if now:
+            caption = caption[5:].lstrip(" :,.-")
+        for part in documents_parts:
+            _extract_document(chat_id, part.attachment, caption, now or settings.ASSISTANT_DOCUMENT_MODE == "direct")
+        parts = [p for p in parts if p.kind == "attachment" and p not in documents_parts]
+        if not parts:
+            return  # o texto era a legenda dos documentos
 
-    if result.text:
-        client.send_message(chat_id, result.text)
-    for batch_id in result.batches_to_present:
+    _run_agent(chat_id, parts, provider)
+
+
+def _deliver(chat_id, text, batch_ids):
+    """Envia a resposta e o resumo (com botões) de cada lote apresentado."""
+    if text:
+        client.send_message(chat_id, text)
+    for batch_id in batch_ids:
         batch = ImportBatch.objects.select_related("payment_method", "balance_account").get(pk=batch_id)
-        text, keyboard = render.batch_summary(batch)
-        sent = client.send_message(chat_id, text, reply_markup=keyboard, html=True)
+        summary, keyboard = render.batch_summary(batch)
+        sent = client.send_message(chat_id, summary, reply_markup=keyboard, html=True)
         message_id = sent.get("result", {}).get("message_id") if sent.get("ok") else None
         if message_id:
             batch.telegram_message_id = message_id
             batch.save(update_fields=["telegram_message_id"])
+
+
+def _run_agent(chat_id, parts, provider=None):
+    with typing(chat_id):
+        result = agent.run_turn(chat_id, parts, provider=provider)
+    _deliver(chat_id, result.text, result.batches_to_present)
+
+
+def _extract_document(chat_id, attachment, caption, immediately):
+    if not immediately:
+        try:
+            extraction.submit_batch(chat_id, attachment, caption)
+        except extraction.ExtractionFailed as exc:
+            logger.warning("Batch indisponível, lendo na hora: %s", exc)
+        else:
+            client.send_message(
+                chat_id,
+                f"📥 Recebi {attachment.filename}. Vou ler em segundo plano, que sai mais barato, e aviso aqui "
+                "quando o lote estiver pronto (em geral alguns minutos). Para ler na hora, reenvie com a "
+                "legenda \"agora\".",
+            )
+            return
+    with typing(chat_id):
+        result = extraction.run_direct(chat_id, attachment, caption)
+    _handle_extraction_result(result)
+
+
+def _handle_extraction_result(result):
+    job = result.job
+    if result.needs_agent:
+        # As conferências não fecharam nem nas novas tentativas: relê com o agente completo
+        client.send_message(
+            job.chat_id,
+            f"A leitura rápida de {job.attachment.filename} não fechou nas conferências. Vou reler com o "
+            "modelo completo; pode levar alguns minutos.",
+        )
+        parts = [Part("attachment", attachment=job.attachment)]
+        if job.caption:
+            parts.append(Part("text", text=job.caption))
+        _run_agent(job.chat_id, parts)
+        return
+    header = f"📄 Li {job.attachment.filename}."
+    _deliver(job.chat_id, f"{header}\n{result.text}".strip(), result.batches_to_present)
+
+
+def deliver_finished_extractions():
+    """Chamado pelo worker: entrega os documentos cuja leitura em batch terminou."""
+    for result in extraction.poll():
+        try:
+            _handle_extraction_result(result)
+        except Exception:
+            logger.exception("Erro ao entregar extração #%s", result.job.pk)
+            client.send_message(result.job.chat_id, "⚠️ Tive um erro ao montar o lote do seu documento. Reenvie, por favor.")

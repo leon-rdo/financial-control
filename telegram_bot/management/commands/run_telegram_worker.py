@@ -15,6 +15,7 @@ from django.db import close_old_connections, connection
 from django.db.models import F, Max
 from django.utils import timezone
 
+from assistant import extraction
 from telegram_bot import bot, client
 from telegram_bot.models import TelegramUpdate
 
@@ -67,6 +68,7 @@ class Command(BaseCommand):
                     else:
                         time.sleep(3)
 
+                self.check_extractions()
                 worked = self.process_ready()
                 if options["once"] and not worked and not self._pending_exists():
                     return
@@ -74,6 +76,18 @@ class Command(BaseCommand):
                     time.sleep(1)
         except KeyboardInterrupt:
             self.stdout.write("Encerrado.")
+
+    def check_extractions(self, every=20):
+        """Documentos em leitura por batch: consulta de tempos em tempos e entrega os prontos."""
+        now = time.monotonic()
+        if now - getattr(self, "_last_extraction_check", 0.0) < every:
+            return
+        self._last_extraction_check = now
+        try:
+            if extraction.pending_jobs().exists():
+                bot.deliver_finished_extractions()
+        except Exception:
+            logger.exception("Erro ao consultar extrações em batch")
 
     def _pending_exists(self):
         return TelegramUpdate.objects.filter(status=TelegramUpdate.Status.PENDING).exists()

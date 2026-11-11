@@ -221,6 +221,15 @@ AI_PROVIDER = os.environ.get('AI_PROVIDER', 'anthropic')  # anthropic | openai
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-opus-5-5')
 ANTHROPIC_EFFORT = os.environ.get('ANTHROPIC_EFFORT', 'medium')  # low | medium | high | xhigh | max
+# Leitura de documentos (PDF, CSV, OFX) em chamada única, por um modelo mais barato:
+#   batch  = API de batches (metade do preço, resposta em minutos)
+#   direct = a mesma chamada, na hora
+#   agent  = agente interativo com o modelo principal (como antes)
+ASSISTANT_DOCUMENT_MODE = os.environ.get('ASSISTANT_DOCUMENT_MODE', 'batch')
+ANTHROPIC_EXTRACTION_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_MODEL', 'claude-haiku-5-5')
+ANTHROPIC_EXTRACTION_EFFORT = os.environ.get('ANTHROPIC_EXTRACTION_EFFORT', '')  # vazio = padrão do modelo
+# Usado quando a extração barata falha nas conferências duas vezes (vazio = ir direto ao agente)
+ANTHROPIC_EXTRACTION_FALLBACK_MODEL = os.environ.get('ANTHROPIC_EXTRACTION_FALLBACK_MODEL', 'claude-sonnet-5-5')
 ASSISTANT_IDLE_HOURS = int(os.environ.get('ASSISTANT_IDLE_HOURS', '6'))
 ASSISTANT_MAX_STEPS = int(os.environ.get('ASSISTANT_MAX_STEPS', '15'))
 # Senhas tentadas automaticamente em PDFs protegidos (ex.: primeiros dígitos do CPF)
