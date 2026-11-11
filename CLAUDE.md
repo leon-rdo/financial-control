@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-source .venv/bin/activate          # Python 3.12 venv
-uv pip install -e .                # Install deps via uv
+uv sync --no-install-project       # Cria/atualiza .venv (Python 3.12) a partir do uv.lock
+source .venv/bin/activate
 
 python manage.py runserver         # Dev server on :8000
 python manage.py makemigrations    # After model changes
@@ -30,7 +30,7 @@ python manage.py test financial assistant telegram_bot  # Testes (Django TestCas
 deploy/deploy.sh                   # Publica em produção (confin.site, host ssh leonardo_contabo)
 ```
 
-No linter is configured. `uv sync --no-install-project` instala a partir do `uv.lock` (extra `prod` = gunicorn + psycopg).
+No linter is configured. O extra `prod` (gunicorn + psycopg) é instalado pelo `deploy/deploy.sh`, que também roda os testes no servidor antes de publicar.
 
 ## Production
 
@@ -40,7 +40,7 @@ No linter is configured. `uv sync --no-install-project` instala a partir do `uv.
 
 ### Django Project: `financial_control/`
 
-Settings in `financial_control/settings.py`. Database defaults to SQLite; set `DB_USED=mysql` env var to switch. Root URL conf mounts apps at `/` (core, accounts, financial) and `/telegram/` (telegram_bot).
+Settings in `financial_control/settings.py`. Database defaults to SQLite; set `DB_USED=mysql` or `DB_USED=postgres` (production) to switch. Root URL conf mounts apps at `/` (core, accounts, financial) and `/telegram/` (telegram_bot).
 
 ### Apps
 
@@ -58,7 +58,8 @@ Settings in `financial_control/settings.py`. Database defaults to SQLite; set `D
   - `Installment` — Individual payment with `paid` flag, `reference_month`/`reference_year` for invoice grouping
   - `Recurrence` — Scheduled transaction templates (WEEKLY/MONTHLY/YEARLY/CUSTOM)
   - `DashboardView` — Aggregated financial summary at `/`
-  - `InvoiceForecastView` — Groups unpaid installments by month and payment method at `/previsao-faturas/`
+  - `InvoiceForecastView` — Invoices by due month and main card at `/previsao-faturas/` (installments, one-off credit purchases, refunds and card recurrences, via `financial/forecast.py`)
+  - `Transfer` — Invoice payments and moves between own accounts/pots (not income or expense)
 
 - **`assistant/`** — Assistente de IA independente de canal:
   - `agent.py` — `run_turn(chat_id, parts)`: loop manual modelo ↔ ferramentas, persiste cada passo em `ChatMessage` (formato nativo do provedor; histórico só cresce). Conversa nova por inatividade (`ASSISTANT_IDLE_HOURS`), `/novo`, ou mudança de provedor/modelo/prompt/ferramentas (`Conversation.prompt_hash`). Data/hora e avisos entram como mensagem `role: "system"` no meio da conversa.
