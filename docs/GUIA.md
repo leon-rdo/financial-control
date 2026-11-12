@@ -57,6 +57,8 @@ Depois de um ajuste chega um resumo novo. Use sempre os botões do resumo mais r
 
 `/desfazer` desfaz o último lote confirmado, inclusive cartões e caixinhas que ele tenha criado.
 
+No site, em **Assistente > Lotes do bot**, cada lote mostra os itens e as conferências. Lá dá para **Confirmar** ou **Descartar** um lote em rascunho e **Desfazer** o último confirmado, com as mesmas regras do chat. Os ajustes de itens continuam pelo Telegram.
+
 ## Cartões
 
 - **Fatura com vários cartões** (titular, adicional, virtual): é uma fatura só, mas cada compra fica no cartão que a fez. Os cartões adicionais ficam ligados ao principal pelo campo "Cobrado na fatura de". Você não precisa configurar isso à mão: quando a fatura traz um cartão novo, o bot propõe o cadastro já ligado; quando traz um cartão que você já cadastrou solto, o resumo avisa "Ao confirmar, ligo à fatura de X: ..." e a ligação é feita no Confirmar (o `/desfazer` desfaz).

@@ -27,7 +27,8 @@ Revisado em 11/11/2026. O guia de uso está em [docs/GUIA.md](docs/GUIA.md).
 
 ## Produto
 
-- [ ] Telas no site (sessão dedicada, ainda não começada): fechamentos de fatura e cartões ligados, transferências, saldos informados, caixinhas, pessoas da família, compras de terceiros (campo "por conta de" nos formulários e quem deve quanto), regras do usuário e gasto com IA. Hoje tudo isso existe só no bot e no admin.
+- [x] Redesign do site (novembro de 2026) e telas que só existiam no bot e no admin: cartões e fechamentos, transferências, contas e caixinhas com saldos informados, família, terceiros (campo "por conta de" e quem deve quanto), regras do usuário, gasto com IA e lotes do bot
+- [x] Confirmar, descartar e desfazer lotes pelo site (mesmas regras do bot; só o último lote confirmado de cada chat pode ser desfeito)
 - [ ] Dividir um item entre a família e outra pessoa
 - [ ] Sugerir recorrências a partir de cobranças que se repetem
 - [ ] Orçamento por categoria e metas para caixinhas
