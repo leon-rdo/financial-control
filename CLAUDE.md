@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**financial-control** is a Django-based personal finance management application for tracking expenses, income, installment-based purchases, and recurrences. Built with Django 6+, HTMX for dynamic UI, Tailwind CSS + DaisyUI components, and Select2 for enhanced dropdowns.
+**financial-control** is a Django-based personal finance management application for tracking expenses, income, installment-based purchases, and recurrences. Built with Django 6+, HTMX for dynamic UI, a hand-written design system (`static/css/confin.css`, no Tailwind/DaisyUI), Alpine.js, and Select2 for searchable dropdowns on desktop.
 
 ## Commands
 
@@ -96,26 +96,28 @@ Settings in `financial_control/settings.py`. Database defaults to SQLite; set `D
 
 ### View Pattern
 
-All CRUD views follow the same pattern:
-- **List**: `FilterView` (django-filter) with 20/page pagination. Returns `*_table.html` partial for HTMX, full `*_list.html` otherwise.
-- **Create/Update**: ModelForm-based. On HTMX submit, returns table HTML with `HX-Trigger` header instead of redirect.
-- **Delete**: Same HTMX pattern — returns updated table partial or normal redirect.
-- **Inline creation**: Category, Tag, Entity, and PaymentMethod support `?inline` POST with JSON body for creating records from within other forms.
+All CRUD views follow the same pattern (mixins in `core/mixins.py`):
+- **List**: `FilterView` (django-filter) with 20/page pagination. Returns `*_table.html` partial for HTMX, full `*_list.html` otherwise. The table partial also re-renders the band numbers out-of-band (`_*_stats.html` with `hx-swap-oob`) so totals follow the filters.
+- **Create/Update** (`HtmxModalFormMixin`): form opens in `#modal-container`; on HTMX submit returns the table partial with `HX-Trigger` (event + `showToast`). Invalid forms come back into the modal (`HX-Retarget`). Opened outside its list (`?depois=recarregar`, e.g. "Nova transação" in the top bar), it saves and sends `HX-Refresh`, with the toast carried by Django messages.
+- **Delete** (`HtmxDeleteMixin`): `DELETE` via the shared confirm dialog (`data-delete`, `data-target`); returns the table partial. A `ProtectedError` returns 409 with an error toast instead of a 500.
+- **Inline creation**: Category, Tag, Entity, and PaymentMethod support `?inline` POST with JSON body (Alpine `inlineCreate` in `static/js/confin.js`).
 
 ### URL Namespacing
 
-- `financial:` — dashboard (`/`), transactions (`/transacoes/`), purchases (`/compras/`), recurrences (`/recorrencias/`), invoice forecast (`/previsao-faturas/`)
-- `accounts:` — bank accounts, payment methods
-- `core:` — categories, tags, entities
+- `financial:` — dashboard (`/`, `?mes=AAAA-MM`), transactions (`/transacoes/`), purchases (`/compras/`), recurrences (`/recorrencias/`), transfers (`/transferencias/`), invoice forecast (`/previsao-faturas/`), cards and real closings (`/cartoes/`), third parties (`/terceiros/`), monthly report (`/relatorios/mensal/`)
+- `accounts:` — accounts and pots with balances (`/contas/`), balance snapshots (`/saldos/informar/`, `/contas/<pk>/saldos/`), payment methods
+- `core:` — categories, tags, entities, family (`/familia/`)
+- `assistant:` — bot batches (`/assistente/lotes/`; the detail page confirms, discards and undoes through `batch_service.commit/discard/undo`, the same rules as the bot: version check, and only the chat's last confirmed batch can be undone; it leaves a note for the agent and edits the Telegram summary), user rules (`/assistente/regras/`), AI spend (`/assistente/custo/`)
 - URLs use Portuguese paths (e.g., `/transacoes/criar/`, `/compras/<pk>/editar/`)
 
 ### Frontend
 
-- **Tailwind CSS + DaisyUI** classes (`input input-bordered`, `select select-bordered`, `btn`, etc.)
-- **HTMX** for partial page updates — list views serve `*_table.html` partials, forms trigger refreshes via HX-Trigger events
-- **Select2** for dropdown fields (django-select2)
-- **Templates**: `templates/base.html` (shared layout), then `<app>/templates/<app>/` per app. Each list page has a `*_table.html` partial for HTMX responses.
-- Filter widgets apply DaisyUI CSS classes directly in FilterSet definitions
+Design context lives in `PRODUCT.md` (product truth) and `.impeccable/surfaces/` (direction contract); `DESIGN.md` documents the visual system.
+- **Design system**: `static/css/confin.css` (tokens for light and dark, components) and `static/js/confin.js` (theme, toasts, modal, confirm dialog, nav menus, Select2 setup, Alpine components). Signature: every screen opens with `.band`, a solid cobalt field with 2-4 numbers and an optional proportion bar (`.prop`).
+- **Widgets**: forms and filters use `core/widgets.py` (`field` class for inputs/selects/textareas, `check` for checkboxes); `FriendlyEmptyLabels` replaces the `---------` empty choice.
+- **Template tags**: `{% load ui %}` gives `brl`/`rs`/`signed` (Brazilian money format), `icon` (Lucide paths), `pct`, `month_name`, `ym_label`, `nav_active`, `query_with`, `active_count`.
+- **Templates**: `templates/base.html` (top bar with grouped menus, mobile bottom bar and menu sheet), `templates/layouts/list.html` (band + filters + table), `templates/partials/` (field, modal, form modal, pagination, row actions). Tables use `rtable` with `c-main`/`c-amount`/`c-meta`/`c-hide`/`c-actions` cells so they turn into stacked rows on phones.
+- **HTMX** for partial page updates; **Select2** only on desktop and for multi-selects (phones keep native selects).
 
 ### Key Conventions
 

@@ -1,0 +1,10 @@
+{% load ui %}<div class="modal" data-modal>
+  <div class="modal-scrim" data-modal-close></div>
+  <div class="modal-panel {% block size %}{% endblock %}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h2 id="modal-title">{% block title %}{% endblock %}</h2>
+      <button type="button" class="icon-btn" data-modal-close aria-label="Fechar">{% icon "x" 20 %}</button>
+    </div>
+    {% block modal_content %}{% endblock %}
+  </div>
+</div>

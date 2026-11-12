@@ -12,7 +12,7 @@ APP=/var/www/confin
 cd "$(dirname "$0")/.."
 
 rsync -az --delete \
-    --exclude '.git/' --exclude '.venv/' --exclude '.env' --exclude '.claude/' \
+    --exclude '.git/' --exclude '.venv/' --exclude '.env' --exclude '.claude/' --exclude '.impeccable/' \
     --exclude 'db.sqlite3*' --exclude 'private/' --exclude 'media/' --exclude 'data/' \
     --exclude 'staticfiles/' --exclude '__pycache__/' --exclude '*.pyc' \
     ./ "$HOST:$APP/"

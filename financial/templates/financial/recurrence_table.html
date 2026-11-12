@@ -1,105 +1,23 @@
-<div id="recurrence-table" class="bg-base-100 rounded-xl border border-base-300/40">
-<div class="overflow-x-auto">
-    <table class="table w-full">
-        <thead>
-            <tr>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Descrição</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Valor</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Tipo</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Frequência</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Dia Ref.</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Período</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Status</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider text-right">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for recurrence in object_list %}
-            <tr class="hover:bg-base-200/30 transition-colors">
-                <td>
-                    <div class="font-medium text-sm">{{ recurrence.description }}</div>
-                    <div class="text-xs text-base-content/40">{{ recurrence.category.name }}</div>
-                </td>
-                <td>
-                    <div class="text-sm font-semibold tabular-nums">R$ {{ recurrence.amount|floatformat:2 }}</div>
-                </td>
-                <td>
-                    {% if recurrence.type == "INCOME" %}
-                    <span class="text-xs text-success font-medium">{{ recurrence.get_type_display }}</span>
-                    {% else %}
-                    <span class="text-xs text-error font-medium">{{ recurrence.get_type_display }}</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="text-xs px-2 py-0.5 rounded bg-base-content/5 text-base-content/60">{{ recurrence.get_frequency_display }}</span>
-                </td>
-                <td>
-                    <span class="text-sm text-base-content/60">{{ recurrence.reference_day }}</span>
-                </td>
-                <td>
-                    <div class="text-xs text-base-content/50">
-                        <div>Início: {{ recurrence.start_date|date:"d/m/Y" }}</div>
-                        {% if recurrence.end_date %}
-                        <div>Fim: {{ recurrence.end_date|date:"d/m/Y" }}</div>
-                        {% else %}
-                        <div class="text-base-content/30">Sem fim</div>
-                        {% endif %}
-                    </div>
-                </td>
-                <td>
-                    {% if recurrence.active %}
-                    <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-success"></div><span class="text-xs text-base-content/50">Ativa</span></div>
-                    {% else %}
-                    <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-base-content/20"></div><span class="text-xs text-base-content/35">Inativa</span></div>
-                    {% endif %}
-                </td>
-                <td class="text-right">
-                    <div class="flex gap-1 justify-end">
-                        <button
-                            hx-get="{% url 'financial:recurrence_update' recurrence.pk %}"
-                            hx-target="#modal-container"
-                            hx-swap="innerHTML"
-                            class="btn btn-ghost btn-xs btn-square">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                        </button>
-                        <button
-                            @click="$dispatch('openDeleteModal', { url: '{% url 'financial:recurrence_delete' recurrence.pk %}' })"
-                            class="btn btn-ghost btn-xs btn-square text-error">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" class="text-center py-10 text-base-content/30 text-sm">
-                    Nenhuma recorrência encontrada
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+{% load ui %}<section class="card" id="recurrence-table" aria-label="Lista de recorrências">
+  <div class="table-wrap">
+    <table class="table rtable rtable-inline-actions">
+      <thead><tr><th>Descrição</th><th>Frequência</th><th>Forma de pagamento</th><th>Período</th><th>Situação</th><th class="num">Valor</th><th><span class="sr-only">Ações</span></th></tr></thead>
+      <tbody>
+        {% for r in object_list %}
+        <tr class="{% if not r.active %}is-muted{% endif %}">
+          <td class="c-main"><p class="cell-title">{{ r.description }}</p><p class="cell-meta">{{ r.category.name }}{% if r.entity %}<span class="sep"></span>{{ r.entity.name }}{% endif %}<span class="show-sm"><span class="sep"></span>{{ r.get_frequency_display }}{% if r.reference_day %}, dia {{ r.reference_day }}{% endif %}</span></p></td>
+          <td class="c-hide">{{ r.get_frequency_display }}{% if r.reference_day %}<span class="muted">, dia {{ r.reference_day }}</span>{% endif %}</td>
+          <td class="c-hide muted">{{ r.payment_method.name }}</td>
+          <td class="c-hide muted nowrap">desde {{ r.start_date|date:"m/Y" }}{% if r.end_date %} até {{ r.end_date|date:"m/Y" }}{% endif %}</td>
+          <td class="c-meta">{% if r.active %}<span class="status status-ok">Ativa</span>{% else %}<span class="status status-off">Inativa</span>{% endif %}</td>
+          <td class="c-amount num"><span class="amount{% if r.type == 'INCOME' %} in{% endif %}">{{ r.amount|signed:r.type }}</span></td>
+          <td class="c-actions">{% url 'financial:recurrence_update' r.pk as edit_url %}{% url 'financial:recurrence_delete' r.pk as delete_url %}{% include "partials/row_actions.html" with edit_url=edit_url delete_url=delete_url target="#recurrence-table" what=r.description %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty"><strong>Nenhuma recorrência</strong>Cadastre aluguel, condomínio, assinaturas e salários para a previsão ficar completa.</div></td></tr>
+        {% endfor %}
+      </tbody>
     </table>
-</div>
-
-{% if is_paginated %}
-<div class="flex justify-center mt-6">
-    <div class="join">
-        {% if page_obj.has_previous %}
-        <button hx-get="?page=1" hx-target="#recurrence-table" hx-swap="outerHTML" class="join-item btn btn-sm">«</button>
-        <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#recurrence-table" hx-swap="outerHTML" class="join-item btn btn-sm">‹</button>
-        {% endif %}
-
-        <button class="join-item btn btn-sm btn-active">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</button>
-
-        {% if page_obj.has_next %}
-        <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#recurrence-table" hx-swap="outerHTML" class="join-item btn btn-sm">›</button>
-        <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#recurrence-table" hx-swap="outerHTML" class="join-item btn btn-sm">»</button>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-</div>
+  </div>
+  {% include "partials/pagination.html" with target="#recurrence-table" %}
+</section>

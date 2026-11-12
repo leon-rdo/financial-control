@@ -1,0 +1,16 @@
+{% extends "partials/modal_base.html" %}{% load ui %}
+{% block modal_content %}
+<form class="modal-form" hx-post="{{ request.path }}" {% if refresh_after %}hx-swap="none"{% else %}hx-target="{{ table_target }}" hx-swap="outerHTML"{% endif %} data-modal-form {% block form_attrs %}{% endblock %}>
+  {% csrf_token %}
+  <input type="hidden" name="_after" value="{% if refresh_after %}refresh{% else %}table{% endif %}">
+  <div class="modal-body">
+    {% if form.non_field_errors %}<div class="form-errors" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+    {% block fields %}{% endblock %}
+  </div>
+  <div class="modal-foot">
+    {% block foot_left %}{% endblock %}
+    <button type="button" class="btn btn-ghost" data-modal-close>Cancelar</button>
+    <button type="submit" class="btn btn-primary"><span class="spinner htmx-indicator" aria-hidden="true"></span>{% block submit_label %}Salvar{% endblock %}</button>
+  </div>
+</form>
+{% endblock %}

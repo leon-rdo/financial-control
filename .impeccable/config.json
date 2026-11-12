@@ -1,0 +1,89 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-12T21:49:21.215Z",
+        "reason": "agent decision: canon decision card deliberately depicts the category standard, which uses Inter; not a shipping file"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          ".impeccable/mocks/decision/canon2.html"
+        ],
+        "createdAt": "2026-11-12T21:49:21.248Z",
+        "reason": "agent decision: canon decision card deliberately depicts the category standard, which uses Inter; not a shipping file"
+      },
+      {
+        "rule": "flat-type-hierarchy",
+        "value": "*",
+        "files": [
+          "templates/base.html"
+        ],
+        "createdAt": "2026-11-12T21:49:21.283Z",
+        "reason": "agent decision: detector cannot read the stylesheet linked via the Django {% static %} tag and measures browser defaults; real scale is 14/15-17/26/38px in static/css/confin.css"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-12T22:02:00.810Z",
+        "reason": "agent decision: decision-round sketch of an unchosen direction, drawn in that direction's own face on purpose; not a shipping file (mocks/ is gitignored)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-12T22:02:00.845Z",
+        "reason": "agent decision: decision-round sketch of an unchosen direction, drawn in that direction's own face on purpose; not a shipping file (mocks/ is gitignored)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-12T22:02:00.877Z",
+        "reason": "agent decision: decision-round sketch of an unchosen direction, drawn in that direction's own face on purpose; not a shipping file (mocks/ is gitignored)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/grounded-folhinha.html"
+        ],
+        "createdAt": "2026-11-12T22:02:00.909Z",
+        "reason": "agent decision: decision-round sketch of an unchosen direction, drawn in that direction's own face on purpose; not a shipping file (mocks/ is gitignored)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/grounded-cedulas.html"
+        ],
+        "createdAt": "2026-11-12T22:02:00.941Z",
+        "reason": "agent decision: decision-round sketch of an unchosen direction, drawn in that direction's own face on purpose; not a shipping file (mocks/ is gitignored)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon2.html"
+        ],
+        "createdAt": "2026-11-12T22:02:00.976Z",
+        "reason": "agent decision: decision-round sketch of an unchosen direction, drawn in that direction's own face on purpose; not a shipping file (mocks/ is gitignored)"
+      }
+    ]
+  }
+}

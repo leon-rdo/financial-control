@@ -1,0 +1,16 @@
+{% extends "layouts/list.html" %}{% load ui %}
+{% block title %}Família · Confin{% endblock %}
+{% block band_title %}Família{% endblock %}
+{% block band_sub %}Quem faz parte das finanças conjuntas. Todos veem tudo; o titular de cada conta e cartão serve para os relatórios por pessoa e para o bot saber quem está falando.{% endblock %}
+{% block band_actions %}<button class="band-btn" hx-get="{% url 'core:family_create' %}" hx-target="#modal-container">{% icon "plus" 16 %}Adicionar pessoa</button>{% endblock %}
+{% block band_extra %}
+<div class="band-nums">
+  <div><span class="stat-label">Pessoas</span><strong class="stat-value is-md">{{ object_list|length }}</strong><p class="stat-note">na família</p></div>
+  <div><span class="stat-label">Falam com o bot</span><strong class="stat-value is-md">{{ with_telegram }}</strong><p class="stat-note">com o chat do Telegram ligado</p></div>
+  <div><span class="stat-label">Sem titular</span><strong class="stat-value is-md">{{ no_holder.total }}</strong><p class="stat-note">{{ no_holder.accounts }} conta{{ no_holder.accounts|pluralize }} e {{ no_holder.methods }} cartão{{ no_holder.methods|pluralize:"ões" }}</p></div>
+</div>
+{% endblock %}
+{% block before_table %}
+<div class="note note-blue">{% icon "bot" 16 %}<p>Pelo bot também dá: "Sou o Fulano, nos documentos apareço como FULANO DE TAL" ou "o Inter é da Maria". O chat do Telegram precisa estar liberado no servidor.</p></div>
+{% endblock %}
+{% block table %}{% include "core/family_table.html" %}{% endblock %}

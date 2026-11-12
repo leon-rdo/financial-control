@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load ui %}
+{% comment %}Tela de lista: faixa com título, números e ação principal; filtros; tabela.{% endcomment %}
+{% block content %}
+<section class="band" aria-labelledby="band-title">
+  <div class="band-inner">
+    <div class="band-head">
+      <div>
+        <h1 id="band-title">{% block band_title %}{% endblock %}</h1>
+        {% block band_sub_wrap %}<p class="band-sub">{% block band_sub %}{% endblock %}</p>{% endblock %}
+      </div>
+      <div class="band-actions">{% block band_actions %}{% endblock %}</div>
+    </div>
+    {% block band_extra %}{% endblock %}
+  </div>
+</section>
+<div class="page stack">
+  {% block before_table %}{% endblock %}
+  {% block table %}{% endblock %}
+  {% block after_table %}{% endblock %}
+</div>
+{% endblock %}

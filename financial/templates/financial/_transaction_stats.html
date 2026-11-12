@@ -1,0 +1,5 @@
+{% load ui %}<div class="band-nums" id="band-nums"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div><span class="stat-label">Lançamentos</span><strong class="stat-value is-md">{{ totals.count }}</strong><p class="stat-note">no filtro atual</p></div>
+  <div><span class="stat-label">Receitas</span><strong class="stat-value is-md">{{ totals.income|rs }}</strong><p class="stat-note">inclui devoluções e estornos</p></div>
+  <div><span class="stat-label">Despesas</span><strong class="stat-value is-md">{{ totals.expense|rs }}</strong><p class="stat-note">inclui compras de terceiros</p></div>
+</div>

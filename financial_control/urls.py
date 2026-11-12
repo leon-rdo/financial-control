@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path, include
 
-admin.site.site_header = "Controle Financeiro"
-admin.site.site_title = "Controle Financeiro Admin"
+admin.site.site_header = "Confin"
+admin.site.site_title = "Confin"
 admin.site.index_title = "Painel Administrativo"
 
 urlpatterns = [
@@ -14,5 +14,6 @@ urlpatterns = [
     path("", include("core.urls")),
     path("", include("accounts.urls")),
     path("", include("financial.urls")),
+    path("assistente/", include("assistant.urls")),
     path("telegram/", include("telegram_bot.urls")),
 ]

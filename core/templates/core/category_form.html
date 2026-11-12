@@ -1,100 +1,12 @@
-<div class="modal modal-open" x-data="{ open: true }" x-show="open" @keydown.escape.window="open = false">
-    <div class="modal-box max-w-lg">
-        <div class="flex justify-between items-center mb-5">
-            <h3 class="text-base font-semibold">
-                {% if object.pk %}Editar Categoria{% else %}Nova Categoria{% endif %}
-            </h3>
-            <button @click="open = false" class="btn btn-ghost btn-xs btn-square">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <form
-            hx-post="{% if object.pk %}{% url 'core:category_update' object.pk %}{% else %}{% url 'core:category_create' %}{% endif %}"
-            hx-target="#category-table"
-            hx-swap="outerHTML"
-            @htmx:after-request="if(event.detail.successful) { open = false; showToast('Categoria salva com sucesso!'); }">
-
-            {% csrf_token %}
-
-            <div class="space-y-4">
-                <!-- Name -->
-                <div class="form-control">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
-                    {{ form.name }}
-                    {% if form.name.errors %}
-                    <p class="text-xs text-error mt-1">{{ form.name.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Type -->
-                <div class="form-control">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
-                    {{ form.type }}
-                    {% if form.type.errors %}
-                    <p class="text-xs text-error mt-1">{{ form.type.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Color -->
-                <div class="form-control">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Cor (opcional)</label>
-                    <div class="flex gap-2 items-center">
-                        {{ form.color }}
-                        <div
-                            x-data="{ color: '{{ form.color.value|default:'#3b82f6' }}' }"
-                            class="w-10 h-10 rounded border cursor-pointer"
-                            :style="`background-color: ${color}`"
-                            @click="$refs.colorInput.click()"
-                            x-init="$watch('color', value => $refs.colorInput.value = value)">
-                        </div>
-                    </div>
-                    {% if form.color.errors %}
-                    <p class="text-xs text-error mt-1">{{ form.color.errors.0 }}</p>
-                    {% endif %}
-                    <p class="text-[11px] text-base-content/30 mt-1">Codigo hexadecimal (ex: #FF5733)</p>
-                </div>
-
-                <!-- Icon -->
-                <div class="form-control">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Icone (opcional)</label>
-                    {{ form.icon }}
-                    {% if form.icon.errors %}
-                    <p class="text-xs text-error mt-1">{{ form.icon.errors.0 }}</p>
-                    {% endif %}
-                    <p class="text-[11px] text-base-content/30 mt-1">Identificador do icone (ex: 🏠, 🍔, 💰)</p>
-                </div>
-
-                <!-- Active -->
-                <div class="form-control">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        {{ form.active }}
-                        <span class="text-sm font-medium">Ativo</span>
-                    </label>
-                    {% if form.active.errors %}
-                    <p class="text-xs text-error mt-1">{{ form.active.errors.0 }}</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-2 mt-6">
-                <button type="button" @click="open = false" class="btn btn-ghost btn-sm">Cancelar</button>
-                <button type="submit" class="btn btn-neutral btn-sm">Salvar</button>
-            </div>
-        </form>
-    </div>
-    <div class="modal-backdrop" @click="open = false"></div>
+{% extends "partials/form_modal.html" %}
+{% block size %}is-sm{% endblock %}
+{% block title %}{% if object.pk %}Editar categoria{% else %}Nova categoria{% endif %}{% endblock %}
+{% block fields %}
+<div class="form-grid">
+  {% include "partials/field.html" with field=form.name label="Nome" span=True %}
+  {% include "partials/field.html" with field=form.type label="Usada em" %}
+  {% include "partials/field.html" with field=form.color label="Cor" %}
+  {% include "partials/field.html" with field=form.icon label="Ícone" optional=True help="Um emoji, se quiser." span=True %}
+  <label class="toggle-row span-2" for="{{ form.active.id_for_label }}">{{ form.active }}<span><strong>Ativa</strong><span>Inativas continuam nos lançamentos antigos.</span></span></label>
 </div>
-
-<script>
-    document.addEventListener('alpine:init', () => {
-        const modal = document.querySelector('[x-data]');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.__x.$data.open = false;
-                }
-            });
-        }
-    });
-</script>
+{% endblock %}

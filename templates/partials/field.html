@@ -1,0 +1,7 @@
+{% comment %}Campo de formulário: label, widget, ajuda e erros.
+Parâmetros: field, label, help, optional, span (ocupa as duas colunas), extra (classes).{% endcomment %}<div class="fld{% if span %} span-2{% endif %}{% if extra %} {{ extra }}{% endif %}">
+  <label class="fld-label" for="{{ field.id_for_label }}">{{ label|default:field.label }}{% if optional %} <span class="opt">(opcional)</span>{% endif %}</label>
+  {{ field }}
+  {% if help %}<p class="fld-help">{{ help }}</p>{% endif %}
+  {% for error in field.errors %}<p class="fld-error">{{ error }}</p>{% endfor %}
+</div>

@@ -1,0 +1,28 @@
+{% extends "partials/modal_base.html" %}{% load ui %}
+
+{% block title %}Saldos informados: {{ account.name }}{% endblock %}
+{% block modal_content %}
+<div class="modal-body">
+  {% if snapshots %}
+  <table class="table compact">
+    <thead><tr><th>Data</th><th>Origem</th><th class="num">Saldo</th><th><span class="sr-only">Ações</span></th></tr></thead>
+    <tbody>
+      {% for s in snapshots %}
+      <tr>
+        <td>{{ s.date|date:"d/m/Y" }}{% if s.notes %}<p class="cell-meta">{{ s.notes }}</p>{% endif %}</td>
+        <td class="muted">{% if s.source == "STATEMENT" %}Extrato{% elif s.source == "ASSISTANT" %}Bot{% else %}Informado no site{% endif %}</td>
+        <td class="num strong">{{ s.balance|brl }}</td>
+        <td class="num"><button type="button" class="icon-btn is-danger" data-delete="{% url 'accounts:snapshot_delete' s.pk %}" data-target="#modal-container" data-what="o saldo de {{ s.date|date:'d/m/Y' }}" aria-label="Remover saldo de {{ s.date|date:'d/m/Y' }}">{% icon "trash" 16 %}</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty"><strong>Nenhum saldo informado</strong>O saldo é calculado a partir do saldo inicial da conta.</div>
+  {% endif %}
+</div>
+<div class="modal-foot">
+  <button type="button" class="btn btn-ghost" data-modal-close>Fechar</button>
+  {% if account.active %}<button type="button" class="btn btn-primary" hx-get="{% url 'accounts:snapshot_create' %}?conta={{ account.pk }}" hx-target="#modal-container">Informar saldo de hoje</button>{% endif %}
+</div>
+{% endblock %}

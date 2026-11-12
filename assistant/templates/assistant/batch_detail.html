@@ -1,0 +1,90 @@
+{% extends "base.html" %}{% load ui %}
+{% block title %}{{ batch.title|default:"Lote" }} · Confin{% endblock %}
+{% block content %}
+<section class="band" aria-labelledby="band-title">
+  <div class="band-inner">
+    <a class="band-back" href="{% url 'assistant:batch_list' %}">{% icon "chevron-left" 16 %}Lotes do bot</a>
+    <div class="band-head">
+      <div><h1 id="band-title">{{ batch.title|default:"Lote sem título" }}</h1><p class="band-sub">{{ batch.get_kind_display }}, criado em {{ batch.created_at|date:"d/m/Y \à\s H:i" }}{% if batch.committed_at %}, confirmado em {{ batch.committed_at|date:"d/m/Y \à\s H:i" }}{% endif %}</p></div>
+      <div class="band-actions">
+        {% if batch.status == "staged" %}
+        <form method="post" action="{% url 'assistant:batch_action' batch.pk 'confirmar' %}" data-confirm="Gravar {{ totals.included }} item{{ totals.included|pluralize:'ns' }} deste lote?{% if not checks_ok %} Há conferências que não bateram.{% endif %}" data-confirm-title="Confirmar lote" data-confirm-yes="Confirmar e gravar">
+          {% csrf_token %}<input type="hidden" name="version" value="{{ batch.version }}">
+          <button class="band-btn" type="submit">{% icon "check" 16 %}Confirmar lote</button>
+        </form>
+        <form method="post" action="{% url 'assistant:batch_action' batch.pk 'descartar' %}" data-confirm="Descartar este lote? Nada dele será gravado." data-confirm-title="Descartar lote" data-confirm-yes="Descartar" data-confirm-danger>
+          {% csrf_token %}<input type="hidden" name="version" value="{{ batch.version }}">
+          <button class="band-btn is-quiet" type="submit">{% icon "x" 16 %}Descartar</button>
+        </form>
+        {% elif batch.status == "confirmed" and can_undo %}
+        <form method="post" action="{% url 'assistant:batch_action' batch.pk 'desfazer' %}" data-confirm="Desfazer este lote? Os lançamentos, cartões e caixinhas que ele criou são apagados, e o que ele alterou volta ao que era." data-confirm-title="Desfazer lote" data-confirm-yes="Desfazer" data-confirm-danger>
+          {% csrf_token %}
+          <button class="band-btn is-quiet" type="submit">{% icon "undo" 16 %}Desfazer lote</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <div class="band-nums">
+      <div><span class="stat-label">Itens</span><strong class="stat-value is-md">{{ batch.n_entries }}</strong><p class="stat-note">{{ totals.included }} a gravar, {{ totals.excluded }} já registrado{{ totals.excluded|pluralize }} ou fora</p></div>
+      <div><span class="stat-label">Soma dos incluídos</span><strong class="stat-value is-md">{{ included_total|rs }}</strong><p class="stat-note">{% if batch.invoice_total %}fatura: {{ batch.invoice_total|rs }}{% else %}valores dos itens{% endif %}</p></div>
+      <div><span class="stat-label">Situação</span><strong class="stat-value is-md">{{ batch.get_status_display }}</strong><p class="stat-note">{% if batch.status == "staged" %}confira e confirme aqui ou no Telegram{% elif batch.status == "confirmed" %}{% if can_undo %}é o último lote confirmado deste chat{% else %}só o último confirmado pode ser desfeito{% endif %}{% else %}nada foi gravado{% endif %}</p></div>
+    </div>
+    {% if batch.status == "staged" and totals.included %}
+    <div class="prop" role="img" aria-label="{{ totals.included|pct:batch.n_entries }}% dos itens serão gravados"><i class="prop-a" style="width: {{ totals.included|pct:batch.n_entries }}%"></i><i class="prop-b" style="width: {{ totals.excluded|pct:batch.n_entries }}%"></i></div>
+    <div class="prop-legend"><span><b>{{ totals.included }}</b> a gravar</span><span><b>{{ totals.excluded }}</b> já registrado{{ totals.excluded|pluralize }} ou fora do lote</span></div>
+    {% endif %}
+  </div>
+</section>
+
+<div class="page stack">
+  {% if batch.status == "staged" %}
+  <div class="grid-2">
+    <section class="card" aria-labelledby="h-checks">
+      <div class="card-head"><h2 id="h-checks">Conferências</h2></div>
+      <div class="card-body">
+        <ul class="lines">
+          {% for ok, text in checks %}
+          <li><span class="status {% if ok %}status-ok{% elif ok is False %}status-late{% else %}status-off{% endif %}">{{ text }}</span></li>
+          {% empty %}
+          <li class="muted small">Este lote não tem total de fatura nem saldo de extrato para conferir. Confira os itens abaixo.</li>
+          {% endfor %}
+        </ul>
+        {% if not checks_ok %}<p class="card-note">Resolva os pontos em vermelho pelo Telegram antes de confirmar. Se a fatura ou o extrato não bateram, peça ao bot "confira de novo, falta alguma linha".</p>{% endif %}
+      </div>
+    </section>
+    <section class="card" aria-labelledby="h-plans">
+      <div class="card-head"><h2 id="h-plans">Ao confirmar, também</h2></div>
+      <div class="card-body">
+        <ul class="lines">
+          {% for plan in plans %}<li><span>{{ plan }}</span></li>
+          {% empty %}<li class="muted small">Só grava os itens. Nenhum cadastro novo.</li>{% endfor %}
+        </ul>
+        <p class="card-note">Para ajustar itens (categoria, cartão, tirar ou incluir), escreva no Telegram usando o número do item. O resumo novo aparece aqui também.</p>
+      </div>
+    </section>
+  </div>
+  {% elif batch.status == "confirmed" and not can_undo and latest_confirmed %}
+  <div class="note note-blue">{% icon "info" 16 %}<p>Só o último lote confirmado deste chat pode ser desfeito, porque os seguintes podem ter usado o que este gravou. O último é <a class="link" href="{% url 'assistant:batch_detail' latest_confirmed.pk %}">{{ latest_confirmed.title|default:"este" }}</a>.</p></div>
+  {% endif %}
+
+  <section class="card" aria-label="Itens do lote">
+    <div class="table-wrap">
+      <table class="table rtable">
+        <thead><tr><th>#</th><th>Item</th><th>Tipo</th><th>Situação</th><th class="num">Valor</th></tr></thead>
+        <tbody>
+          {% for e in entries %}
+          <tr class="{% if not e.include %}is-muted{% endif %}">
+            <td class="c-hide muted">{{ e.position }}</td>
+            <td class="c-main"><p class="cell-title">{{ e.description }}</p><p class="cell-meta"><span class="show-sm">#{{ e.position }}<span class="sep"></span></span>{{ e.date|date:"d/m/Y" }}{% if e.category %}<span class="sep"></span>{{ e.category.name }}{% elif e.category_name %}<span class="sep"></span>{{ e.category_name }}{% endif %}{% if e.installment_number %}<span class="sep"></span>parcela {{ e.installment_number }}/{{ e.installments_total }}{% endif %}{% if e.on_behalf_of %}<span class="sep"></span><span class="badge badge-amber">por conta de {{ e.on_behalf_of.name }}</span>{% endif %}</p>{% if e.match_note %}<p class="cell-meta">{{ e.match_note }}</p>{% endif %}</td>
+            <td class="c-meta" data-label="Tipo">{{ e.get_kind_display }}</td>
+            <td class="c-meta">{% if not e.include %}<span class="status status-off">Fora do lote</span>{% elif e.match_status == "duplicate" %}<span class="status status-off">Já registrado</span>{% elif e.match_status == "weak_match" %}<span class="status status-pending">Possível duplicado</span>{% elif e.match_status == "confirm_existing" %}<span class="status status-ok">Confirma previsto</span>{% else %}<span class="status status-ok">Novo</span>{% endif %}</td>
+            <td class="c-amount num"><span class="amount{% if e.kind == 'INCOME' or e.kind == 'REFUND' %} in{% endif %}">{{ e.amount|brl }}</span></td>
+          </tr>
+          {% empty %}<tr><td colspan="5"><div class="empty"><strong>Lote vazio</strong></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% load ui %}<section class="card" id="batch-table" aria-label="Lotes do bot">
+  <div class="table-wrap">
+    <table class="table rtable">
+      <thead><tr><th>Lote</th><th>Origem</th><th>Itens</th><th>Situação</th><th class="num">Soma</th></tr></thead>
+      <tbody>
+        {% for b in object_list %}
+        <tr>
+          <td class="c-main"><a class="cell-title" href="{% url 'assistant:batch_detail' b.pk %}">{{ b.title|default:"Lote sem título" }}</a><p class="cell-meta">{{ b.created_at|date:"d/m/Y H:i" }}{% if b.committed_at %}<span class="sep"></span>confirmado {{ b.committed_at|date:"d/m H:i" }}{% endif %}</p></td>
+          <td class="c-meta" data-label="Origem">{{ b.get_kind_display }}{% if b.payment_method %}, {{ b.payment_method.name }}{% endif %}</td>
+          <td class="c-meta" data-label="Itens">{{ b.n_entries }} item{{ b.n_entries|pluralize:"ns" }}{% if b.n_dup %}<span class="muted">, {{ b.n_dup }} já registrado{{ b.n_dup|pluralize }}</span>{% endif %}</td>
+          <td class="c-meta">{% include "assistant/_batch_status.html" %}</td>
+          <td class="c-amount num"><span class="amount">{{ b.total|default:0|brl }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5"><div class="empty"><strong>Nenhum lote ainda</strong>Mande uma fatura, um extrato ou uma frase ao bot no Telegram.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with target="#batch-table" %}
+</section>

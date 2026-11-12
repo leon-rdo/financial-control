@@ -1,28 +1,18 @@
 import django_filters
-from django import forms
-from .models import Category, Tag, Entity
+
+from . import widgets as w
+from .models import Category, Entity, Tag
+
+
+def active_choice():
+    return django_filters.ChoiceFilter(choices=[("1", "Ativos"), ("0", "Inativos")], empty_label="Todos",
+                                       widget=w.select())
 
 
 class CategoryFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(
-        lookup_expr="icontains",
-        widget=forms.TextInput(
-            attrs={
-                "class": "input input-bordered w-full",
-                "placeholder": "Buscar por nome...",
-            }
-        ),
-    )
-
-    type = django_filters.ChoiceFilter(
-        choices=[("", "Todos")] + list(Category.TypeChoices.choices),
-        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
-    )
-
-    active = django_filters.ChoiceFilter(
-        choices=[("", "Todos"), ("true", "Ativos"), ("false", "Inativos")],
-        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
-    )
+    name = django_filters.CharFilter(lookup_expr="icontains", widget=w.text("Buscar pelo nome", type="search"))
+    type = django_filters.ChoiceFilter(choices=Category.TypeChoices.choices, empty_label="Todos", widget=w.select())
+    active = active_choice()
 
     class Meta:
         model = Category
@@ -30,15 +20,7 @@ class CategoryFilter(django_filters.FilterSet):
 
 
 class TagFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(
-        lookup_expr="icontains",
-        widget=forms.TextInput(
-            attrs={
-                "class": "input input-bordered w-full",
-                "placeholder": "Buscar por nome...",
-            }
-        ),
-    )
+    name = django_filters.CharFilter(lookup_expr="icontains", widget=w.text("Buscar pelo nome", type="search"))
 
     class Meta:
         model = Tag
@@ -46,25 +28,9 @@ class TagFilter(django_filters.FilterSet):
 
 
 class EntityFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(
-        lookup_expr="icontains",
-        widget=forms.TextInput(
-            attrs={
-                "class": "input input-bordered w-full",
-                "placeholder": "Buscar por nome...",
-            }
-        ),
-    )
-
-    type = django_filters.ChoiceFilter(
-        choices=[("", "Todos")] + list(Entity.TypeChoices.choices),
-        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
-    )
-
-    active = django_filters.ChoiceFilter(
-        choices=[("", "Todos"), ("true", "Ativos"), ("false", "Inativos")],
-        widget=forms.Select(attrs={"class": "select select-bordered w-full"}),
-    )
+    name = django_filters.CharFilter(lookup_expr="icontains", widget=w.text("Buscar pelo nome", type="search"))
+    type = django_filters.ChoiceFilter(choices=Entity.TypeChoices.choices, empty_label="Todos", widget=w.select())
+    active = active_choice()
 
     class Meta:
         model = Entity

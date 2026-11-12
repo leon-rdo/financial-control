@@ -1,0 +1,637 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T19:00:07-03:00",
+  "title": "Design System: Confin",
+  "extensions": {
+    "colorMeta": {
+      "cobalt": {
+        "role": "primary",
+        "displayName": "Cobalto Modernista",
+        "canonical": "#1B3F8F",
+        "cssVar": "--blue / --band",
+        "tonalRamp": [
+          "#08132B",
+          "#0E2048",
+          "#132C64",
+          "#183981",
+          "#546FAB",
+          "#8D9FC7",
+          "#C6CFE3",
+          "#EDF0F6"
+        ]
+      },
+      "cobalt-deep": {
+        "role": "primary",
+        "displayName": "Cobalto Fundo",
+        "canonical": "#15336F",
+        "cssVar": "--blue-hover",
+        "tonalRamp": [
+          "#060F21",
+          "#0A1A38",
+          "#0F244E",
+          "#132E64",
+          "#506693",
+          "#8A99B7",
+          "#C4CCDB",
+          "#ECEFF3"
+        ]
+      },
+      "cobalt-tint": {
+        "role": "primary",
+        "displayName": "Névoa Cobalto",
+        "canonical": "#E8EEF9",
+        "cssVar": "--blue-tint",
+        "tonalRamp": [
+          "#46474B",
+          "#74777C",
+          "#A2A7AE",
+          "#D1D6E0",
+          "#EEF2FA",
+          "#F4F6FC",
+          "#F9FBFE",
+          "#FDFEFF"
+        ]
+      },
+      "sun-yellow": {
+        "role": "secondary",
+        "displayName": "Amarelo Sol",
+        "canonical": "#F2B705",
+        "cssVar": "--yellow",
+        "tonalRamp": [
+          "#493702",
+          "#795C02",
+          "#A98004",
+          "#DAA504",
+          "#F5C944",
+          "#F8DB82",
+          "#FCEDC0",
+          "#FEF9EB"
+        ]
+      },
+      "page-mist": {
+        "role": "neutral",
+        "displayName": "Névoa da Página",
+        "canonical": "#F2F4F8",
+        "cssVar": "--bg",
+        "tonalRamp": [
+          "#49494A",
+          "#797A7C",
+          "#A9ABAE",
+          "#DADCDF",
+          "#F5F7FA",
+          "#F8FAFC",
+          "#FCFCFD",
+          "#FEFEFE"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Branco",
+        "canonical": "#FFFFFF",
+        "cssVar": "--surface",
+        "tonalRamp": [
+          "#4D4D4D",
+          "#808080",
+          "#B2B2B2",
+          "#E6E6E6",
+          "#FFFFFF",
+          "#FFFFFF",
+          "#FFFFFF",
+          "#FFFFFF"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Branco Gelo",
+        "canonical": "#F6F7FA",
+        "cssVar": "--surface-2",
+        "tonalRamp": [
+          "#4A4A4B",
+          "#7B7C7D",
+          "#ACADAF",
+          "#DDDEE1",
+          "#F8F9FB",
+          "#FAFBFC",
+          "#FDFDFE",
+          "#FEFEFF"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta Marinho",
+        "canonical": "#14213D",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "#060A12",
+          "#0A101E",
+          "#0E172B",
+          "#121E37",
+          "#4F586E",
+          "#8A909E",
+          "#C4C8CE",
+          "#ECEDEF"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Tinta Média",
+        "canonical": "#33405C",
+        "cssVar": "--ink-2",
+        "tonalRamp": [
+          "#0F131C",
+          "#1A202E",
+          "#242D40",
+          "#2E3A53",
+          "#667085",
+          "#99A0AE",
+          "#CCCFD6",
+          "#EFF0F2"
+        ]
+      },
+      "mute": {
+        "role": "neutral",
+        "displayName": "Cinza Ardósia",
+        "canonical": "#58627A",
+        "cssVar": "--mute",
+        "tonalRamp": [
+          "#1A1D25",
+          "#2C313D",
+          "#3E4555",
+          "#4F586E",
+          "#82899B",
+          "#ACB0BC",
+          "#D5D8DE",
+          "#F2F2F4"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Linha",
+        "canonical": "#E0E4EC",
+        "cssVar": "--line",
+        "tonalRamp": [
+          "#434447",
+          "#707276",
+          "#9DA0A5",
+          "#CACDD4",
+          "#E8EBF1",
+          "#F0F2F6",
+          "#F7F8FA",
+          "#FDFDFD"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Linha Interna",
+        "canonical": "#EDF0F5",
+        "cssVar": "--line-2",
+        "tonalRamp": [
+          "#47484A",
+          "#76787A",
+          "#A6A8AC",
+          "#D5D8DC",
+          "#F2F4F8",
+          "#F6F8FA",
+          "#FAFBFC",
+          "#FEFEFE"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Linha Forte",
+        "canonical": "#C7CEDB",
+        "cssVar": "--line-strong",
+        "tonalRamp": [
+          "#3C3E42",
+          "#64676E",
+          "#8B9099",
+          "#B3B9C5",
+          "#D5DAE4",
+          "#E3E6ED",
+          "#F1F3F6",
+          "#FBFBFC"
+        ]
+      },
+      "money-green": {
+        "role": "tertiary",
+        "displayName": "Verde Entrada",
+        "canonical": "#17804A",
+        "cssVar": "--green",
+        "tonalRamp": [
+          "#072616",
+          "#0C4025",
+          "#105A34",
+          "#157343",
+          "#51A077",
+          "#8BC0A4",
+          "#C5DFD2",
+          "#ECF5F1"
+        ]
+      },
+      "money-green-tint": {
+        "role": "tertiary",
+        "displayName": "Fundo Verde",
+        "canonical": "#E6F4EC",
+        "cssVar": "--green-tint",
+        "tonalRamp": [
+          "#454947",
+          "#737A76",
+          "#A1ABA5",
+          "#CFDCD4",
+          "#ECF7F1",
+          "#F2FAF6",
+          "#F9FCFA",
+          "#FDFEFD"
+        ]
+      },
+      "alert-red": {
+        "role": "tertiary",
+        "displayName": "Vermelho Alerta",
+        "canonical": "#C62828",
+        "cssVar": "--red",
+        "tonalRamp": [
+          "#3B0C0C",
+          "#631414",
+          "#8B1C1C",
+          "#B22424",
+          "#D45E5E",
+          "#E29494",
+          "#F1C9C9",
+          "#FAEEEE"
+        ]
+      },
+      "alert-red-tint": {
+        "role": "tertiary",
+        "displayName": "Fundo Vermelho",
+        "canonical": "#FDECEC",
+        "cssVar": "--red-tint",
+        "tonalRamp": [
+          "#4C4747",
+          "#7E7676",
+          "#B1A5A5",
+          "#E4D4D4",
+          "#FEF1F1",
+          "#FEF6F6",
+          "#FEFAFA",
+          "#FFFDFD"
+        ]
+      },
+      "pending-amber": {
+        "role": "tertiary",
+        "displayName": "Âmbar Pendente",
+        "canonical": "#9A5B00",
+        "cssVar": "--amber",
+        "tonalRamp": [
+          "#2E1B00",
+          "#4D2E00",
+          "#6C4000",
+          "#8B5200",
+          "#B38440",
+          "#CCAD80",
+          "#E6D6BF",
+          "#F7F2EB"
+        ]
+      },
+      "pending-amber-tint": {
+        "role": "tertiary",
+        "displayName": "Fundo Âmbar",
+        "canonical": "#FFF3D6",
+        "cssVar": "--amber-tint",
+        "tonalRamp": [
+          "#4D4940",
+          "#807A6B",
+          "#B2AA96",
+          "#E6DBC1",
+          "#FFF6E0",
+          "#FFF9EA",
+          "#FFFCF5",
+          "#FFFEFC"
+        ]
+      },
+      "night-band": {
+        "role": "primary",
+        "displayName": "Cobalto Noturno",
+        "canonical": "#1C3A80",
+        "cssVar": "--band (escuro)",
+        "tonalRamp": [
+          "#081126",
+          "#0E1D40",
+          "#14295A",
+          "#193473",
+          "#556BA0",
+          "#8E9CC0",
+          "#C6CEDF",
+          "#EDEFF5"
+        ]
+      },
+      "night-bg": {
+        "role": "neutral",
+        "displayName": "Fundo Noite",
+        "canonical": "#0F1526",
+        "cssVar": "--bg (escuro)",
+        "tonalRamp": [
+          "#05060B",
+          "#080A13",
+          "#0A0F1B",
+          "#0E1322",
+          "#4B505C",
+          "#878A92",
+          "#C3C4C9",
+          "#ECECEE"
+        ]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Superfície Noite",
+        "canonical": "#161E33",
+        "cssVar": "--surface (escuro)",
+        "tonalRamp": [
+          "#07090F",
+          "#0B0F1A",
+          "#0F1524",
+          "#141B2E",
+          "#505666",
+          "#8A8E99",
+          "#C5C7CC",
+          "#ECEDEF"
+        ]
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Tinta Noite",
+        "canonical": "#E7EBF3",
+        "cssVar": "--ink (escuro)",
+        "tonalRamp": [
+          "#454749",
+          "#74767A",
+          "#A2A4AA",
+          "#D0D4DB",
+          "#EDF0F6",
+          "#F3F5F9",
+          "#F9FAFC",
+          "#FDFDFE"
+        ]
+      },
+      "night-blue": {
+        "role": "primary",
+        "displayName": "Azul Claro Noturno",
+        "canonical": "#7FA2EE",
+        "cssVar": "--blue (escuro)",
+        "tonalRamp": [
+          "#263147",
+          "#405177",
+          "#5971A7",
+          "#7292D6",
+          "#9FB9F2",
+          "#BFD0F6",
+          "#DFE8FB",
+          "#F5F8FE"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Número da faixa",
+        "purpose": "Os 2 a 4 números da faixa; 30px na variante média; clamp(18px, 5.6vw, 24px) no celular."
+      },
+      "headline": {
+        "displayName": "Título da tela",
+        "purpose": "Título dentro da faixa; 22px no celular; 30px no login."
+      },
+      "title": {
+        "displayName": "Título de cartão",
+        "purpose": "Cartões (16px); mês, pessoa e modal (17px)."
+      },
+      "body": {
+        "displayName": "Corpo",
+        "purpose": "Texto, células, campos; títulos de linha em 600."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Rótulos de campo, links de cartão, estados."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Meta-texto de linha, cabeçalho de tabela (700), ajuda de campo."
+      }
+    },
+    "darkTheme": {
+      "selector": ":root[data-theme=dark] e prefers-color-scheme: dark sem data-theme=light",
+      "overrides": {
+        "--blue": "#7FA2EE",
+        "--blue-hover": "#A3BEF5",
+        "--blue-tint": "#1E2A47",
+        "--blue-text": "#9DB8F3",
+        "--band": "#1C3A80",
+        "--bg": "#0F1526",
+        "--surface": "#161E33",
+        "--surface-2": "#1C2540",
+        "--ink": "#E7EBF3",
+        "--ink-2": "#C3CBDA",
+        "--mute": "#98A2B8",
+        "--line": "#273152",
+        "--line-2": "#212A46",
+        "--line-strong": "#3A4670",
+        "--green": "#4FC48A",
+        "--green-tint": "#15362A",
+        "--red": "#F08080",
+        "--red-tint": "#3E1E26",
+        "--amber": "#F2C25C",
+        "--amber-tint": "#3A2F12"
+      }
+    },
+    "shadows": [
+      {
+        "name": "pop",
+        "value": "0 12px 32px rgba(20, 33, 61, .16), 0 2px 6px rgba(20, 33, 61, .08)",
+        "purpose": "Só camadas que flutuam: menus, modal, confirmação, toast, barra de ações em massa, lista do Select2. No escuro: 0 12px 32px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.3)."
+      },
+      {
+        "name": "switch-thumb",
+        "value": "0 1px 3px rgba(20, 33, 61, .14)",
+        "purpose": "Opção marcada do seletor Despesa/Receita."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(27, 63, 143, .18)",
+        "purpose": "Anel de foco de campos e do Select2."
+      }
+    ],
+    "motion": [
+      {
+        "name": "prop-in",
+        "value": "0.9s cubic-bezier(.16, 1, .3, 1), scaleX(.04) para 1, origem à esquerda",
+        "purpose": "A barra de proporção cresce da esquerda uma vez ao carregar."
+      },
+      {
+        "name": "rise",
+        "value": "0.2s cubic-bezier(.16, 1, .3, 1), translateY(10px) scale(.985)",
+        "purpose": "Entrada do modal no computador (e dos toasts)."
+      },
+      {
+        "name": "sheet",
+        "value": "0.22–0.24s cubic-bezier(.16, 1, .3, 1), translateY(24px)",
+        "purpose": "Folha de menu e modal no celular."
+      },
+      {
+        "name": "fade",
+        "value": "0.16s ease-out",
+        "purpose": "Véu atrás de modal e folha."
+      },
+      {
+        "name": "state",
+        "value": "0.12s ease-out (cor, borda, sombra); 0.15s no giro das setas",
+        "purpose": "Transições de estado de botões, campos e menus."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "durações a .01ms",
+        "purpose": "prefers-reduced-motion desliga tudo."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "tablet",
+        "value": "1080px",
+        "purpose": "Calha 24px, painel em 2 colunas."
+      },
+      {
+        "name": "mobile",
+        "value": "860px",
+        "purpose": "Barra inferior, tabelas empilhadas, modais em folha, alvos de 44px, calha 16px, topo de 54px."
+      }
+    ],
+    "layout": {
+      "pageMax": "1360px",
+      "gutter": "40px / 24px / 16px",
+      "topbar": "58px (54px no celular)",
+      "bottombar": "62px + área segura",
+      "touchTarget": "44px"
+    }
+  },
+  "components": [
+    {
+      "name": "A Faixa",
+      "kind": "custom",
+      "refersTo": "band",
+      "description": "Assinatura: campo cobalto chapado no topo de cada tela, com 2 a 4 números e a barra de proporção.",
+      "html": "<section class=\"ds-band\"><h1 class=\"ds-band-title\">Novembro de 2026</h1><p class=\"ds-band-sub\">Até hoje, dia 12. Faltam 18 dias.</p><div class=\"ds-band-nums\"><div><span class=\"ds-stat-label\">Entrou</span><strong class=\"ds-stat-value\">R$ 14.250,00</strong><p class=\"ds-stat-note\">Receitas confirmadas</p></div><div><span class=\"ds-stat-label\">Saiu</span><strong class=\"ds-stat-value\">R$ 6.643,80</strong><p class=\"ds-stat-note\">R$ 878,46 a menos que em outubro</p></div><div><span class=\"ds-stat-label\">Sobra</span><strong class=\"ds-stat-value\">R$ 7.606,20</strong><p class=\"ds-stat-note\">Entrou menos o que saiu</p></div></div><div class=\"ds-prop\" role=\"img\" aria-label=\"46% do que entrou já saiu\"><i class=\"ds-prop-a\" style=\"width:46%\"></i><i class=\"ds-prop-b\" style=\"width:54%\"></i></div><div class=\"ds-prop-legend\"><span><b>46%</b> do que entrou já saiu</span><span><b>54%</b> sobrando</span></div></section>",
+      "css": ".ds-band { background: var(--band, #1B3F8F); color: #fff; padding: 26px 40px; font-family: var(--font, 'Manrope', ui-sans-serif, system-ui, sans-serif); font-feature-settings: 'tnum' 1, 'lnum' 1; } .ds-band-title { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; } .ds-band-sub { margin: 4px 0 0; font-size: 14px; font-weight: 600; color: rgba(255,255,255,.84); } .ds-band-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px 28px; margin-top: 20px; } .ds-stat-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.84); } .ds-stat-value { display: block; font-size: 38px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; } .ds-stat-note { margin: 2px 0 0; font-size: 13px; color: rgba(255,255,255,.84); } .ds-prop { display: flex; height: 10px; margin-top: 22px; border-radius: 5px; overflow: hidden; background: rgba(255,255,255,.2); transform-origin: left center; animation: ds-prop-in .9s cubic-bezier(.16,1,.3,1); } .ds-prop > i { display: block; height: 100%; } .ds-prop-a { background: #fff; } .ds-prop-b { background: #F2B705; } .ds-prop-legend { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 13px; color: rgba(255,255,255,.84); } .ds-prop-legend b { color: #fff; font-weight: 700; } @keyframes ds-prop-in { from { transform: scaleX(.04); } } @media (prefers-reduced-motion: reduce) { .ds-prop { animation: none; } }"
+    },
+    {
+      "name": "Botão primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal da tela ou do modal.",
+      "html": "<button class=\"ds-btn ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>Nova transação</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid transparent; font: 700 14px/1 'Manrope', ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color .12s ease-out, border-color .12s ease-out, color .12s ease-out; } .ds-btn-primary { background: var(--blue, #1B3F8F); color: #fff; } .ds-btn-primary:hover { background: var(--blue-hover, #15336F); } .ds-btn:focus-visible { outline: 2px solid var(--blue, #1B3F8F); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botão secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ações de apoio: filtrar, cancelar, exportar.",
+      "html": "<button class=\"ds-btn2\">Cancelar</button>",
+      "css": ".ds-btn2 { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-strong, #C7CEDB); background: var(--surface, #fff); color: var(--ink, #14213D); font: 700 14px/1 'Manrope', ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: border-color .12s ease-out, color .12s ease-out; } .ds-btn2:hover { border-color: var(--blue, #1B3F8F); color: var(--blue-text, #1B3F8F); } .ds-btn2:focus-visible { outline: 2px solid var(--blue, #1B3F8F); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botão da faixa",
+      "kind": "button",
+      "refersTo": "band-button",
+      "description": "Ação dentro da faixa cobalto: branco com texto cobalto, ou quieto a 12% de branco.",
+      "html": "<div class=\"ds-bandbg\"><button class=\"ds-bbtn\">Nova despesa</button> <button class=\"ds-bbtn ds-bbtn-quiet\">Nova receita</button></div>",
+      "css": ".ds-bandbg { background: #1B3F8F; padding: 16px; display: flex; gap: 8px; } .ds-bbtn { height: 36px; padding: 0 14px; border-radius: 8px; border: 0; background: #fff; color: #1B3F8F; font: 700 14px 'Manrope', ui-sans-serif, system-ui, sans-serif; cursor: pointer; } .ds-bbtn:hover { background: #E8EEF9; color: #15336F; } .ds-bbtn-quiet { background: rgba(255,255,255,.12); color: #fff; } .ds-bbtn-quiet:hover { background: rgba(255,255,255,.22); color: #fff; } .ds-bbtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Campo",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Campo de texto, número ou seletor nativo, com rótulo acima.",
+      "html": "<label class=\"ds-fld\"><span class=\"ds-fld-label\">Valor</span><input class=\"ds-field\" placeholder=\"0,00\" inputmode=\"decimal\"></label>",
+      "css": ".ds-fld { display: flex; flex-direction: column; gap: 6px; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; } .ds-fld-label { font-size: 13px; font-weight: 700; color: var(--ink-2, #33405C); } .ds-field { height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong, #C7CEDB); background: var(--surface, #fff); color: var(--ink, #14213D); font: 500 14px 'Manrope', ui-sans-serif, system-ui, sans-serif; font-variant-numeric: tabular-nums; transition: border-color .12s ease-out, box-shadow .12s ease-out; } .ds-field::placeholder { color: var(--mute, #58627A); } .ds-field:hover { border-color: #A9B3C6; } .ds-field:focus { outline: none; border-color: var(--blue, #1B3F8F); box-shadow: 0 0 0 3px rgba(27,63,143,.18); }"
+    },
+    {
+      "name": "Navegação superior",
+      "kind": "nav",
+      "refersTo": "topbar",
+      "description": "Barra branca de 58px com marca, grupos e ativo sublinhado em cobalto.",
+      "html": "<nav class=\"ds-top\"><a class=\"ds-brand\"><span class=\"ds-mark\"></span>confin</a><a class=\"ds-nav is-active\">Painel</a><a class=\"ds-nav\">Lançamentos</a><a class=\"ds-nav\">Cartões</a><a class=\"ds-nav\">Dinheiro</a></nav>",
+      "css": ".ds-top { display: flex; align-items: stretch; height: 58px; padding: 0 24px; gap: 2px; background: var(--surface, #fff); border-bottom: 1px solid var(--line, #E0E4EC); font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; } .ds-brand { display: flex; align-items: center; gap: 9px; margin-right: 22px; font-weight: 800; font-size: 21px; letter-spacing: -.02em; color: var(--ink, #14213D); } .ds-mark { width: 24px; height: 10px; display: flex; gap: 2px; } .ds-mark::before, .ds-mark::after { content: ''; height: 100%; border-radius: 2px; } .ds-mark::before { flex: 0 0 15px; background: #1B3F8F; } .ds-mark::after { flex: 1; background: #F2B705; } .ds-nav { display: inline-flex; align-items: center; padding: 0 11px; font-weight: 600; font-size: 14px; color: var(--mute, #58627A); cursor: pointer; box-shadow: inset 0 -3px 0 transparent; } .ds-nav:hover { color: var(--ink, #14213D); } .ds-nav.is-active { color: var(--ink, #14213D); box-shadow: inset 0 -3px 0 var(--blue, #1B3F8F); } .ds-nav:focus-visible { outline: 2px solid var(--blue, #1B3F8F); outline-offset: -2px; }"
+    },
+    {
+      "name": "Marcas de estado",
+      "kind": "chip",
+      "refersTo": "status",
+      "description": "Cheio verde confirmado, vazado âmbar pendente, cheio vermelho atrasado, vazado cinza desligado.",
+      "html": "<div class=\"ds-states\"><span class=\"ds-st ds-ok\">Confirmada</span><span class=\"ds-st ds-pend\">Pendente</span><span class=\"ds-st ds-late\">Atrasada</span><span class=\"ds-st ds-off\">Desligada</span></div>",
+      "css": ".ds-states { display: flex; gap: 18px; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; } .ds-st { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--ink-2, #33405C); } .ds-st::before { content: ''; width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box; } .ds-ok::before { background: var(--green, #17804A); } .ds-pend { color: var(--amber, #9A5B00); } .ds-pend::before { border: 2px solid var(--amber, #9A5B00); } .ds-late { color: var(--red, #C62828); } .ds-late::before { background: var(--red, #C62828); } .ds-off { color: var(--mute, #58627A); } .ds-off::before { border: 2px solid var(--line-strong, #C7CEDB); }"
+    },
+    {
+      "name": "Cartão com linhas",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Cartão plano de borda fina com lista de linhas, bloco de dia e valores tabulares.",
+      "html": "<section class=\"ds-card\"><div class=\"ds-card-head\"><h2>Vem aí</h2><a class=\"ds-link\">Faturas</a></div><ul class=\"ds-lines\"><li class=\"is-late\"><div class=\"ds-lead\"><div class=\"ds-day\">10<small>nov</small></div><div><p class=\"ds-t\">Fatura do cartão</p><p class=\"ds-m\">Venceu, sem pagamento</p></div></div><span class=\"ds-amt\">1.334,31</span></li><li><div class=\"ds-lead\"><div class=\"ds-day\">20<small>nov</small></div><div><p class=\"ds-t\">Salário</p><p class=\"ds-m\">Recorrência</p></div></div><span class=\"ds-amt ds-in\">+7.000,00</span></li></ul></section>",
+      "css": ".ds-card { background: var(--surface, #fff); border: 1px solid var(--line, #E0E4EC); border-radius: 10px; font: 500 14px/1.5 'Manrope', ui-sans-serif, system-ui, sans-serif; color: var(--ink, #14213D); font-feature-settings: 'tnum' 1, 'lnum' 1; max-width: 420px; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 20px 0; } .ds-card-head h2 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.01em; } .ds-link { font-size: 13px; font-weight: 700; color: var(--blue-text, #1B3F8F); cursor: pointer; } .ds-link:hover { text-decoration: underline; text-underline-offset: 3px; } .ds-lines { list-style: none; margin: 0; padding: 10px 20px 16px; } .ds-lines li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-2, #EDF0F5); } .ds-lines li:last-child { border-bottom: 0; } .ds-lead { display: flex; align-items: center; gap: 12px; } .ds-day { width: 44px; text-align: center; background: var(--surface-2, #F6F7FA); border-radius: 8px; padding: 4px 0; font-weight: 800; font-size: 17px; line-height: 1.1; } .ds-day small { display: block; font-size: 11px; font-weight: 600; color: var(--mute, #58627A); } .is-late .ds-day { background: var(--red-tint, #FDECEC); color: var(--red, #C62828); } .is-late .ds-m { color: var(--red, #C62828); font-weight: 600; } .ds-t, .ds-m { margin: 0; } .ds-t { font-weight: 600; } .ds-m { font-size: 12px; color: var(--mute, #58627A); } .ds-amt { font-weight: 700; white-space: nowrap; } .ds-in { color: var(--green, #17804A); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Cartaz do Mês",
+    "overview": "**Creative North Star: \"O Cartaz do Mês\"**\n\nConfin é o painel financeiro que a família já conhece, com uma ideia própria tirada da identidade modernista brasileira dos anos 60 e 70: cada tela abre com um campo de cobalto chapado, de ponta a ponta, que traz os dois a quatro números daquela tela em branco grande e, quando existe uma relação parte/todo, uma barra de proporção branca e amarela. Abaixo da faixa, tudo é papel: fundo névoa, cartões brancos de borda fina, tabelas densas, tinta azul-marinho. A cor forte mora num lugar só; o resto é leitura.\n\nA densidade é deliberada. São cerca de 1.500 lançamentos, 14 cartões e 13 contas; a interface prefere linhas de 44px, números tabulares alinhados à direita e meta-texto de 12px a respiros decorativos. Não há gráficos de enfeite, cards de KPI coloridos nem ilustrações. O mesmo sistema funciona no computador e no celular com o mesmo peso: no celular a faixa empilha os números 2x2, tabelas viram linhas empilhadas, modais viram folhas que sobem de baixo e a navegação desce para uma barra inferior.\n\nO tema escuro é um par completo, não uma inversão: a faixa fica num cobalto mais fundo (night-band), as superfícies passam a azul-noite e o azul de ação clareia (night-blue), com texto escuro dentro do botão primário.",
+    "keyCharacteristics": [
+      "Uma faixa de cobalto chapado por tela, sempre o primeiro bloco do conteúdo.",
+      "Manrope em todos os papéis, números tabulares e lineares no corpo inteiro.",
+      "Superfícies planas com borda de 1px; sombra só no que flutua.",
+      "Verde só para dinheiro que entra, vermelho só para alerta e negativo, despesa na cor da tinta.",
+      "Amarelo como acento raro: sobra na barra de proporção, marca, seleção de texto."
+    ],
+    "rules": [
+      {
+        "name": "The One Field Rule",
+        "body": "O cobalto chapado ocupa uma faixa por tela, de ponta a ponta, no topo do conteúdo. Fora dela, o azul aparece só em ações, foco e pequenos fundos claros; nunca em outro bloco grande.",
+        "section": "colors"
+      },
+      {
+        "name": "The Money Has Two Colors Rule",
+        "body": "Verde é só dinheiro que entra; vermelho é só alerta, atraso e negativo. Despesa é tinta, com sinal de menos. Se uma despesa comum aparece vermelha, está errado.",
+        "section": "colors"
+      },
+      {
+        "name": "The Rare Sun Rule",
+        "body": "O amarelo marca a sobra, a marca e a seleção. Não vira cor de botão, de texto ou de estado.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Everywhere Rule",
+        "body": "O corpo inteiro roda com `tnum` e `lnum`. Todo valor em dinheiro sai pelo formato `brl` (`1.234,56`, menos tipográfico `−` para negativo), `rs` quando leva o símbolo (`R$ 1.234,56`) ou `signed` (`+`/`−` pelo tipo), alinhado à direita e sem quebra.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Small Caps Rule",
+        "body": "Não há texto em caixa alta, tracking positivo ou rótulo acima de título. Hierarquia vem de peso e tamanho.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "Se está no fluxo da página, não tem sombra. Sombra significa \"isto está por cima e vai sumir\".",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** abrir toda tela nova com uma faixa cobalto, uma só, com 2 a 4 números dessa tela e a barra de proporção quando houver parte/todo.",
+      "**Do** formatar todo valor com `brl`, `rs` ou `signed`, em números tabulares, alinhados à direita.",
+      "**Do** usar verde só para receita e confirmado, vermelho só para atraso, erro e negativo, e deixar despesa em tinta com sinal de menos.",
+      "**Do** dar a cada tabela nova o comportamento de linhas empilhadas no celular, com o valor no canto superior direito e alvos de toque de 44px.",
+      "**Do** escrever estados vazios com o que falta e o que fazer, em português direto.",
+      "**Do** manter o par claro e escuro completo em cada token novo."
+    ],
+    "donts": [
+      "**Don't** colocar um segundo campo de cobalto chapado, cards de KPI coloridos ou gráficos decorativos na tela.",
+      "**Don't** pintar despesas comuns de vermelho nem usar o amarelo como cor de botão, texto ou estado.",
+      "**Don't** dar sombra a cartões, tabelas ou à faixa; sombra é só para o que flutua.",
+      "**Don't** usar texto em caixa alta, tracking positivo ou rótulo pequeno acima de títulos.",
+      "**Don't** criar animação nova além da barra de proporção, da subida do modal e da folha; o resto são transições de cor e o giro das setas de menu.",
+      "**Don't** carregar Select2 em campos simples no celular."
+    ]
+  }
+}

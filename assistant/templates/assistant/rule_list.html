@@ -1,0 +1,7 @@
+{% extends "layouts/list.html" %}{% load ui %}
+{% block title %}Regras · Confin{% endblock %}
+{% block band_title %}Regras do bot{% endblock %}
+{% block band_sub %}O que vocês ensinaram uma vez e vale para sempre. O bot e o leitor de documentos recebem as regras ativas em toda mensagem.{% endblock %}
+{% block band_actions %}<button class="band-btn" hx-get="{% url 'assistant:rule_create' %}" hx-target="#modal-container">{% icon "plus" 16 %}Nova regra</button>{% endblock %}
+{% block band_extra %}{% include "assistant/_rule_stats.html" %}{% endblock %}
+{% block table %}{% include "assistant/rule_table.html" %}{% endblock %}

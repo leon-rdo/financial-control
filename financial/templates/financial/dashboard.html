@@ -1,211 +1,165 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load ui %}
 
-{% block title %}Dashboard - Controle Financeiro{% endblock %}
+{% block title %}Painel · Confin{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="flex justify-between items-center">
+<section class="band" aria-labelledby="band-title">
+  <div class="band-inner">
+    <div class="band-head">
+      <div class="band-title">
         <div>
-            <h1 class="text-xl font-semibold">Dashboard</h1>
-            <p class="text-sm text-base-content/40 mt-0.5">{{ current_month|capfirst }}</p>
+          <h1 id="band-title">{{ month_title }}</h1>
+          <p class="band-sub">{% if is_current %}Até hoje, dia {{ today.day }}. {% if days_left %}Faltam {{ days_left }} dia{{ days_left|pluralize }}.{% else %}Último dia do mês.{% endif %}{% elif is_future %}Mês que ainda não começou.{% else %}Mês fechado.{% endif %}</p>
         </div>
-        <button hx-get="{% url 'financial:transaction_create' %}" hx-target="#modal-container" hx-swap="innerHTML" class="btn btn-neutral btn-sm gap-1.5">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            Nova Transação
-        </button>
+      </div>
+      <nav class="band-nav" aria-label="Trocar de mês">
+        <a href="?mes={{ prev_param }}" aria-label="Mês anterior">{% icon "chevron-left" 20 %}</a>
+        {% if not is_current %}<a href="{% url 'financial:dashboard' %}" aria-label="Voltar para o mês atual">{% icon "calendar" 18 %}</a>{% endif %}
+        <a href="?mes={{ next_param }}" aria-label="Próximo mês">{% icon "chevron-right" 20 %}</a>
+      </nav>
     </div>
 
-    <!-- Summary cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-base-100 rounded-xl p-4 border border-base-300/40">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Saldo Total</p>
-            <p class="text-xl font-semibold mt-1.5 {% if total_balance >= 0 %}text-success{% else %}text-error{% endif %}">R$ {{ total_balance|floatformat:2 }}</p>
-            <p class="text-[11px] text-base-content/25 mt-1">Disponível nas contas{% if reserved_balance %} · R$ {{ reserved_balance|floatformat:2 }} em caixinhas{% endif %}</p>
-            {% if balance_by_holder %}
-            <p class="text-[11px] text-base-content/40 mt-1">{% for name, amounts in balance_by_holder.items %}{{ name }}: R$ {{ amounts.available|floatformat:2 }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
-            {% endif %}
-        </div>
-        <div class="bg-base-100 rounded-xl p-4 border border-base-300/40">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Receitas</p>
-            <p class="text-xl font-semibold mt-1.5 text-success">R$ {{ income_month|floatformat:2 }}</p>
-            <p class="text-[11px] text-base-content/25 mt-1">Mes atual</p>
-        </div>
-        <div class="bg-base-100 rounded-xl p-4 border border-base-300/40">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Despesas</p>
-            <p class="text-xl font-semibold mt-1.5 text-error">R$ {{ expense_month|floatformat:2 }}</p>
-            <p class="text-[11px] text-base-content/25 mt-1">Mes atual</p>
-        </div>
-        <div class="bg-base-100 rounded-xl p-4 border border-base-300/40">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Balanco</p>
-            <p class="text-xl font-semibold mt-1.5 {% if balance_month >= 0 %}text-success{% else %}text-error{% endif %}">R$ {{ balance_month|floatformat:2 }}</p>
-            <p class="text-[11px] text-base-content/25 mt-1">Mes atual</p>
-        </div>
+    <div class="band-nums">
+      <div>
+        <span class="stat-label">Entrou</span>
+        <strong class="stat-value">{{ income_month|rs }}</strong>
+        <p class="stat-note">Receitas confirmadas da família</p>
+      </div>
+      <div>
+        <span class="stat-label">Saiu</span>
+        <strong class="stat-value">{{ expense_month|rs }}</strong>
+        <p class="stat-note">{% if expense_diff > 0 %}{{ expense_diff|rs }} a mais{% elif expense_diff < 0 %}{{ expense_diff|rs|cut:"−" }} a menos{% else %}O mesmo{% endif %} que em {{ prev_month_name }}{% if is_current %} até o dia {{ today.day }}{% endif %}</p>
+      </div>
+      <div>
+        <span class="stat-label">Sobra</span>
+        <strong class="stat-value">{% if balance_month < 0 %}<span class="neg">{{ balance_month|rs }}</span>{% else %}{{ balance_month|rs }}{% endif %}</strong>
+        <p class="stat-note">{% if is_current and still_due %}{{ still_due|rs }} ainda vencem este mês{% else %}Entrou menos o que saiu{% endif %}</p>
+      </div>
+      <div>
+        <span class="stat-label">Disponível nas contas</span>
+        <strong class="stat-value">{{ total_balance|rs }}</strong>
+        <p class="stat-note">{% if reserved_balance %}Mais {{ reserved_balance|rs }} guardado em caixinhas{% elif not available_anchored %}Informe os saldos das contas{% else %}Hoje, sem as caixinhas{% endif %}</p>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-2 space-y-4">
-            <!-- Recent transactions -->
-            <div class="bg-base-100 rounded-xl border border-base-300/40">
-                <div class="flex justify-between items-center px-5 py-3.5 border-b border-base-300/30">
-                    <h2 class="text-sm font-semibold">Transações Recentes</h2>
-                    <a href="{% url 'financial:transaction_list' %}" class="text-xs text-base-content/40 hover:text-base-content/70 transition-colors">Ver todas</a>
-                </div>
-                {% if recent_transactions %}
-                <div class="divide-y divide-base-300/20">
-                    {% for transaction in recent_transactions %}
-                    <div class="flex items-center justify-between px-5 py-3 hover:bg-base-200/30 transition-colors">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 {% if transaction.type == 'INCOME' %}bg-success/10 text-success{% else %}bg-error/10 text-error{% endif %}">
-                                {% if transaction.type == 'INCOME' %}
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                                {% else %}
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-                                {% endif %}
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium truncate">{{ transaction.description }}</p>
-                                <p class="text-[11px] text-base-content/30">{{ transaction.date|date:"d/m" }} &middot; {{ transaction.category.name }}</p>
-                            </div>
-                        </div>
-                        <span class="text-sm font-semibold tabular-nums shrink-0 ml-4 {% if transaction.type == 'INCOME' %}text-success{% else %}text-error{% endif %}">
-                            {% if transaction.type == 'INCOME' %}+{% else %}-{% endif %}R$ {{ transaction.amount|floatformat:2 }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-10 text-base-content/30">
-                    <p class="text-sm">Nenhuma transação registrada</p>
-                    <button hx-get="{% url 'financial:transaction_create' %}" hx-target="#modal-container" hx-swap="innerHTML" class="btn btn-neutral btn-sm mt-3">Criar primeira</button>
-                </div>
-                {% endif %}
-            </div>
-
-            {% if top_categories %}
-            <div class="bg-base-100 rounded-xl border border-base-300/40">
-                <div class="px-5 py-3.5 border-b border-base-300/30">
-                    <h2 class="text-sm font-semibold">Categorias do Mes</h2>
-                </div>
-                <div class="p-5 space-y-3.5">
-                    {% for category in top_categories %}
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <div class="flex items-center gap-2">
-                                {% if category.category__icon %}<span class="text-sm">{{ category.category__icon }}</span>{% endif %}
-                                <span class="text-sm font-medium">{{ category.category__name }}</span>
-                                <span class="text-[11px] text-base-content/25">{{ category.count }}x</span>
-                            </div>
-                            <span class="text-sm font-semibold tabular-nums">R$ {{ category.total|floatformat:2 }}</span>
-                        </div>
-                        <div class="w-full bg-base-300/30 rounded-full h-1">
-                            <div class="bg-base-content/15 h-1 rounded-full" style="width: {% widthratio category.total expense_month 100 %}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if active_purchases %}
-            <div class="bg-base-100 rounded-xl border border-base-300/40">
-                <div class="flex justify-between items-center px-5 py-3.5 border-b border-base-300/30">
-                    <h2 class="text-sm font-semibold">Parcelados Ativos</h2>
-                    <a href="{% url 'financial:purchase_list' %}" class="text-xs text-base-content/40 hover:text-base-content/70 transition-colors">Ver todos</a>
-                </div>
-                <div class="divide-y divide-base-300/20">
-                    {% for purchase in active_purchases %}
-                    <div class="px-5 py-3">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <p class="text-sm font-medium">{{ purchase.description }}</p>
-                                <p class="text-[11px] text-base-content/30">{{ purchase.payment_method.name }}</p>
-                            </div>
-                            <span class="text-[11px] font-medium text-base-content/40 bg-base-300/30 px-2 py-0.5 rounded">{{ purchase.paid_count }}/{{ purchase.total_count }}</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="flex-1 bg-base-300/30 rounded-full h-1">
-                                <div class="bg-base-content/20 h-1 rounded-full" style="width: {% widthratio purchase.paid_count purchase.total_count 100 %}%"></div>
-                            </div>
-                            <span class="text-xs tabular-nums text-base-content/35">R$ {{ purchase.total_amount|floatformat:2 }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Right column -->
-        <div class="space-y-4">
-            <div class="bg-base-100 rounded-xl border border-base-300/40">
-                <div class="px-5 py-3.5 border-b border-base-300/30">
-                    <h2 class="text-sm font-semibold">Resumo</h2>
-                </div>
-                <div class="p-5 space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-base-content/45">Contas</span>
-                        <span class="text-sm font-semibold tabular-nums">{{ total_accounts }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-base-content/45">Pagamentos</span>
-                        <span class="text-sm font-semibold tabular-nums">{{ total_payment_methods }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-base-content/45">Categorias</span>
-                        <span class="text-sm font-semibold tabular-nums">{{ total_categories }}</span>
-                    </div>
-                    {% if pending_transactions > 0 %}
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-base-content/45">Pendentes</span>
-                        <span class="text-sm font-semibold tabular-nums text-warning">{{ pending_transactions }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="bg-base-100 rounded-xl border border-base-300/40">
-                <div class="px-5 py-3.5 border-b border-base-300/30">
-                    <h2 class="text-sm font-semibold">Proximas Parcelas</h2>
-                    <p class="text-[11px] text-base-content/25 mt-0.5">Proximos 30 dias</p>
-                </div>
-                {% if upcoming_installments %}
-                <div class="divide-y divide-base-300/20">
-                    {% for installment in upcoming_installments %}
-                    <div class="flex justify-between items-center px-5 py-2.5">
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium truncate">{{ installment.purchase.description }}</p>
-                            <p class="text-[11px] text-base-content/25">{{ installment.installment_number }}/{{ installment.purchase.number_of_installments }}</p>
-                        </div>
-                        <div class="text-right shrink-0 ml-3">
-                            <p class="text-sm font-semibold tabular-nums">R$ {{ installment.amount|floatformat:2 }}</p>
-                            <p class="text-[11px] text-base-content/25">{{ installment.due_date|date:"d/m" }}</p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-8 text-base-content/25">
-                    <p class="text-xs">Nenhuma parcela a vencer</p>
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="bg-base-100 rounded-xl border border-base-300/40 p-4 space-y-1.5">
-                <button hx-get="{% url 'financial:transaction_create' %}" hx-target="#modal-container" hx-swap="innerHTML" class="btn btn-neutral btn-sm btn-block justify-start gap-2 font-medium">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    Nova Transação
-                <button hx-get="{% url 'financial:purchase_create' %}" hx-target="#modal-container" hx-swap="innerHTML" class="btn btn-ghost btn-sm btn-block justify-start gap-2 text-base-content/45 font-normal">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    Novo Parcelado
-                </button>
-                <button hx-get="{% url 'financial:recurrence_create' %}" hx-target="#modal-container" hx-swap="innerHTML" class="btn btn-ghost btn-sm btn-block justify-start gap-2 text-base-content/45 font-normal">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    Nova Recorrência
-                </button>
-            </div>
-        </div>
+    <div class="prop" role="img" aria-label="{{ spent_share }}% do que entrou já saiu">
+      <i class="prop-a" style="width: {{ spent_share }}%"></i>
+      {% if kept_share %}<i class="prop-b" style="width: {{ kept_share }}%"></i>{% endif %}
     </div>
+    <div class="prop-legend">
+      {% if income_month > 0 %}
+      <span><b>{{ spent_share }}%</b> do que entrou já saiu</span>
+      <span>{% if balance_month >= 0 %}<b>{{ kept_share }}%</b> sobrando{% else %}Saiu <b>{{ balance_month|rs|cut:"−" }}</b> a mais do que entrou{% endif %}</span>
+      {% else %}
+      <span>Nenhuma receita confirmada neste mês ainda.</span>
+      {% endif %}
+    </div>
+
+    {% if late_dues %}{% with d=late_dues.0 %}
+    <p class="band-alert">{% icon "alert" 16 %}{{ d.title }} {% if d.kind == "invoice" %}venceu dia {{ d.date|date:"d/m" }} e não tem pagamento registrado{% else %}está atrasado desde {{ d.date|date:"d/m" }}{% endif %}{% if late_dues|length > 1 %}, e há mais {{ late_dues|length|add:-1 }} atrasado{{ late_dues|length|add:-1|pluralize }}{% endif %}.</p>
+    {% endwith %}{% endif %}
+  </div>
+</section>
+
+<div class="page stack">
+  <div class="grid-3">
+    <section class="card" aria-labelledby="h-cats">
+      <div class="card-head"><h2 id="h-cats">Para onde foi</h2><a class="link" href="{% url 'financial:monthly_report' %}">Comparativo</a></div>
+      <div class="card-body">
+        {% for c in categories %}
+        <div class="cat-row">
+          <div class="cat-top">
+            <span class="chip"><i class="chip-dot" style="background: {{ c.color|default:'var(--line-strong)' }}"></i>{{ c.label }}</span>
+            <span class="num">{{ c.total|brl }}</span>
+          </div>
+          <div class="bar"><i style="width: {{ c.total|pct:biggest_category }}%; background: {{ c.color|default:'var(--mute)' }}"></i></div>
+        </div>
+        {% empty %}
+        <div class="empty"><strong>Nenhum gasto neste mês</strong>Os gastos aparecem aqui assim que forem lançados.</div>
+        {% endfor %}
+        {% if third_party_total or refunds %}
+        <p class="card-note">{% if refunds %}Estornos já descontados ({{ refunds|rs }}). {% endif %}{% if third_party_total %}Compras de terceiros ficam de fora ({{ third_party_total|rs }}).{% endif %}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-dues">
+      <div class="card-head"><h2 id="h-dues">Vem aí</h2><a class="link" href="{% url 'financial:invoice_forecast' %}">Faturas</a></div>
+      <div class="card-body">
+        <ul class="lines">
+          {% for d in dues %}
+          <li class="{% if d.late %}is-late{% elif d.date == today %}is-today{% endif %}">
+            <div class="line-lead">
+              <div class="dayblock">{{ d.date|date:"d" }}<small>{{ d.date|date:"n"|month_short }}</small></div>
+              <div class="line-main">{% if d.modal %}<button type="button" class="line-title line-action truncate" hx-get="{{ d.modal }}" hx-target="#modal-container">{{ d.title }}</button>{% elif d.href %}<a class="line-title line-action truncate" href="{{ d.href }}">{{ d.title }}</a>{% else %}<p class="line-title truncate">{{ d.title }}</p>{% endif %}<p class="line-meta">{{ d.meta }}</p></div>
+            </div>
+            <span class="line-amount{% if d.income %} in{% endif %}">{% if d.income %}+{% endif %}{{ d.amount|brl }}</span>
+          </li>
+          {% empty %}
+          <li class="empty"><strong>Nada vencendo nos próximos 30 dias</strong>Faturas, recorrências e lançamentos pendentes aparecem aqui.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-recent">
+      <div class="card-head"><h2 id="h-recent">Últimos lançamentos</h2><a class="link" href="{% url 'financial:transaction_list' %}">Ver todos</a></div>
+      <div class="card-body">
+        <ul class="lines">
+          {% for t in recent_transactions %}
+          <li>
+            <div class="line-main">
+              <button type="button" class="line-title line-action truncate" hx-get="{% url 'financial:transaction_update' t.pk %}?depois=recarregar" hx-target="#modal-container" title="Editar">{{ t.description }}</button>
+              <p class="line-meta">{{ t.date|date:"d/m" }}, {{ t.category.name }}{% if not t.confirmed %}, <button type="button" class="status status-pending is-inline" data-toggle-confirmed="{% url 'financial:toggle_transaction_confirmed' t.pk %}" data-after="reload" aria-pressed="false" title="Confirmar com um clique"><span>Pendente</span></button>{% endif %}</p>
+            </div>
+            <span class="line-amount{% if t.type == 'INCOME' %} in{% endif %}">{{ t.amount|signed:t.type }}</span>
+          </li>
+          {% empty %}
+          <li class="empty"><strong>Nenhum lançamento ainda</strong>Mande uma fatura ao bot ou lance à mão.<br><button class="btn btn-primary" hx-get="{% url 'financial:transaction_create' %}?depois=recarregar" hx-target="#modal-container">{% icon "plus" 16 %}Nova transação</button></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid-3">
+    <section class="card span-2" aria-labelledby="h-accounts">
+      <div class="card-head"><h2 id="h-accounts">Dinheiro nas contas</h2><a class="link" href="{% url 'accounts:bankaccount_list' %}">Contas e caixinhas</a></div>
+      <div class="card-body">
+        <ul class="lines">
+          {% for a in account_balances %}
+          <li>
+            <div class="line-main"><p class="line-title">{{ a.account }}</p><p class="line-meta">{% if a.holder %}{{ a.holder }}{% else %}Sem titular{% endif %}{% if a.anchor_date %}, saldo de {{ a.anchor_date|date:"d/m" }} mais os movimentos{% else %}, sem saldo informado{% endif %}</p></div>
+            <span class="line-amount">{% if a.balance is None %}—{% else %}{{ a.balance|brl }}{% endif %}</span>
+          </li>
+          {% empty %}
+          <li class="empty"><strong>Nenhuma conta cadastrada</strong><a class="link" href="{% url 'accounts:bankaccount_list' %}">Cadastrar conta</a></li>
+          {% endfor %}
+        </ul>
+        {% if balance_by_holder %}
+        <div class="badges">
+          {% for name, amounts in balance_by_holder.items %}<span class="badge">{{ name }}: {{ amounts.available|rs }}</span>{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-ending">
+      <div class="card-head"><h2 id="h-ending">Parcelados terminando</h2><a class="link" href="{% url 'financial:purchase_list' %}">Parcelados</a></div>
+      <div class="card-sub">Faltam até 3 parcelas</div>
+      <div class="card-body">
+        <ul class="lines">
+          {% for p in ending_purchases %}
+          <li>
+            <div class="line-main"><a class="line-title" href="{% url 'financial:purchase_detail' p.pk %}">{{ p.description }}</a><p class="line-meta">{{ p.payment_method.name }}, falta{{ p.left|pluralize:"m" }} {{ p.left }} de {{ p.total_count }}</p></div>
+            <span class="line-amount">{{ p.installment_amount|brl }}<span class="muted tiny"> /mês</span></span>
+          </li>
+          {% empty %}
+          <li class="empty"><strong>Nenhum parcelado terminando</strong>Os que estão perto da última parcela aparecem aqui.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </div>
 </div>
-
-<div id="modal-container"></div>
 {% endblock %}

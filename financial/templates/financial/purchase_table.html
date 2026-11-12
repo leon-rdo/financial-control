@@ -1,111 +1,29 @@
-<div id="purchase-table" class="bg-base-100 rounded-xl border border-base-300/40">
-<div class="overflow-x-auto">
-    <table class="table w-full">
-        <thead>
-            <tr>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Data</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Descrição</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Valor Total</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Parcelas</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Categoria</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Método</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider">Status</th>
-                <th class="text-xs font-medium text-base-content/40 uppercase tracking-wider text-right">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for purchase in object_list %}
-            <tr class="hover:bg-base-200/30 transition-colors">
-                <td>
-                    <div class="text-sm">{{ purchase.purchase_date|date:"d/m/Y" }}</div>
-                </td>
-                <td>
-                    <div class="font-medium text-sm">{{ purchase.description }}</div>
-                    {% if purchase.entity %}
-                    <div class="text-xs text-base-content/40">{{ purchase.entity.name }}</div>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="text-sm font-semibold tabular-nums">R$ {{ purchase.total_amount|floatformat:2 }}</div>
-                </td>
-                <td>
-                    <span class="text-xs text-base-content/60">{{ purchase.number_of_installments }}x de R$ {{ purchase.installment_amount }}</span>
-                </td>
-                <td>
-                    <span class="text-xs px-2 py-0.5 rounded bg-base-content/5 text-base-content/60">{{ purchase.category.name }}</span>
-                </td>
-                <td>
-                    <div class="text-sm text-base-content/60">{{ purchase.payment_method.name }}</div>
-                </td>
-                <td>
-                    <div class="text-sm">
-                        <div class="text-xs text-base-content/50 mb-1">{{ purchase.paid_installments_count|default:0 }}/{{ purchase.number_of_installments }}</div>
-                        <div class="w-20 bg-base-300/30 rounded-full h-1">
-                            <div class="bg-base-content/20 h-1 rounded-full" style="width: {% widthratio purchase.paid_installments_count|default:0 purchase.number_of_installments 100 %}%"></div>
-                        </div>
-                    </div>
-                </td>
-                <td class="text-right">
-                    <div class="flex gap-1 justify-end">
-                        <a href="{% url 'financial:purchase_detail' purchase.pk %}"
-                            class="btn btn-ghost btn-xs btn-square" title="Ver detalhes">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                        </a>
-                        <button hx-get="{% url 'financial:purchase_update' purchase.pk %}" hx-target="#modal-container"
-                            hx-swap="innerHTML" class="btn btn-ghost btn-xs btn-square">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                        </button>
-                        <button
-                            @click="$dispatch('openDeleteModal', { url: '{% url 'financial:purchase_delete' purchase.pk %}' })"
-                            class="btn btn-ghost btn-xs btn-square text-error">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" class="text-center py-10 text-base-content/30 text-sm">
-                    Nenhuma compra encontrada
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+{% load ui %}<section class="card" id="purchase-table" aria-label="Lista de parcelados">
+  <div class="table-wrap">
+    <table class="table rtable rtable-inline-actions">
+      <thead><tr><th>Compra</th><th>Cartão</th><th>Parcelas</th><th class="num">Parcela</th><th class="num">Falta pagar</th><th class="num">Total</th><th><span class="sr-only">Ações</span></th></tr></thead>
+      <tbody>
+        {% for p in object_list %}
+        <tr class="{% if p.paid_count == p.total_count %}is-muted{% endif %}">
+          <td class="c-main">
+            <a class="cell-title" href="{% url 'financial:purchase_detail' p.pk %}">{{ p.description }}</a>
+            <p class="cell-meta">{{ p.purchase_date|date:"d/m/Y" }}<span class="sep"></span>{{ p.category.name }}{% if p.on_behalf_of %}<span class="sep"></span><span class="badge badge-amber">por conta de {{ p.on_behalf_of.name }}</span>{% endif %}<span class="show-sm"><span class="sep"></span>{{ p.payment_method.name }}</span></p>
+          </td>
+          <td class="c-hide muted">{{ p.payment_method.name }}</td>
+          <td class="c-meta" data-label="Pagas">
+            <div class="progress-inline"><span class="nowrap">{{ p.paid_count }} de {{ p.total_count }}</span><span class="bar"><i style="width: {{ p.paid_count|pct:p.total_count }}%"></i></span></div>
+          </td>
+          <td class="c-hide num">{{ p.installment_amount|brl }}</td>
+          <td class="c-amount num"><span class="amount">{% if p.left_amount %}{{ p.left_amount|brl }}{% else %}Quitado{% endif %}</span></td>
+          <td class="c-hide num muted">{{ p.total_amount|brl }}</td>
+          <td class="c-actions">{% url 'financial:purchase_update' p.pk as edit_url %}{% url 'financial:purchase_delete' p.pk as delete_url %}{% include "partials/row_actions.html" with edit_url=edit_url delete_url=delete_url target="#purchase-table" what=p.description %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty"><strong>Nenhum parcelado encontrado</strong>As compras parceladas das faturas importadas aparecem aqui.</div></td></tr>
+        {% endfor %}
+      </tbody>
     </table>
-</div>
-
-{% if is_paginated %}
-<div class="flex justify-center mt-6">
-    <div class="join">
-        {% if page_obj.has_previous %}
-        <button hx-get="?page=1" hx-target="#purchase-table" hx-swap="outerHTML" class="join-item btn btn-sm">«</button>
-        <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#purchase-table" hx-swap="outerHTML"
-            class="join-item btn btn-sm">‹</button>
-        {% endif %}
-
-        <button class="join-item btn btn-sm btn-active">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</button>
-
-        {% if page_obj.has_next %}
-        <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#purchase-table" hx-swap="outerHTML"
-            class="join-item btn btn-sm">›</button>
-        <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#purchase-table" hx-swap="outerHTML"
-            class="join-item btn btn-sm">»</button>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-</div>
+  </div>
+  {% include "partials/pagination.html" with target="#purchase-table" %}
+</section>
+{% if request.htmx and left_total is not None %}{% include "financial/_purchase_stats.html" with oob=True %}{% endif %}

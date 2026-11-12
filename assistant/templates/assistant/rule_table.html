@@ -1,0 +1,18 @@
+{% load ui %}<section class="card" id="rule-table" aria-label="Regras">
+  <ul class="rules">
+    {% for r in object_list %}
+    <li class="rule{% if not r.active %} is-off{% endif %}">
+      <div class="rule-text"><p>{{ r.text }}</p><p class="cell-meta">Desde {{ r.created_at|date:"d/m/Y" }}{% if not r.active %}<span class="sep"></span>desativada{% endif %}</p></div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary btn-sm" hx-post="{% url 'assistant:rule_toggle' r.pk %}" hx-target="#rule-table" hx-swap="outerHTML">{% if r.active %}Desativar{% else %}Ativar{% endif %}</button>
+        {% url 'assistant:rule_update' r.pk as edit_url %}{% url 'assistant:rule_delete' r.pk as delete_url %}
+        <button type="button" class="icon-btn" hx-get="{{ edit_url }}" hx-target="#modal-container" aria-label="Editar regra" title="Editar">{% icon "pencil" 16 %}</button>
+        <button type="button" class="icon-btn is-danger" data-delete="{{ delete_url }}" data-target="#rule-table" data-what="esta regra" aria-label="Excluir regra" title="Excluir">{% icon "trash" 16 %}</button>
+      </div>
+    </li>
+    {% empty %}
+    <li><div class="empty"><strong>Nenhuma regra ainda</strong>No chat, diga "lembre que compras no Posto Y são sempre Combustível", ou crie aqui.</div></li>
+    {% endfor %}
+  </ul>
+</section>
+{% if request.htmx %}{% include "assistant/_rule_stats.html" with oob=True %}{% endif %}

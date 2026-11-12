@@ -1,146 +1,33 @@
-<div id="transaction-table" class="bg-base-100 rounded-xl border border-base-300/40">
-  <div class="overflow-x-auto">
-    <table class="table w-full">
+{% load ui %}<section class="card" id="transaction-table" aria-label="Lista de transações">
+  <div class="table-wrap">
+    <table class="table rtable rtable-inline-actions">
       <thead>
-        <tr>
-          <th>Data</th>
-          <th>Descrição</th>
-          <th class="text-right">Valor</th>
-          <th>Categoria</th>
-          <th>Método</th>
-          <th>Status</th>
-          <th class="text-right">Ações</th>
-        </tr>
+        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Forma de pagamento</th><th>Status</th><th class="num">Valor</th><th><span class="sr-only">Ações</span></th></tr>
       </thead>
       <tbody>
-        {% for transaction in object_list %}
-        <tr class="hover:bg-base-200/30 transition-colors">
-          <td class="whitespace-nowrap">
-            <span class="text-sm text-base-content/70">{{ transaction.date|date:"d/m/Y" }}</span>
+        {% for t in object_list %}
+        <tr>
+          <td class="c-hide nowrap muted">{{ t.date|date:"d/m/Y" }}</td>
+          <td class="c-main">
+            <p class="cell-title">{{ t.description }}</p>
+            <p class="cell-meta show-sm">{{ t.date|date:"d/m" }}<span class="sep"></span>{{ t.category.name }}<span class="sep"></span>{{ t.payment_method.name }}</p>
+            {% if t.entity and t.entity.name != t.description or t.on_behalf_of %}<p class="cell-meta">{% if t.entity and t.entity.name != t.description %}{{ t.entity.name }}{% if t.on_behalf_of %}<span class="sep"></span>{% endif %}{% endif %}{% if t.on_behalf_of %}<span class="badge badge-amber">por conta de {{ t.on_behalf_of.name }}</span>{% endif %}</p>{% endif %}
+            {% with tags=t.tags.all %}{% if tags %}<div class="tags">{% for tag in tags %}<span>{{ tag.name }}</span>{% endfor %}</div>{% endif %}{% endwith %}
           </td>
-          <td>
-            <div class="flex items-center gap-2.5">
-              <div
-                class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 {% if transaction.type == 'INCOME' %}bg-success/10 text-success{% else %}bg-error/10 text-error{% endif %}"
-              >
-                {% if transaction.type == 'INCOME' %}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-                {% else %}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-                {% endif %}
-              </div>
-              <div class="min-w-0">
-                <div class="text-sm font-medium truncate">{{ transaction.description }}</div>
-                {% if transaction.entity %}
-                <div class="text-xs text-base-content/40 truncate">{{ transaction.entity.name }}</div>
-                {% endif %}
-                {% if transaction.tags.all %}
-                <div class="flex gap-1 mt-0.5 flex-wrap">
-                  {% for tag in transaction.tags.all %}
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/50">
-                    {{ tag.name }}
-                  </span>
-                  {% endfor %}
-                </div>
-                {% endif %}
-              </div>
-            </div>
+          <td class="c-hide"><span class="chip"><i class="chip-dot" style="background: {{ t.category.color|default:'var(--line-strong)' }}"></i>{{ t.category.name }}</span></td>
+          <td class="c-hide muted">{{ t.payment_method.name }}</td>
+          <td class="c-meta">
+            <button type="button" class="status {% if t.confirmed %}status-ok{% else %}status-pending{% endif %}" data-toggle-confirmed="{% url 'financial:toggle_transaction_confirmed' t.pk %}" aria-pressed="{{ t.confirmed|yesno:'true,false' }}" title="Clique para alternar entre confirmada e pendente"><span>{% if t.confirmed %}Confirmada{% else %}Pendente{% endif %}</span></button>
           </td>
-          <td class="text-right whitespace-nowrap">
-            <span class="text-sm font-semibold tabular-nums {% if transaction.type == 'INCOME' %}text-success{% else %}text-error{% endif %}">
-              {% if transaction.type == 'INCOME' %}+{% else %}-{% endif %} R$ {{ transaction.amount|floatformat:2 }}
-            </span>
-          </td>
-          <td>
-            {% if transaction.category.color %}
-            <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full shrink-0" style="background-color: {{ transaction.category.color }};"></span>
-              <span class="text-sm text-base-content/70">{{ transaction.category.name }}</span>
-            </div>
-            {% else %}
-            <span class="text-sm text-base-content/50">{{ transaction.category.name }}</span>
-            {% endif %}
-          </td>
-          <td>
-            <span class="text-sm text-base-content/50">{{ transaction.payment_method.name }}</span>
-          </td>
-          <td>
-            <button
-              onclick="toggleConfirmed({{ transaction.pk }}, this)"
-              class="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
-              title="Clique para alternar status"
-              data-confirmed="{{ transaction.confirmed|yesno:'true,false' }}"
-            >
-              {% if transaction.confirmed %}
-              <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-              <span class="text-xs text-base-content/50">Confirmada</span>
-              {% else %}
-              <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
-              <span class="text-xs text-base-content/50">Pendente</span>
-              {% endif %}
-            </button>
-          </td>
-          <td class="text-right">
-            <div class="flex gap-0.5 justify-end">
-              <button
-                hx-get="{% url 'financial:transaction_duplicate' transaction.pk %}"
-                hx-target="#modal-container"
-                hx-swap="innerHTML"
-                class="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-success"
-                title="Duplicar">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
-              <button
-                hx-get="{% url 'financial:transaction_update' transaction.pk %}"
-                hx-target="#modal-container"
-                hx-swap="innerHTML"
-                class="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-base-content"
-                title="Editar">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
-              <button
-                @click="$dispatch('openDeleteModal', { url: '{% url 'financial:transaction_delete' transaction.pk %}' })"
-                class="btn btn-ghost btn-xs btn-square text-base-content/40 hover:text-error"
-                title="Excluir">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </td>
+          <td class="c-amount num"><span class="amount{% if t.type == 'INCOME' %} in{% endif %}">{{ t.amount|signed:t.type }}</span></td>
+          <td class="c-actions">{% url 'financial:transaction_update' t.pk as edit_url %}{% url 'financial:transaction_delete' t.pk as delete_url %}{% url 'financial:transaction_duplicate' t.pk as dup_url %}{% include "partials/row_actions.html" with edit_url=edit_url delete_url=delete_url dup_url=dup_url target="#transaction-table" what=t.description %}</td>
         </tr>
         {% empty %}
-        <tr>
-          <td colspan="7" class="text-center py-16">
-            <span class="text-sm text-base-content/40">Nenhuma transação encontrada</span>
-          </td>
-        </tr>
+        <tr><td colspan="7"><div class="empty"><strong>Nenhuma transação encontrada</strong>Mude os filtros ou lance uma nova.</div></td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-
-  {% if is_paginated %}
-  <div class="flex justify-center py-4 border-t border-base-300/40">
-    <div class="join">
-      {% if page_obj.has_previous %}
-      <button hx-get="?page=1" hx-target="#transaction-table" hx-swap="outerHTML" class="join-item btn btn-ghost btn-sm">«</button>
-      <button hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#transaction-table" hx-swap="outerHTML" class="join-item btn btn-ghost btn-sm">‹</button>
-      {% endif %}
-      <button class="join-item btn btn-ghost btn-sm btn-active">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</button>
-      {% if page_obj.has_next %}
-      <button hx-get="?page={{ page_obj.next_page_number }}" hx-target="#transaction-table" hx-swap="outerHTML" class="join-item btn btn-ghost btn-sm">›</button>
-      <button hx-get="?page={{ page_obj.paginator.num_pages }}" hx-target="#transaction-table" hx-swap="outerHTML" class="join-item btn btn-ghost btn-sm">»</button>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
-</div>
+  {% include "partials/pagination.html" with target="#transaction-table" %}
+</section>
+{% if request.htmx and totals %}{% include "financial/_transaction_stats.html" with oob=True %}{% endif %}

@@ -63,7 +63,6 @@ INSTALLED_APPS = [
     'django_select2',
     'corsheaders',
     'rest_framework',
-    'tailwind',
     
     # Local apps
     'core',
@@ -73,7 +72,6 @@ INSTALLED_APPS = [
     'assistant',
 ]
 
-# TAILWIND_APP_NAME = 'theme'
 SELECT2_CACHE_BACKEND = 'default'
 
 MIDDLEWARE = [

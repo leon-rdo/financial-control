@@ -1,0 +1,29 @@
+{% extends "layouts/list.html" %}{% load ui %}
+
+{% block title %}Transferências · Confin{% endblock %}
+{% block band_title %}Transferências{% endblock %}
+{% block band_sub %}Pagamentos de fatura e dinheiro movido entre contas e caixinhas. Não contam como receita nem despesa.{% endblock %}
+{% block band_actions %}
+<button class="band-btn" hx-get="{% url 'financial:transfer_create' %}" hx-target="#modal-container">{% icon "plus" 16 %}Nova transferência</button>
+{% endblock %}
+{% block band_extra %}{% include "financial/_transfer_stats.html" %}{% endblock %}
+
+{% block before_table %}
+{% if stats.open_count %}
+<div class="note">{% icon "alert" 16 %}<p><strong>{{ stats.open_count }} transferência{{ stats.open_count|pluralize }} com ponta aberta</strong>: falta a conta de origem ou a de destino. Acontece quando só um dos extratos foi importado. <a class="link" href="?kind=open">Ver só essas</a></p></div>
+{% endif %}
+<details class="filters" open data-active="{{ filter.form|active_count }}">
+  <summary>Filtros{% if filter.form|active_count %} ({{ filter.form|active_count }} em uso){% endif %}{% icon "chevron-down" 16 %}</summary>
+  <form class="filters-body" hx-get="{% url 'financial:transfer_list' %}" hx-target="#transfer-table" hx-swap="outerHTML" hx-push-url="true" hx-trigger="change, submit, keyup changed delay:400ms from:find input[type=search]">
+    {% include "partials/field.html" with field=filter.form.description label="Buscar" extra="fld-search" %}
+    {% include "partials/field.html" with field=filter.form.kind label="Tipo" %}
+    {% include "partials/field.html" with field=filter.form.account label="Conta" %}
+    {% include "partials/field.html" with field=filter.form.to_card label="Cartão pago" %}
+    {% include "partials/field.html" with field=filter.form.date_from label="De" %}
+    {% include "partials/field.html" with field=filter.form.date_to label="Até" %}
+    <div class="filters-actions"><a class="btn btn-ghost btn-sm" href="{% url 'financial:transfer_list' %}">Limpar filtros</a></div>
+  </form>
+</details>
+{% endblock %}
+
+{% block table %}{% include "financial/transfer_table.html" %}{% endblock %}

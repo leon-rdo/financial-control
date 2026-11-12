@@ -1,0 +1,11 @@
+{% load ui %}<div class="band-nums" id="band-nums"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div><span class="stat-label">Transferências</span><strong class="stat-value is-md">{{ stats.count }}</strong><p class="stat-note">no filtro atual</p></div>
+  <div><span class="stat-label">Movimentado</span><strong class="stat-value is-md">{{ stats.total|rs }}</strong><p class="stat-note">soma do filtro atual</p></div>
+  <div><span class="stat-label">Em faturas pagas</span><strong class="stat-value is-md">{{ stats.invoices|rs }}</strong><p class="stat-note">parte que foi pagamento de cartão</p></div>
+</div>
+{% if stats.total %}
+<div id="band-prop"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="prop" role="img" aria-label="{{ stats.invoices|pct:stats.total }}% foi pagamento de fatura"><i class="prop-a" style="width: {{ stats.invoices|pct:stats.total }}%"></i><i class="prop-b" style="width: {{ stats.between_share }}%"></i></div>
+  <div class="prop-legend"><span><b>{{ stats.invoices|pct:stats.total }}%</b> pagamento de fatura</span><span><b>{{ stats.between_share }}%</b> entre contas e caixinhas</span></div>
+</div>
+{% endif %}

@@ -1,0 +1,6 @@
+<div id="rule-stats"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="band-nums">
+    <div><span class="stat-label">Ativas</span><strong class="stat-value is-md">{{ active_count }} de {{ max_rules }}</strong><p class="stat-note">limite para o bot não se perder</p></div>
+  </div>
+  <div class="prop" role="img" aria-label="{{ active_count }} de {{ max_rules }} regras ativas"><i class="prop-a" style="width: {% widthratio active_count max_rules 100 %}%"></i></div>
+</div>

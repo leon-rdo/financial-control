@@ -1,168 +1,96 @@
 from django import forms
-from .models import BankAccount, PaymentMethod
+
+from core import widgets as w
+
+from .models import BalanceSnapshot, BankAccount, PaymentMethod
 
 
-class BankAccountForm(forms.ModelForm):
+class BankAccountForm(w.FriendlyEmptyLabels, forms.ModelForm):
     class Meta:
         model = BankAccount
-        fields = ["name", "bank", "type", "holder", "parent", "color", "opening_balance",
-                  "opening_balance_date", "active"]
+        fields = ["name", "bank", "type", "holder", "parent", "color", "opening_balance", "opening_balance_date",
+                  "active"]
         widgets = {
-            "holder": forms.Select(attrs={"class": "select select-bordered w-full"}),
-            "parent": forms.Select(attrs={"class": "select select-bordered w-full"}),
-            "opening_balance": forms.NumberInput(
-                attrs={"class": "input input-bordered w-full", "step": "0.01"}
-            ),
-            "opening_balance_date": forms.DateInput(
-                attrs={"class": "input input-bordered w-full", "type": "date"}, format="%Y-%m-%d"
-            ),
-            "name": forms.TextInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "Ex: Nubank",
-                }
-            ),
-            "bank": forms.TextInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "Será preenchido automaticamente",
-                }
-            ),
-            "type": forms.Select(
-                attrs={
-                    "class": "select select-bordered w-full",
-                }
-            ),
-            "color": forms.TextInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "#FF5733",
-                    "maxlength": "7",
-                }
-            ),
-            "active": forms.CheckboxInput(
-                attrs={
-                    "class": "checkbox checkbox-primary",
-                }
-            ),
+            "name": w.text("Ex.: Nubank"),
+            "bank": w.text("Preenchido ao escolher o banco"),
+            "type": w.select(),
+            "holder": w.select(),
+            "parent": w.select(),
+            "color": w.text("#1B3F8F", maxlength="7"),
+            "opening_balance": w.money(),
+            "opening_balance_date": w.date(),
+            "active": w.check(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        parents = BankAccount.objects.filter(parent__isnull=True, active=True)
+        if self.instance.pk:
+            parents = parents.exclude(pk=self.instance.pk)
+        self.fields["parent"].queryset = parents
+        self.fields["parent"].empty_label = "Não, é uma conta"
+        self.fields["holder"].empty_label = "Sem titular"
 
-class PaymentMethodForm(forms.ModelForm):
+
+class PaymentMethodForm(w.FriendlyEmptyLabels, forms.ModelForm):
     class Meta:
         model = PaymentMethod
-        fields = [
-            "name",
-            "type",
-            "bank_account",
-            "holder",
-            "billing_card",
-            "credit_limit",
-            "closing_day",
-            "due_day",
-            "active",
-        ]
+        fields = ["name", "type", "bank_account", "holder", "billing_card", "lent_to", "credit_limit", "closing_day",
+                  "due_day", "active"]
         widgets = {
-            "holder": forms.Select(attrs={"class": "select select-bordered w-full"}),
-            "billing_card": forms.Select(attrs={"class": "select select-bordered w-full"}),
-            "name": forms.TextInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "Ex: Nubank Crédito",
-                }
-            ),
-            "type": forms.Select(
-                attrs={
-                    "class": "select select-bordered w-full",
-                }
-            ),
-            "bank_account": forms.Select(
-                attrs={
-                    "class": "select select-bordered w-full",
-                }
-            ),
-            "credit_limit": forms.NumberInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "0.00",
-                    "step": "0.01",
-                }
-            ),
-            "closing_day": forms.NumberInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "Ex: 10",
-                    "min": "1",
-                    "max": "31",
-                }
-            ),
-            "due_day": forms.NumberInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "Ex: 15",
-                    "min": "1",
-                    "max": "31",
-                }
-            ),
-            "active": forms.CheckboxInput(
-                attrs={
-                    "class": "checkbox checkbox-primary",
-                }
-            ),
+            "name": w.text("Ex.: Nubank crédito"),
+            "type": w.select(),
+            "bank_account": w.select(),
+            "holder": w.select(),
+            "billing_card": w.select(),
+            "lent_to": w.select(),
+            "credit_limit": w.money(),
+            "closing_day": w.day("Ex.: 3"),
+            "due_day": w.day("Ex.: 10"),
+            "active": w.check(),
         }
 
+    def __init__(self, *args, **kwargs):
+        from core.models import Entity
 
-class SimplePaymentMethodForm(forms.ModelForm):
-    """Formulário simplificado para criação inline de métodos de pagamento"""
+        super().__init__(*args, **kwargs)
+        mains = PaymentMethod.objects.filter(type=PaymentMethod.TypeChoices.CREDIT, billing_card__isnull=True)
+        if self.instance.pk:
+            mains = mains.exclude(pk=self.instance.pk)
+        self.fields["billing_card"].queryset = mains
+        self.fields["billing_card"].empty_label = "Na própria fatura (é o cartão principal)"
+        self.fields["lent_to"].queryset = Entity.objects.filter(type=Entity.TypeChoices.PERSON)
+        self.fields["lent_to"].empty_label = "Fica com a família"
+        self.fields["bank_account"].empty_label = "Nenhuma"
+        self.fields["holder"].empty_label = "Herdar da conta"
+
+
+class SimplePaymentMethodForm(w.FriendlyEmptyLabels, forms.ModelForm):
+    """Criação rápida de forma de pagamento (dentro do formulário de transação)."""
 
     class Meta:
         model = PaymentMethod
         fields = ["name", "type"]
+
+
+class BalanceSnapshotForm(w.FriendlyEmptyLabels, forms.ModelForm):
+    """Saldo conhecido de uma conta ou caixinha no fim de um dia."""
+
+    class Meta:
+        model = BalanceSnapshot
+        fields = ["account", "date", "balance", "notes"]
         widgets = {
-            "name": forms.TextInput(
-                attrs={
-                    "class": "input input-bordered w-full",
-                    "placeholder": "Ex: Nubank Crédito",
-                }
-            ),
-            "type": forms.Select(
-                attrs={
-                    "class": "select select-bordered w-full",
-                }
-            ),
+            "account": w.select(),
+            "date": w.date(),
+            "balance": forms.NumberInput(attrs={"class": "field field-num", "step": "0.01", "placeholder": "0,00",
+                                                "inputmode": "decimal"}),
+            "notes": w.text("Ex.: conferido no app do banco"),
         }
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.active = True
-        if commit:
-            instance.save()
-        return instance
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["account"].queryset = BankAccount.objects.filter(active=True).select_related("parent")
 
-
-def _limit_choices(form):
-    """Caixinha só pode ficar em conta comum; cartão adicional só em cartão principal."""
-    if "parent" in form.fields:
-        qs = BankAccount.objects.filter(parent__isnull=True)
-        if form.instance.pk:
-            qs = qs.exclude(pk=form.instance.pk)
-        form.fields["parent"].queryset = qs
-        form.fields["parent"].empty_label = "Nenhuma (conta comum)"
-    if "holder" in form.fields:
-        form.fields["holder"].empty_label = "Não informado"
-    if "billing_card" in form.fields:
-        qs = PaymentMethod.objects.filter(type="CREDIT", billing_card__isnull=True)
-        if form.instance.pk:
-            qs = qs.exclude(pk=form.instance.pk)
-        form.fields["billing_card"].queryset = qs
-        form.fields["billing_card"].empty_label = "Nenhum (fatura própria)"
-
-
-for _form in (BankAccountForm, PaymentMethodForm):
-    _original_init = _form.__init__
-
-    def _init(self, *args, _original_init=_original_init, **kwargs):
-        _original_init(self, *args, **kwargs)
-        _limit_choices(self)
-
-    _form.__init__ = _init
+    def validate_unique(self):
+        # Um saldo por conta e dia: informar de novo no mesmo dia substitui (ver BalanceSnapshotCreateView)
+        pass

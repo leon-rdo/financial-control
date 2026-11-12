@@ -1,0 +1,39 @@
+{% load ui %}{% comment %}
+Grupos de navegação. variant="menu": menus do topo (details); variant="sheet": lista do menu do celular.
+{% endcomment %}
+{% if variant == "sheet" %}
+<a class="nav-item {% nav_active 'financial:dashboard' %}" href="{% url 'financial:dashboard' %}">{% icon "home" %}Painel</a>
+{% endif %}
+
+{% if variant == "menu" %}<details class="nav-group {% nav_active 'financial:transaction' 'financial:purchase' 'financial:recurrence' 'financial:transfer' %}"><summary class="nav-trigger">Lançamentos{% icon "chevron-down" 14 %}</summary><div class="nav-menu">{% else %}<h3>Lançamentos</h3>{% endif %}
+  <a class="nav-item {% nav_active 'financial:transaction' %}" href="{% url 'financial:transaction_list' %}">{% icon "list" %}Transações</a>
+  <a class="nav-item {% nav_active 'financial:purchase' %}" href="{% url 'financial:purchase_list' %}">{% icon "card" %}Parcelados</a>
+  <a class="nav-item {% nav_active 'financial:recurrence' %}" href="{% url 'financial:recurrence_list' %}">{% icon "repeat" %}Recorrências</a>
+  <a class="nav-item {% nav_active 'financial:transfer' %}" href="{% url 'financial:transfer_list' %}">{% icon "transfer" %}Transferências</a>
+{% if variant == "menu" %}</div></details>{% endif %}
+
+{% if variant == "menu" %}<details class="nav-group {% nav_active 'financial:invoice' 'financial:cards' 'accounts:paymentmethod' %}"><summary class="nav-trigger">Cartões{% icon "chevron-down" 14 %}</summary><div class="nav-menu">{% else %}<h3>Cartões</h3>{% endif %}
+  <a class="nav-item {% nav_active 'financial:invoice' %}" href="{% url 'financial:invoice_forecast' %}">{% icon "calendar" %}Faturas previstas</a>
+  <a class="nav-item {% nav_active 'financial:cards' %}" href="{% url 'financial:cards' %}">{% icon "link" %}Cartões e fechamentos</a>
+  <a class="nav-item {% nav_active 'accounts:paymentmethod' %}" href="{% url 'accounts:paymentmethod_list' %}">{% icon "wallet" %}Formas de pagamento</a>
+{% if variant == "menu" %}</div></details>{% endif %}
+
+{% if variant == "menu" %}<details class="nav-group {% nav_active 'accounts:bankaccount' 'accounts:snapshot' 'financial:third_party' %}"><summary class="nav-trigger">Dinheiro{% icon "chevron-down" 14 %}</summary><div class="nav-menu">{% else %}<h3>Dinheiro</h3>{% endif %}
+  <a class="nav-item {% nav_active 'accounts:bankaccount' 'accounts:snapshot' %}" href="{% url 'accounts:bankaccount_list' %}">{% icon "bank" %}Contas e caixinhas</a>
+  <a class="nav-item {% nav_active 'financial:third_party' %}" href="{% url 'financial:third_party' %}">{% icon "users" %}Terceiros</a>
+{% if variant == "menu" %}</div></details>{% endif %}
+
+{% if variant == "menu" %}<a class="nav-link {% nav_active 'financial:monthly_report' %}" href="{% url 'financial:monthly_report' %}">Comparativo</a>{% else %}<h3>Análise</h3><a class="nav-item {% nav_active 'financial:monthly_report' %}" href="{% url 'financial:monthly_report' %}">{% icon "chart" %}Comparativo mensal</a>{% endif %}
+
+{% if variant == "menu" %}<details class="nav-group {% nav_active 'assistant:' %}"><summary class="nav-trigger">Assistente{% icon "chevron-down" 14 %}</summary><div class="nav-menu">{% else %}<h3>Assistente</h3>{% endif %}
+  <a class="nav-item {% nav_active 'assistant:batch' %}" href="{% url 'assistant:batch_list' %}">{% icon "bot" %}Lotes do bot</a>
+  <a class="nav-item {% nav_active 'assistant:rule' %}" href="{% url 'assistant:rule_list' %}">{% icon "check-circle" %}Regras</a>
+  <a class="nav-item {% nav_active 'assistant:cost' %}" href="{% url 'assistant:cost' %}">{% icon "dollar" %}Gasto com IA</a>
+{% if variant == "menu" %}</div></details>{% endif %}
+
+{% if variant == "menu" %}<details class="nav-group {% nav_active 'core:' %}"><summary class="nav-trigger">Cadastros{% icon "chevron-down" 14 %}</summary><div class="nav-menu">{% else %}<h3>Cadastros</h3>{% endif %}
+  <a class="nav-item {% nav_active 'core:category' %}" href="{% url 'core:category_list' %}">{% icon "tag" %}Categorias</a>
+  <a class="nav-item {% nav_active 'core:entity' %}" href="{% url 'core:entity_list' %}">{% icon "folder" %}Entidades</a>
+  <a class="nav-item {% nav_active 'core:tag' %}" href="{% url 'core:tag_list' %}">{% icon "tag" %}Tags</a>
+  <a class="nav-item {% nav_active 'core:family' %}" href="{% url 'core:family_list' %}">{% icon "users" %}Família</a>
+{% if variant == "menu" %}</div></details>{% endif %}

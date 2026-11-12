@@ -1,21 +1,9 @@
-{% extends 'base.html' %}
-
-{% block title %}403 - Acesso proibido{% endblock %}
-
+{% extends "base.html" %}{% load ui %}
+{% block title %}Acesso negado · Confin{% endblock %}
 {% block content %}
-<div class="flex items-center justify-center min-h-[60vh]">
-    <div class="text-center">
-        <p class="text-7xl font-bold text-base-content/10">403</p>
-        <h1 class="text-xl font-semibold mt-4">Acesso proibido</h1>
-        <p class="text-sm text-base-content/40 mt-2 max-w-sm mx-auto">
-            Voce nao tem permissao para acessar esta pagina.
-        </p>
-        <div class="flex justify-center gap-3 mt-6">
-            <a href="/" class="btn btn-neutral btn-sm">Voltar ao Inicio</a>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="window.history.length > 1 ? window.history.back() : window.location.href='/';">
-                Voltar
-            </button>
-        </div>
-    </div>
-</div>
+<section class="band"><div class="band-inner">
+  <h1>Sem acesso a esta página</h1>
+  <p class="band-sub">Entre com um usuário que tenha permissão ou volte para o painel.</p>
+  <div class="band-actions band-actions-top"><a class="band-btn" href="{% url 'financial:dashboard' %}">{% icon "home" 16 %}Ir para o painel</a></div>
+</div></section>
 {% endblock %}
