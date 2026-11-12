@@ -1,154 +1,25 @@
-<div
-  class="modal modal-open"
-  x-data="{ open: true }"
-  x-show="open"
-  @keydown.escape.window="open = false"
->
-  <div class="modal-box max-w-lg max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center mb-5">
-      <h3 class="text-base font-semibold">
-        {% if object.pk %}Editar Recorrência{% else %}Nova Recorrência{% endif %}
-      </h3>
-      <button @click="open = false" class="btn btn-ghost btn-xs btn-square">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
+{% extends "partials/form_modal.html" %}{% load ui %}
 
-    <form
-      hx-post="{% if object.pk %}{% url 'financial:recurrence_update' object.pk %}{% else %}{% url 'financial:recurrence_create' %}{% endif %}"
-      hx-target="#recurrence-table"
-      hx-swap="outerHTML"
-      @htmx:after-request="if(event.detail.successful) { open = false; showToast('Recorrência salva com sucesso!'); }"
-    >
-      {% csrf_token %}
+{% block title %}{% if object.pk %}Editar recorrência{% else %}Nova recorrência{% endif %}{% endblock %}
 
-      <div class="space-y-4">
-        <!-- Type -->
-        <div class="form-control">
-          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
-          {{ form.type }}
-          {% if form.type.errors %}
-          <p class="text-xs text-error mt-1">{{ form.type.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Description -->
-        <div class="form-control">
-          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Descricao *</label>
-          {{ form.description }}
-          {% if form.description.errors %}
-          <p class="text-xs text-error mt-1">{{ form.description.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Amount -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Valor *</label>
-            {{ form.amount }}
-            {% if form.amount.errors %}
-            <p class="text-xs text-error mt-1">{{ form.amount.errors.0 }}</p>
-            {% endif %}
-          </div>
-
-          <!-- Category -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Categoria *</label>
-            {{ form.category }}
-            {% if form.category.errors %}
-            <p class="text-xs text-error mt-1">{{ form.category.errors.0 }}</p>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Entity -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Entidade (opcional)</label>
-            {{ form.entity }}
-            {% if form.entity.errors %}
-            <p class="text-xs text-error mt-1">{{ form.entity.errors.0 }}</p>
-            {% endif %}
-          </div>
-
-          <!-- Payment Method -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Metodo de Pagamento *</label>
-            {{ form.payment_method }}
-            {% if form.payment_method.errors %}
-            <p class="text-xs text-error mt-1">{{ form.payment_method.errors.0 }}</p>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Frequency -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Frequencia *</label>
-            {{ form.frequency }}
-            {% if form.frequency.errors %}
-            <p class="text-xs text-error mt-1">{{ form.frequency.errors.0 }}</p>
-            {% endif %}
-          </div>
-
-          <!-- Reference Day -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Dia de Referencia *</label>
-            {{ form.reference_day }}
-            {% if form.reference_day.errors %}
-            <p class="text-xs text-error mt-1">{{ form.reference_day.errors.0 }}</p>
-            {% endif %}
-            <p class="text-[11px] text-base-content/30 mt-1">Dia do mes (1-31) ou semana (1-7)</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Start Date -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Data de Inicio *</label>
-            {{ form.start_date }}
-            {% if form.start_date.errors %}
-            <p class="text-xs text-error mt-1">{{ form.start_date.errors.0 }}</p>
-            {% endif %}
-          </div>
-
-          <!-- End Date -->
-          <div class="form-control">
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Data de Termino (opcional)</label>
-            {{ form.end_date }}
-            {% if form.end_date.errors %}
-            <p class="text-xs text-error mt-1">{{ form.end_date.errors.0 }}</p>
-            {% endif %}
-            <p class="text-[11px] text-base-content/30 mt-1">Deixe em branco para recorrência infinita</p>
-          </div>
-        </div>
-
-        <!-- Notes -->
-        <div class="form-control">
-          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Observacoes (opcional)</label>
-          {{ form.notes }}
-          {% if form.notes.errors %}
-          <p class="text-xs text-error mt-1">{{ form.notes.errors.0 }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Active -->
-        <div class="form-control">
-          <label class="flex items-center gap-3 cursor-pointer">
-            {{ form.active }}
-            <span class="text-sm font-medium">Recorrência Ativa</span>
-          </label>
-          {% if form.active.errors %}
-          <p class="text-xs text-error mt-1">{{ form.active.errors.0 }}</p>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 mt-6">
-        <button type="button" @click="open = false" class="btn btn-ghost btn-sm">Cancelar</button>
-        <button type="submit" class="btn btn-neutral btn-sm">Salvar</button>
-      </div>
-    </form>
-  </div>
-  <div class="modal-backdrop" @click="open = false"></div>
+{% block fields %}
+<div class="form-grid">
+  <fieldset class="type-switch span-2">
+    <legend class="sr-only">Tipo</legend>
+    <label><input type="radio" name="type" value="EXPENSE" {% if form.type.value != "INCOME" %}checked{% endif %}><span>Despesa</span></label>
+    <label><input type="radio" name="type" value="INCOME" {% if form.type.value == "INCOME" %}checked{% endif %}><span>Receita</span></label>
+  </fieldset>
+  {% include "partials/field.html" with field=form.description label="Descrição" span=True %}
+  {% include "partials/field.html" with field=form.amount label="Valor (R$)" %}
+  {% include "partials/field.html" with field=form.category label="Categoria" %}
+  {% include "partials/field.html" with field=form.payment_method label="Forma de pagamento" help="No cartão de crédito, entra na previsão da fatura." %}
+  {% include "partials/field.html" with field=form.entity label="Entidade" optional=True %}
+  <p class="fieldset-title">Quando acontece</p>
+  {% include "partials/field.html" with field=form.frequency label="Frequência" %}
+  {% include "partials/field.html" with field=form.reference_day label="Dia do mês" optional=True %}
+  {% include "partials/field.html" with field=form.start_date label="Começa em" %}
+  {% include "partials/field.html" with field=form.end_date label="Termina em" optional=True help="Em branco: sem data para acabar." %}
+  {% include "partials/field.html" with field=form.notes label="Observações" optional=True span=True %}
+  <label class="toggle-row span-2" for="{{ form.active.id_for_label }}">{{ form.active }}<span><strong>Ativa</strong><span>Inativas não entram na previsão.</span></span></label>
 </div>
+{% endblock %}

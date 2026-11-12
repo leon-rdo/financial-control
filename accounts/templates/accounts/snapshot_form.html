@@ -1,0 +1,15 @@
+{% extends "partials/form_modal.html" %}{% load ui %}
+
+{% block size %}is-sm{% endblock %}
+{% block title %}Informar saldo{% endblock %}
+{% block submit_label %}Guardar saldo{% endblock %}
+
+{% block fields %}
+<div class="form-grid">
+  {% include "partials/field.html" with field=form.account label="Conta ou caixinha" span=True %}
+  {% include "partials/field.html" with field=form.balance label="Saldo (R$)" help="Como aparece no app do banco." %}
+  {% include "partials/field.html" with field=form.date label="No fim do dia" %}
+  {% include "partials/field.html" with field=form.notes label="Observação" optional=True span=True %}
+  <div class="note note-blue span-2">{% icon "info" 16 %}<p>O saldo de hoje passa a partir deste valor. Informar de novo no mesmo dia substitui o anterior.</p></div>
+</div>
+{% endblock %}

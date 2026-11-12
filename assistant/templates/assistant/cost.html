@@ -1,0 +1,46 @@
+{% extends "layouts/list.html" %}{% load ui %}
+{% block title %}Gasto com IA · Confin{% endblock %}
+{% block band_title %}Gasto com IA{% endblock %}
+{% block band_sub %}Quanto o bot gastou com o modelo neste mês, pelo uso registrado de cada chamada. É a mesma conta do comando /custo.{% endblock %}
+{% block band_extra %}
+<div class="band-nums">
+  <div><span class="stat-label">Neste mês</span><strong class="stat-value">US$ {{ spend.total|floatformat:2 }}</strong><p class="stat-note">{{ spend.calls }} chamada{{ spend.calls|pluralize }}</p></div>
+  <div><span class="stat-label">Orçamento</span><strong class="stat-value">{% if budget %}US$ {{ budget|floatformat:2 }}{% else %}—{% endif %}</strong><p class="stat-note">{% if budget %}e-mail aos 80% e aos 100%{% else %}sem avisos configurados{% endif %}</p></div>
+  <div><span class="stat-label">Teto</span><strong class="stat-value">{% if limit %}US$ {{ limit|floatformat:2 }}{% else %}—{% endif %}</strong><p class="stat-note">{% if limit %}ao chegar, o bot para de usar IA{% else %}sem teto{% endif %}</p></div>
+</div>
+{% if budget %}
+<div class="prop" role="img" aria-label="{{ budget_share }}% do orçamento usado"><i class="prop-a" style="width: {% if budget_share > 100 %}100{% else %}{{ budget_share }}{% endif %}%"></i></div>
+<div class="prop-legend"><span><b>{{ budget_share }}%</b> do orçamento usado</span>{% if limit %}<span>{{ limit_share }}% do teto</span>{% endif %}</div>
+{% endif %}
+{% if over_limit %}<p class="band-alert">{% icon "alert" 16 %}O teto do mês foi atingido: o bot parou de chamar a IA até o mês virar. Comandos, botões e avisos continuam.</p>{% endif %}
+{% endblock %}
+{% block table %}
+<div class="grid-main">
+  <section class="card" aria-labelledby="h-hist">
+    <div class="card-head"><h2 id="h-hist">Últimos seis meses</h2></div>
+    <div class="card-body">
+      <ul class="lines">
+        {% for h in history %}
+        <li>
+          <div class="line-main hist-line"><p class="line-title">{{ h.month|month_name|capfirst }} de {{ h.year|stringformat:'d' }}{% if h.current %} <span class="badge badge-blue">em andamento</span>{% endif %}</p>
+            <div class="bar"><i style="width: {{ h.total|pct:history_top }}%"></i></div>
+            <p class="line-meta">Conversa US$ {{ h.chat|floatformat:2 }}<span class="sep"></span>documentos US$ {{ h.documents|floatformat:2 }}<span class="sep"></span>{{ h.calls }} chamada{{ h.calls|pluralize }}</p></div>
+          <span class="line-amount">US$ {{ h.total|floatformat:2 }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  <section class="card" aria-labelledby="h-model">
+    <div class="card-head"><h2 id="h-model">Por modelo, neste mês</h2></div>
+    <div class="card-body">
+      <ul class="lines">
+        {% for model, cost in by_model %}<li><span class="line-title truncate">{{ model }}</span><span class="line-amount">US$ {{ cost|floatformat:2 }}</span></li>
+        {% empty %}<li class="muted small">Nenhuma chamada neste mês.</li>{% endfor %}
+      </ul>
+      {% if spend.unpriced_calls %}<p class="card-note">{{ spend.unpriced_calls }} chamada{{ spend.unpriced_calls|pluralize }} de modelo sem preço cadastrado ficaram fora do total (AI_PRICES_JSON).</p>{% endif %}
+      <p class="card-note">Orçamento e teto mudam no .env do servidor: AI_MONTHLY_BUDGET_USD e AI_MONTHLY_LIMIT_USD.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

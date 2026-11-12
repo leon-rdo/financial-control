@@ -1,0 +1,9 @@
+{% extends "partials/form_modal.html" %}
+{% block title %}{% if object.pk %}Editar regra{% else %}Nova regra{% endif %}{% endblock %}
+{% block fields %}
+<div class="form-grid" x-data="{ n: {{ form.text.value|default:''|length }} }" @input="if ($event.target.name === 'text') n = $event.target.value.length">
+  {% include "partials/field.html" with field=form.text label="Regra" help="Escreva como diria ao bot. Até 300 caracteres." span=True %}
+  <p class="fld-help span-2" aria-live="polite"><span x-text="n"></span> de 300 caracteres</p>
+  <label class="toggle-row span-2" for="{{ form.active.id_for_label }}">{{ form.active }}<span><strong>Ativa</strong><span>Só as regras ativas vão para o bot.</span></span></label>
+</div>
+{% endblock %}

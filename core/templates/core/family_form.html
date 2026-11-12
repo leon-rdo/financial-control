@@ -1,0 +1,10 @@
+{% extends "partials/form_modal.html" %}
+{% block title %}{% if object.pk %}Editar pessoa{% else %}Adicionar pessoa{% endif %}{% endblock %}
+{% block fields %}
+<div class="form-grid">
+  {% include "partials/field.html" with field=form.name label="Nome" %}
+  {% include "partials/field.html" with field=form.telegram_chat_id label="Chat do Telegram" optional=True help="Número que aparece no admin em Telegram updates." %}
+  {% include "partials/field.html" with field=form.aliases label="Nomes nos documentos" optional=True help="Um por linha, como aparece em faturas e extratos." span=True %}
+  <label class="toggle-row span-2" for="{{ form.active.id_for_label }}">{{ form.active }}<span><strong>Ativa</strong><span>Pessoas inativas não aparecem nas escolhas de titular.</span></span></label>
+</div>
+{% endblock %}

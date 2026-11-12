@@ -1,148 +1,56 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load ui %}
 
-{% block title %}{{ purchase.description }} - Controle Financeiro{% endblock %}
+{% block title %}{{ purchase.description }} · Confin{% endblock %}
 
 {% block content %}
-<div class="space-y-5">
-    <div class="flex justify-between items-center">
-        <div>
-            <div class="flex items-center gap-2 text-sm text-base-content/40 mb-1">
-                <a href="{% url 'financial:purchase_list' %}" class="hover:text-base-content/70 transition-colors">Parcelados</a>
-                <span>/</span>
-                <span class="text-base-content/60">{{ purchase.description }}</span>
-            </div>
-            <h1 class="text-xl font-semibold">{{ purchase.description }}</h1>
-        </div>
-        <div class="flex gap-2">
-            <button hx-get="{% url 'financial:purchase_update' purchase.pk %}" hx-target="#modal-container" hx-swap="innerHTML" class="btn btn-neutral btn-sm gap-1.5">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
-                Editar
-            </button>
-            <a href="{% url 'financial:purchase_list' %}" class="btn btn-ghost btn-sm">Voltar</a>
-        </div>
+<section class="band" aria-labelledby="band-title">
+  <div class="band-inner">
+    <div class="band-head">
+      <div>
+        <a class="band-back" href="{% url 'financial:purchase_list' %}">{% icon "chevron-left" 16 %}Parcelados</a>
+        <h1 id="band-title">{{ purchase.description }}</h1>
+        <p class="band-sub">{{ purchase.payment_method.name }}, comprado em {{ purchase.purchase_date|date:"d/m/Y" }}{% if purchase.entity %}, {{ purchase.entity.name }}{% endif %}{% if purchase.on_behalf_of %}, por conta de {{ purchase.on_behalf_of.name }}{% endif %}</p>
+      </div>
+      <div class="band-actions">
+        <button class="band-btn" hx-get="{% url 'financial:purchase_update' purchase.pk %}?depois=recarregar" hx-target="#modal-container">{% icon "pencil" 16 %}Editar</button>
+      </div>
     </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div class="bg-base-100 rounded-xl border border-base-300/40 p-4">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Valor Total</p>
-            <p class="text-2xl font-semibold mt-1.5 tabular-nums">R$ {{ purchase.total_amount|floatformat:2 }}</p>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/40 p-4">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Parcelas</p>
-            <p class="text-2xl font-semibold mt-1.5 tabular-nums">{{ purchase.number_of_installments }}x <span class="text-base text-base-content/50">de R$ {{ purchase.installment_amount }}</span></p>
-        </div>
-        <div class="bg-base-100 rounded-xl border border-base-300/40 p-4">
-            <p class="text-[11px] text-base-content/40 font-medium uppercase tracking-wider">Progresso</p>
-            <p class="text-2xl font-semibold mt-1.5 tabular-nums">{{ purchase.paid_installments_count }}<span class="text-base text-base-content/30">/{{ purchase.number_of_installments }}</span></p>
-            <div class="w-full bg-base-300/30 rounded-full h-1.5 mt-2">
-                <div class="bg-base-content/20 h-1.5 rounded-full" style="width: {% widthratio purchase.paid_installments_count purchase.number_of_installments 100 %}%"></div>
-            </div>
-        </div>
+    <div class="band-nums">
+      <div><span class="stat-label">Total</span><strong class="stat-value is-md">{{ purchase.total_amount|rs }}</strong><p class="stat-note">{{ purchase.number_of_installments }} parcelas de {{ purchase.installment_amount|rs }}</p></div>
+      <div><span class="stat-label">Pago</span><strong class="stat-value is-md">{{ paid_amount|rs }}</strong><p class="stat-note">{{ purchase.paid_count }} de {{ purchase.total_count }} parcelas</p></div>
+      <div><span class="stat-label">Falta pagar</span><strong class="stat-value is-md">{{ purchase.left_amount|default:0|rs }}</strong><p class="stat-note">{{ purchase.category.name }}</p></div>
     </div>
+    <div class="prop" role="img" aria-label="{{ purchase.paid_count }} de {{ purchase.total_count }} parcelas pagas"><i class="prop-a" style="width: {{ purchase.paid_count|pct:purchase.total_count }}%"></i></div>
+    <div class="prop-legend"><span><b>{{ purchase.paid_count|pct:purchase.total_count }}%</b> pago</span><span>{% if left_count %}falta{{ left_count|pluralize:"m" }} {{ left_count }} parcela{{ left_count|pluralize }}{% else %}quitado{% endif %}</span></div>
+  </div>
+</section>
 
-    <div class="bg-base-100 rounded-xl border border-base-300/40 p-5">
-        <h2 class="text-sm font-semibold mb-4">Detalhes</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-                <p class="text-[11px] text-base-content/35 uppercase tracking-wider">Data</p>
-                <p class="text-sm font-medium mt-0.5">{{ purchase.purchase_date|date:"d/m/Y" }}</p>
-            </div>
-            <div>
-                <p class="text-[11px] text-base-content/35 uppercase tracking-wider">Categoria</p>
-                <p class="text-sm font-medium mt-0.5">{{ purchase.category.name }}</p>
-            </div>
-            <div>
-                <p class="text-[11px] text-base-content/35 uppercase tracking-wider">Pagamento</p>
-                <p class="text-sm font-medium mt-0.5">{{ purchase.payment_method.name }}</p>
-            </div>
-            {% if purchase.entity %}
-            <div>
-                <p class="text-[11px] text-base-content/35 uppercase tracking-wider">Loja</p>
-                <p class="text-sm font-medium mt-0.5">{{ purchase.entity.name }}</p>
-            </div>
-            {% endif %}
-        </div>
-        {% if purchase.notes %}
-        <div class="mt-4 pt-4 border-t border-base-300/30">
-            <p class="text-[11px] text-base-content/35 uppercase tracking-wider">Observacoes</p>
-            <p class="text-sm mt-0.5 text-base-content/70">{{ purchase.notes }}</p>
-        </div>
-        {% endif %}
+<div class="page stack">
+  <section class="card" aria-labelledby="h-inst" x-data="{ busy: null }">
+    <div class="card-head"><h2 id="h-inst">Parcelas</h2></div>
+    <div class="card-sub">Marcar como paga muda só esta parcela. Pagar a fatura pelo bot ou em Transferências marca todas as daquele mês.</div>
+    <div class="table-wrap">
+      <table class="table rtable">
+        <thead><tr><th>Parcela</th><th>Fatura</th><th>Vencimento</th><th>Situação</th><th class="num">Valor</th><th><span class="sr-only">Ações</span></th></tr></thead>
+        <tbody>
+          {% for i in installments %}
+          <tr class="{% if i.paid %}is-muted{% elif i.due_date < today %}is-late{% endif %}" id="inst-{{ i.pk }}">
+            <td class="c-main"><p class="cell-title">{{ i.installment_number }} de {{ purchase.number_of_installments }}</p><p class="cell-meta show-sm">vence {{ i.due_date|date:"d/m/Y" }}</p></td>
+            <td class="c-hide muted">{{ i.reference_month|month_name|capfirst }} de {{ i.reference_year|stringformat:'d' }}</td>
+            <td class="c-hide c-date">{{ i.due_date|date:"d/m/Y" }}</td>
+            <td class="c-meta">{% if i.paid %}<span class="status status-ok">Paga</span>{% elif i.due_date < today %}<span class="status status-late">Vencida</span>{% else %}<span class="status status-pending">A pagar</span>{% endif %}</td>
+            <td class="c-amount num"><span class="amount">{{ i.amount|brl }}</span></td>
+            <td class="c-actions">
+              <form hx-post="{% url 'financial:toggle_installment_paid' i.pk %}" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">
+                <button class="btn btn-secondary btn-sm" type="submit">{% if i.paid %}Desmarcar{% else %}Marcar como paga{% endif %}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-
-    <div class="bg-base-100 rounded-xl border border-base-300/40" x-data="installmentManager()">
-        <div class="px-5 py-3.5 border-b border-base-300/30">
-            <h2 class="text-sm font-semibold">Parcelas</h2>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="table w-full">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Valor</th>
-                        <th>Vencimento</th>
-                        <th>Referência</th>
-                        <th>Status</th>
-                        <th class="text-right">Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for installment in installments %}
-                    <tr class="hover:bg-base-200/30 transition-colors">
-                        <td><span class="text-sm font-medium tabular-nums">{{ installment.installment_number }}/{{ purchase.number_of_installments }}</span></td>
-                        <td><span class="text-sm font-semibold tabular-nums">R$ {{ installment.amount|floatformat:2 }}</span></td>
-                        <td><span class="text-sm text-base-content/60">{{ installment.due_date|date:"d/m/Y" }}</span></td>
-                        <td><span class="text-sm text-base-content/50">{{ installment.reference_month }}/{% widthratio installment.reference_year 1 1 %}</span></td>
-                        <td>
-                            {% if installment.paid %}
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-                                <span class="text-xs text-base-content/50">Paga</span>
-                            </div>
-                            {% else %}
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-1.5 h-1.5 rounded-full bg-warning"></div>
-                                <span class="text-xs text-base-content/50">Pendente</span>
-                            </div>
-                            {% endif %}
-                        </td>
-                        <td class="text-right">
-                            <button @click="togglePaid({{ installment.pk }})" class="btn btn-ghost btn-xs {% if installment.paid %}text-warning{% else %}text-success{% endif %}">
-                                {% if installment.paid %}Desfazer{% else %}Pagar{% endif %}
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="modal-container"></div>
+  </section>
+  {% if purchase.notes %}<section class="card card-pad"><h2 class="section-title">Observações</h2><p class="muted section-text">{{ purchase.notes|linebreaksbr }}</p></section>{% endif %}
 </div>
-
-<script>
-    function installmentManager() {
-        return {
-            togglePaid(installmentId) {
-                fetch(`/parcelas/${installmentId}/toggle-paid/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '',
-                    },
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showToast('Erro ao atualizar parcela', 'error');
-                    });
-            }
-        };
-    }
-</script>
 {% endblock %}

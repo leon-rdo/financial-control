@@ -1,0 +1,61 @@
+{% extends "layouts/list.html" %}{% load ui %}
+
+{% block title %}Terceiros · Confin{% endblock %}
+{% block band_title %}Terceiros{% endblock %}
+{% block band_sub %}Pessoas de fora da família que compram no cartão de vocês. A compra fica na fatura, mas sai dos gastos da família; a devolução não conta como receita.{% endblock %}
+{% block band_extra %}
+<div class="band-nums">
+  <div><span class="stat-label">Devem para vocês</span><strong class="stat-value">{{ owed|rs }}</strong><p class="stat-note">vencido até este mês, menos o devolvido</p></div>
+  <div><span class="stat-label">Ainda vão vencer</span><strong class="stat-value">{{ upcoming|rs }}</strong><p class="stat-note">parcelas e faturas dos próximos meses</p></div>
+  <div><span class="stat-label">Adiantado por eles</span><strong class="stat-value">{{ advanced|rs }}</strong><p class="stat-note">devolveram mais do que já venceu</p></div>
+</div>
+{% if charged %}
+<div class="prop" role="img" aria-label="{{ repaid|pct:charged }}% do que gastaram já foi devolvido"><i class="prop-a" style="width: {{ repaid|pct:charged }}%"></i><i class="prop-b" style="width: {{ open_share }}%"></i></div>
+<div class="prop-legend"><span><b>{{ repaid|pct:charged }}%</b> devolvido ({{ repaid|rs }})</span><span><b>{{ open_share }}%</b> ainda a devolver, de {{ charged|rs }} gastos</span></div>
+{% endif %}
+{% endblock %}
+
+{% block before_table %}
+{% if lent_cards %}<div class="note note-blue">{% icon "card" 16 %}<p>Cartões que ficam com outra pessoa: {% for c in lent_cards %}<strong>{{ c.name }}</strong> com {{ c.lent_to.name }}{% if not forloop.last %}; {% endif %}{% endfor %}. Tudo que vier neles já nasce atribuído à pessoa.</p></div>{% endif %}
+{% endblock %}
+
+{% block table %}
+{% for p in data.people %}
+<section class="card" aria-labelledby="p-{{ p.person_id }}">
+  <div class="person-head">
+    <div>
+      <h2 id="p-{{ p.person_id }}">{{ p.person }}</h2>
+      <p class="cell-meta">Gastou {{ p.charged_total|rs }}<span class="sep"></span>devolveu {{ p.repaid|rs }}{% if p.upcoming %}<span class="sep"></span>{{ p.upcoming|rs }} ainda vão vencer{% endif %}</p>
+    </div>
+    <div class="person-balance">
+      {% if p.balance > 0 %}<span class="badge badge-red">deve</span><strong>{{ p.balance|rs }}</strong>{% elif p.balance < 0 %}<span class="badge badge-green">adiantou</span><strong>{{ p.balance|rs|cut:"−" }}</strong>{% else %}<span class="badge">em dia</span><strong>R$ 0,00</strong>{% endif %}
+    </div>
+  </div>
+  <div class="grid-main person-body">
+    <div>
+      <h3 class="sub-title">Compras e parcelas</h3>
+      <table class="table rtable compact">
+        <thead><tr><th>Fatura</th><th>Compra</th><th class="num">Valor</th></tr></thead>
+        <tbody>
+          {% for it in p.items %}
+          <tr><td class="c-hide muted">{{ it.month|ym_label }}</td><td class="c-main"><p class="cell-title">{{ it.description }}</p><p class="cell-meta">{{ it.payment_method }}<span class="sep"></span>{{ it.date|date:"d/m/Y" }}<span class="show-sm"><span class="sep"></span>fatura {{ it.month|ym_label }}</span></p></td><td class="c-amount num"><span class="amount">{{ it.amount|brl }}</span></td></tr>
+          {% empty %}<tr><td colspan="3" class="muted">Nenhuma compra.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 class="sub-title">Devoluções</h3>
+      <ul class="lines">
+        {% for r in p.repayments %}<li><div class="line-main"><p class="line-title">{{ r.description }}</p><p class="line-meta">{{ r.date|date:"d/m/Y" }}</p></div><span class="line-amount in">+{{ r.amount|brl }}</span></li>
+        {% empty %}<li class="muted small">Nenhuma devolução registrada.</li>{% endfor %}
+      </ul>
+      <h3 class="sub-title">Por fatura</h3>
+      <div class="badges">{% for b in p.by_month %}<span class="badge">{{ b.month|ym_label }}: {{ b.amount|brl }}</span>{% endfor %}</div>
+    </div>
+  </div>
+</section>
+{% empty %}
+<section class="card"><div class="empty"><strong>Ninguém de fora usando os cartões</strong>Para marcar uma compra, diga ao bot "os itens 12 e 40 são do João", ou use o campo "Por conta de" ao lançar.</div></section>
+{% endfor %}
+{% endblock %}

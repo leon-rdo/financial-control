@@ -1,40 +1,28 @@
 from django.urls import path
-from .views import (
-    CategoryListView,
-    CategoryCreateView,
-    CategoryUpdateView,
-    CategoryDeleteView,
-    TagListView,
-    TagCreateView,
-    TagUpdateView,
-    TagDeleteView,
-    EntityListView,
-    EntityCreateView,
-    EntityUpdateView,
-    EntityDeleteView,
-    fetch_cnpj_data,
-)
 
-app_name = 'core'
+from . import views
+
+app_name = "core"
 urlpatterns = [
-    # Categories
-    path('categories/', CategoryListView.as_view(), name='category_list'),
-    path('categories/create/', CategoryCreateView.as_view(), name='category_create'),
-    path('categories/<int:pk>/update/', CategoryUpdateView.as_view(), name='category_update'),
-    path('categories/<int:pk>/delete/', CategoryDeleteView.as_view(), name='category_delete'),
-    
-    # Tags
-    path('tags/', TagListView.as_view(), name='tag_list'),
-    path('tags/create/', TagCreateView.as_view(), name='tag_create'),
-    path('tags/<int:pk>/update/', TagUpdateView.as_view(), name='tag_update'),
-    path('tags/<int:pk>/delete/', TagDeleteView.as_view(), name='tag_delete'),
-    
-    # Entities
-    path('entities/', EntityListView.as_view(), name='entity_list'),
-    path('entities/create/', EntityCreateView.as_view(), name='entity_create'),
-    path('entities/<int:pk>/update/', EntityUpdateView.as_view(), name='entity_update'),
-    path('entities/<int:pk>/delete/', EntityDeleteView.as_view(), name='entity_delete'),
-    
-    # API
-    path('api/fetch-cnpj/', fetch_cnpj_data, name='fetch_cnpj'),
+    path("categories/", views.CategoryListView.as_view(), name="category_list"),
+    path("categories/create/", views.CategoryCreateView.as_view(), name="category_create"),
+    path("categories/<int:pk>/update/", views.CategoryUpdateView.as_view(), name="category_update"),
+    path("categories/<int:pk>/delete/", views.CategoryDeleteView.as_view(), name="category_delete"),
+
+    path("tags/", views.TagListView.as_view(), name="tag_list"),
+    path("tags/create/", views.TagCreateView.as_view(), name="tag_create"),
+    path("tags/<int:pk>/update/", views.TagUpdateView.as_view(), name="tag_update"),
+    path("tags/<int:pk>/delete/", views.TagDeleteView.as_view(), name="tag_delete"),
+
+    path("entities/", views.EntityListView.as_view(), name="entity_list"),
+    path("entities/create/", views.EntityCreateView.as_view(), name="entity_create"),
+    path("entities/<int:pk>/update/", views.EntityUpdateView.as_view(), name="entity_update"),
+    path("entities/<int:pk>/delete/", views.EntityDeleteView.as_view(), name="entity_delete"),
+
+    path("familia/", views.FamilyListView.as_view(), name="family_list"),
+    path("familia/criar/", views.FamilyCreateView.as_view(), name="family_create"),
+    path("familia/<int:pk>/editar/", views.FamilyUpdateView.as_view(), name="family_update"),
+    path("familia/<int:pk>/excluir/", views.FamilyDeleteView.as_view(), name="family_delete"),
+
+    path("api/fetch-cnpj/", views.fetch_cnpj_data, name="fetch_cnpj"),
 ]

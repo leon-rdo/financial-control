@@ -1,0 +1,5 @@
+{% load ui %}<div class="band-nums" id="band-nums"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div><span class="stat-label">Ainda a pagar</span><strong class="stat-value is-md">{{ left_total|rs }}</strong><p class="stat-note">em {{ open_count }} parcelado{{ open_count|pluralize }}</p></div>
+  <div><span class="stat-label">Parcelas deste mês</span><strong class="stat-value is-md">{{ this_month|rs }}</strong><p class="stat-note">não pagas, vencendo este mês</p></div>
+  <div><span class="stat-label">Parcelas do mês que vem</span><strong class="stat-value is-md">{{ next_month|rs }}</strong><p class="stat-note">já comprometido</p></div>
+</div>

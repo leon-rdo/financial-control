@@ -1,0 +1,26 @@
+{% load ui %}<section class="card" id="transfer-table" aria-label="Lista de transferências">
+  <div class="table-wrap">
+    <table class="table rtable">
+      <thead><tr><th>Data</th><th>Descrição</th><th>Sai de</th><th>Vai para</th><th class="num">Valor</th><th><span class="sr-only">Ações</span></th></tr></thead>
+      <tbody>
+        {% for t in object_list %}
+        <tr>
+          <td class="c-hide muted nowrap">{{ t.date|date:"d/m/Y" }}</td>
+          <td class="c-main">
+            <p class="cell-title">{% if t.description %}{{ t.description }}{% elif t.to_card %}Pagamento de fatura{% else %}Transferência{% endif %}</p>
+            <p class="cell-meta"><span class="show-sm">{{ t.date|date:"d/m/Y" }}<span class="sep"></span></span>{% if t.to_card %}Fatura de {{ t.invoice_month|month_name }}/{{ t.invoice_year|stringformat:'d' }}{% elif t.to_account.parent_id or t.from_account.parent_id %}Caixinha{% else %}Entre contas{% endif %}{% if not t.from_account or not t.to_account and not t.to_card %}<span class="sep"></span><span class="badge badge-amber">ponta aberta</span>{% endif %}</p>
+          </td>
+          <td class="c-meta" data-label="Sai de">{% if t.from_account %}{{ t.from_account }}{% else %}<span class="muted">Desconhecida</span>{% endif %}</td>
+          <td class="c-meta" data-label="Vai para">{% if t.to_card %}{% icon "card" 14 %} {{ t.to_card.name }}{% elif t.to_account %}{{ t.to_account }}{% else %}<span class="muted">Desconhecida</span>{% endif %}</td>
+          <td class="c-amount num"><span class="amount">{{ t.amount|brl }}</span></td>
+          <td class="c-actions">{% url 'financial:transfer_update' t.pk as edit_url %}{% url 'financial:transfer_delete' t.pk as delete_url %}{% include "partials/row_actions.html" with edit_url=edit_url delete_url=delete_url target="#transfer-table" what="esta transferência" %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty"><strong>Nenhuma transferência encontrada</strong>Pagamentos de fatura e movimentos entre contas aparecem aqui ao importar extratos.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with target="#transfer-table" %}
+</section>
+{% if request.htmx and stats %}{% include "financial/_transfer_stats.html" with oob=True %}{% endif %}

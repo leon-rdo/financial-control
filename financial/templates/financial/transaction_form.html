@@ -1,489 +1,88 @@
-<div
-  class="modal modal-open"
-  x-data="transactionFormManager()"
-  x-show="open"
-  @keydown.escape.window="if(!activeModal) open = false"
-  id="transaction-modal"
->
-  <div class="modal-box max-w-3xl max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center mb-5">
-      <h3 class="text-base font-semibold">
-        {% if object.pk %}Editar Transação{% else %}Nova Transação{% endif %}
-      </h3>
-      <button @click="closeMainModal()" class="btn btn-ghost btn-xs btn-square">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
+{% extends "partials/form_modal.html" %}{% load ui %}
 
-    <form
-      x-ref="mainForm"
-      hx-post="{% if object.pk %}{% url 'financial:transaction_update' object.pk %}{% else %}{% url 'financial:transaction_create' %}{% endif %}"
-      hx-target="#transaction-table"
-      hx-swap="outerHTML"
-      @htmx:after-request="if(event.detail.successful) { closeMainModal(); showToast('Transação salva com sucesso!'); }"
-    >
-      {% csrf_token %}
+{% block title %}{% if object.pk %}Editar transação{% elif duplicating %}Duplicar transação{% else %}Nova transação{% endif %}{% endblock %}
+{% block form_attrs %}x-data="inlineCreate()"{% endblock %}
 
-      <div class="space-y-4">
-        <!-- Type selector -->
-        <div>
-          <input type="hidden" name="type" :value="transactionType">
-          <div class="grid grid-cols-2 gap-2">
-            <label
-              @click="transactionType = 'EXPENSE'"
-              class="cursor-pointer rounded-lg border p-3 flex items-center gap-3 transition-all"
-              :class="transactionType === 'EXPENSE'
-                ? 'border-error/50 bg-error/5'
-                : 'border-base-300/40 hover:border-base-content/20'"
-            >
-              <div
-                class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                :class="transactionType === 'EXPENSE' ? 'bg-error text-error-content' : 'bg-base-200 text-base-content/30'"
-              >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-              </div>
-              <div>
-                <div class="text-sm font-medium" :class="transactionType === 'EXPENSE' ? 'text-error' : 'text-base-content/60'">Despesa</div>
-                <div class="text-[11px] text-base-content/30">Saida</div>
-              </div>
-            </label>
-            <label
-              @click="transactionType = 'INCOME'"
-              class="cursor-pointer rounded-lg border p-3 flex items-center gap-3 transition-all"
-              :class="transactionType === 'INCOME'
-                ? 'border-success/50 bg-success/5'
-                : 'border-base-300/40 hover:border-base-content/20'"
-            >
-              <div
-                class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                :class="transactionType === 'INCOME' ? 'bg-success text-success-content' : 'bg-base-200 text-base-content/30'"
-              >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-              </div>
-              <div>
-                <div class="text-sm font-medium" :class="transactionType === 'INCOME' ? 'text-success' : 'text-base-content/60'">Receita</div>
-                <div class="text-[11px] text-base-content/30">Entrada</div>
-              </div>
-            </label>
-          </div>
-          {% if form.type.errors %}
-          <p class="text-xs text-error mt-1">{{ form.type.errors.0 }}</p>
-          {% endif %}
-        </div>
+{% block fields %}
+<div class="form-grid">
+  <fieldset class="type-switch span-2">
+    <legend class="sr-only">Tipo</legend>
+    <label><input type="radio" name="type" value="EXPENSE" {% if form.type.value != "INCOME" %}checked{% endif %}><span>Despesa</span></label>
+    <label><input type="radio" name="type" value="INCOME" {% if form.type.value == "INCOME" %}checked{% endif %}><span>Receita</span></label>
+  </fieldset>
+  {% for error in form.type.errors %}<p class="fld-error span-2">{{ error }}</p>{% endfor %}
 
-        <!-- Description -->
-        <div>
-          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Descricao *</label>
-          {{ form.description }}
-          {% if form.description.errors %}<p class="text-xs text-error mt-1">{{ form.description.errors.0 }}</p>{% endif %}
-        </div>
+  {% include "partials/field.html" with field=form.description label="Descrição" span=True %}
+  {% include "partials/field.html" with field=form.amount label="Valor (R$)" %}
+  {% include "partials/field.html" with field=form.date label="Data" %}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Valor *</label>
-            {{ form.amount }}
-            {% if form.amount.errors %}<p class="text-xs text-error mt-1">{{ form.amount.errors.0 }}</p>{% endif %}
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Data *</label>
-            {{ form.date }}
-            {% if form.date.errors %}<p class="text-xs text-error mt-1">{{ form.date.errors.0 }}</p>{% endif %}
-          </div>
-        </div>
-
-        <div class="border-t border-base-300/30 my-1"></div>
-
-        <!-- Category + Payment Method -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Categoria *</label>
-            <div class="flex gap-2 w-full items-center">
-              <div class="flex-1" id="wrap_category">
-                <select name="category" id="id_category" class="select select-bordered w-full" required>
-                  <option value="">Selecione</option>
-                  {% for value, label in form.fields.category.choices %}
-                  {% if value %}
-                  <option value="{{ value }}" {% if form.category.value == value %}selected{% endif %}>{{ label }}</option>
-                  {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <button type="button" @click="openModal('category')" class="btn btn-ghost btn-sm btn-square" title="Nova categoria">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-              </button>
-            </div>
-            {% if form.category.errors %}<p class="text-xs text-error mt-1">{{ form.category.errors.0 }}</p>{% endif %}
-          </div>
-
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Pagamento *</label>
-            <div class="flex gap-2 w-full items-center">
-              <div class="flex-1" id="wrap_payment_method">
-                <select name="payment_method" id="id_payment_method" class="select select-bordered w-full" required>
-                  <option value="">Selecione</option>
-                  {% for value, label in form.fields.payment_method.choices %}
-                  {% if value %}
-                  <option value="{{ value }}" {% if form.payment_method.value == value %}selected{% endif %}>{{ label }}</option>
-                  {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <button type="button" @click="openModal('paymentMethod')" class="btn btn-ghost btn-sm btn-square" title="Novo metodo">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-              </button>
-            </div>
-            {% if form.payment_method.errors %}<p class="text-xs text-error mt-1">{{ form.payment_method.errors.0 }}</p>{% endif %}
-          </div>
-        </div>
-
-        <!-- Entity + Tags -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Entidade (opcional)</label>
-            <div class="flex gap-2 w-full items-center">
-              <div class="flex-1" id="wrap_entity">
-                <select name="entity" id="id_entity" class="select select-bordered w-full">
-                  <option value="">Selecione</option>
-                  {% for value, label in form.fields.entity.choices %}
-                  {% if value %}
-                  <option value="{{ value }}" {% if form.entity.value == value %}selected{% endif %}>{{ label }}</option>
-                  {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <button type="button" @click="openModal('entity')" class="btn btn-ghost btn-sm btn-square" title="Nova entidade">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-              </button>
-            </div>
-            {% if form.entity.errors %}<p class="text-xs text-error mt-1">{{ form.entity.errors.0 }}</p>{% endif %}
-          </div>
-
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tags (opcional)</label>
-            <div class="flex gap-2 w-full items-center">
-              <div class="flex-1" id="wrap_tags">
-                <select name="tags" id="id_tags" class="select select-bordered w-full" multiple size="3">
-                  {% for value, label in form.fields.tags.choices %}
-                  {% if value %}
-                  <option value="{{ value }}" {% if value in form.tags.value %}selected{% endif %}>{{ label }}</option>
-                  {% endif %}
-                  {% endfor %}
-                </select>
-              </div>
-              <button type="button" @click="openModal('tag')" class="btn btn-ghost btn-sm btn-square" title="Nova tag">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-              </button>
-            </div>
-            {% if form.tags.errors %}<p class="text-xs text-error mt-1">{{ form.tags.errors.0 }}</p>{% endif %}
-          </div>
-        </div>
-
-        <div class="border-t border-base-300/30 my-1"></div>
-
-        <!-- Notes -->
-        <div>
-          <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Observacoes</label>
-          {{ form.notes }}
-          {% if form.notes.errors %}<p class="text-xs text-error mt-1">{{ form.notes.errors.0 }}</p>{% endif %}
-        </div>
-
-        <!-- Confirmed -->
-        <div
-          @click="confirmed = !confirmed"
-          class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all"
-          :class="confirmed
-            ? 'border-success/40 bg-success/5'
-            : 'border-base-300/40 hover:border-base-content/15'"
-        >
-          <input type="hidden" name="confirmed" :value="confirmed ? 'on' : ''">
-          <div
-            class="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-            :class="confirmed ? 'bg-success text-success-content' : 'bg-base-200 text-base-content/20'"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-          </div>
-          <div>
-            <div class="text-sm font-medium" :class="confirmed ? 'text-success' : 'text-base-content/50'">Confirmada</div>
-            <div class="text-[11px] text-base-content/30">Efetivada/paga</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 mt-6">
-        <button type="button" @click="closeMainModal()" class="btn btn-ghost btn-sm">Cancelar</button>
-        <button type="submit" class="btn btn-neutral btn-sm">Salvar</button>
-      </div>
-    </form>
+  <div class="fld">
+    <label class="fld-label" for="id_category">Categoria</label>
+    <div class="fld-inline">{{ form.category }}<button type="button" class="icon-btn" @click="open('category', {type: 'EXPENSE', color: '#1B3F8F'})" aria-label="Criar categoria" title="Criar categoria">{% icon "plus" 18 %}</button></div>
+    {% for error in form.category.errors %}<p class="fld-error">{{ error }}</p>{% endfor %}
   </div>
-  <div class="modal-backdrop" @click="closeMainModal()"></div>
-
-  <!-- Category Modal -->
-  <div x-show="activeModal === 'category'" x-cloak class="fixed inset-0 z-[1100] flex items-center justify-center">
-    <div class="modal-box max-w-md">
-      <h3 class="text-base font-semibold mb-4">Nova Categoria</h3>
-      <form @submit.prevent="saveInline('category')">
-        <div class="space-y-3">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
-            <input type="text" x-model="inlineForm.name" class="input input-bordered w-full" required>
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
-            <select x-model="inlineForm.type" class="select select-bordered w-full" required>
-              <option value="INCOME">Receita</option>
-              <option value="EXPENSE">Despesa</option>
-              <option value="BOTH">Ambos</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Cor</label>
-            <input type="color" x-model="inlineForm.color" class="input input-bordered w-full h-10">
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Icone</label>
-            <input type="text" x-model="inlineForm.icon" class="input input-bordered w-full" placeholder="ex: 🏠">
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button type="button" @click="closeInlineModal()" class="btn btn-ghost btn-sm">Cancelar</button>
-          <button type="submit" class="btn btn-neutral btn-sm" :disabled="saving">
-            <span x-show="!saving">Salvar</span>
-            <span x-show="saving" class="loading loading-spinner loading-sm"></span>
-          </button>
-        </div>
-      </form>
-    </div>
-    <div class="fixed inset-0 bg-black/50 -z-10" @click="closeInlineModal()"></div>
+  <div class="fld">
+    <label class="fld-label" for="id_payment_method">Forma de pagamento</label>
+    <div class="fld-inline">{{ form.payment_method }}<button type="button" class="icon-btn" @click="open('paymentMethod', {type: 'PIX'})" aria-label="Criar forma de pagamento" title="Criar forma de pagamento">{% icon "plus" 18 %}</button></div>
+    {% for error in form.payment_method.errors %}<p class="fld-error">{{ error }}</p>{% endfor %}
   </div>
 
-  <!-- Entity Modal -->
-  <div x-show="activeModal === 'entity'" x-cloak class="fixed inset-0 z-[1100] flex items-center justify-center">
-    <div class="modal-box max-w-md">
-      <h3 class="text-base font-semibold mb-4">Nova Entidade</h3>
-      <form @submit.prevent="saveInline('entity')">
-        <div class="space-y-3">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
-            <input type="text" x-model="inlineForm.name" class="input input-bordered w-full" required>
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
-            <select x-model="inlineForm.type" class="select select-bordered w-full" required>
-              <option value="SUPPLIER">Fornecedor</option>
-              <option value="EMPLOYER">Empregador</option>
-              <option value="CLIENT">Cliente</option>
-              <option value="OTHER">Outro</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Email</label>
-            <input type="email" x-model="inlineForm.email" class="input input-bordered w-full">
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Telefone</label>
-            <input type="text" x-model="inlineForm.phone" class="input input-bordered w-full" placeholder="(00) 00000-0000">
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button type="button" @click="closeInlineModal()" class="btn btn-ghost btn-sm">Cancelar</button>
-          <button type="submit" class="btn btn-neutral btn-sm" :disabled="saving">
-            <span x-show="!saving">Salvar</span>
-            <span x-show="saving" class="loading loading-spinner loading-sm"></span>
-          </button>
-        </div>
-      </form>
-    </div>
-    <div class="fixed inset-0 bg-black/50 -z-10" @click="closeInlineModal()"></div>
+  <div class="fld">
+    <label class="fld-label" for="id_entity">Entidade <span class="opt">(opcional)</span></label>
+    <div class="fld-inline">{{ form.entity }}<button type="button" class="icon-btn" @click="open('entity', {type: 'SUPPLIER'})" aria-label="Criar entidade" title="Criar entidade">{% icon "plus" 18 %}</button></div>
+    {% for error in form.entity.errors %}<p class="fld-error">{{ error }}</p>{% endfor %}
+  </div>
+  {% include "partials/field.html" with field=form.on_behalf_of label="Por conta de" help="Compra de alguém de fora da família no cartão de vocês." %}
+
+  <div class="fld span-2">
+    <label class="fld-label" for="id_tags">Tags <span class="opt">(opcional)</span></label>
+    <div class="fld-inline">{{ form.tags }}<button type="button" class="icon-btn" @click="open('tag', {color: '#1B3F8F'})" aria-label="Criar tag" title="Criar tag">{% icon "plus" 18 %}</button></div>
+    {% for error in form.tags.errors %}<p class="fld-error">{{ error }}</p>{% endfor %}
   </div>
 
-  <!-- Tag Modal -->
-  <div x-show="activeModal === 'tag'" x-cloak class="fixed inset-0 z-[1100] flex items-center justify-center">
-    <div class="modal-box max-w-md">
-      <h3 class="text-base font-semibold mb-4">Nova Tag</h3>
-      <form @submit.prevent="saveInline('tag')">
-        <div class="space-y-3">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
-            <input type="text" x-model="inlineForm.name" class="input input-bordered w-full" required>
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Cor</label>
-            <input type="color" x-model="inlineForm.color" class="input input-bordered w-full h-10">
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button type="button" @click="closeInlineModal()" class="btn btn-ghost btn-sm">Cancelar</button>
-          <button type="submit" class="btn btn-neutral btn-sm" :disabled="saving">
-            <span x-show="!saving">Salvar</span>
-            <span x-show="saving" class="loading loading-spinner loading-sm"></span>
-          </button>
-        </div>
-      </form>
-    </div>
-    <div class="fixed inset-0 bg-black/50 -z-10" @click="closeInlineModal()"></div>
-  </div>
+  {% include "partials/field.html" with field=form.notes label="Observações" optional=True span=True %}
 
-  <!-- Payment Method Modal -->
-  <div x-show="activeModal === 'paymentMethod'" x-cloak class="fixed inset-0 z-[1100] flex items-center justify-center">
-    <div class="modal-box max-w-md">
-      <h3 class="text-base font-semibold mb-4">Novo Metodo de Pagamento</h3>
-      <form @submit.prevent="saveInline('paymentMethod')">
-        <div class="space-y-3">
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Nome *</label>
-            <input type="text" x-model="inlineForm.name" class="input input-bordered w-full" required>
-          </div>
-          <div>
-            <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo *</label>
-            <select x-model="inlineForm.type" class="select select-bordered w-full" required>
-              <option value="PIX">PIX</option>
-              <option value="DEBIT">Debito</option>
-              <option value="CREDIT">Credito</option>
-              <option value="CASH">Dinheiro</option>
-              <option value="TRANSFER">Transferencia</option>
-              <option value="BOLETO">Boleto</option>
-            </select>
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button type="button" @click="closeInlineModal()" class="btn btn-ghost btn-sm">Cancelar</button>
-          <button type="submit" class="btn btn-neutral btn-sm" :disabled="saving">
-            <span x-show="!saving">Salvar</span>
-            <span x-show="saving" class="loading loading-spinner loading-sm"></span>
-          </button>
-        </div>
-      </form>
-    </div>
-    <div class="fixed inset-0 bg-black/50 -z-10" @click="closeInlineModal()"></div>
-  </div>
+  <label class="toggle-row span-2" for="{{ form.confirmed.id_for_label }}">
+    {{ form.confirmed }}
+    <span><strong>Confirmada</strong><span>Já aconteceu ou já foi paga. Pendentes entram na previsão de saldo.</span></span>
+  </label>
 </div>
 
-<script>
-function transactionFormManager() {
-  const CONFIG = {
-    category:      { url: '{% url "core:category_create" %}',           selectId: 'id_category',       label: 'Categoria' },
-    entity:        { url: '{% url "core:entity_create" %}',             selectId: 'id_entity',         label: 'Entidade' },
-    tag:           { url: '{% url "core:tag_create" %}',                selectId: 'id_tags',           label: 'Tag' },
-    paymentMethod: { url: '{% url "accounts:paymentmethod_create" %}',  selectId: 'id_payment_method', label: 'Metodo de pagamento' }
-  };
-
-  var $modal;
-
-  function s2Init() {
-    $modal = $('#transaction-modal');
-    var singles = ['id_category', 'id_payment_method', 'id_entity'];
-    for (var i = 0; i < singles.length; i++) {
-      var $el = $modal.find('select#' + singles[i]).first();
-      if ($el.length && !$el.hasClass('select2-hidden-accessible')) {
-        $el.select2({ width: '100%', dropdownParent: $modal });
-      }
-    }
-    var $tags = $modal.find('select#id_tags').first();
-    if ($tags.length && !$tags.hasClass('select2-hidden-accessible')) {
-      $tags.select2({ width: '100%', multiple: true, dropdownParent: $modal });
-    }
-  }
-
-  function s2Destroy() {
-    if (!$modal) return;
-    $modal.find('select.select2-hidden-accessible').each(function() {
-      $(this).select2('destroy');
-    });
-  }
-
-  return {
-    open: true,
-    activeModal: null,
-    saving: false,
-    inlineForm: {},
-    transactionType: '{{ form.type.value|default:"EXPENSE" }}',
-    confirmed: {{ form.confirmed.value|yesno:"true,false,false" }},
-
-    init() {
-      setTimeout(s2Init, 80);
-    },
-
-    openModal(type) {
-      this.activeModal = type;
-      this.inlineForm = {
-        name: '',
-        type: type === 'category' ? 'EXPENSE' : (type === 'entity' ? 'OTHER' : (type === 'paymentMethod' ? 'PIX' : '')),
-        color: '#3b82f6',
-        icon: '',
-        email: '',
-        phone: '',
-        active: true
-      };
-    },
-
-    closeInlineModal() {
-      this.activeModal = null;
-      this.inlineForm = {};
-    },
-
-    closeMainModal() {
-      s2Destroy();
-      this.open = false;
-      setTimeout(function() {
-        var container = document.getElementById('modal-container');
-        if (container) container.innerHTML = '';
-      }, 100);
-    },
-
-    async saveInline(type) {
-      var cfg = CONFIG[type];
-      if (!cfg) return;
-
-      this.saving = true;
-      var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-      var self = this;
-
-      try {
-        var response = await fetch(cfg.url + '?inline=true', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-          body: JSON.stringify(this.inlineForm)
-        });
-
-        if (!response.ok) {
-          showToast('Erro HTTP ' + response.status, 'error');
-          return;
-        }
-
-        var data = await response.json();
-
-        if (data.success) {
-          var $sel = $modal.find('select#' + cfg.selectId).first();
-
-          if ($sel.length) {
-            if ($sel.hasClass('select2-hidden-accessible')) {
-              $sel.select2('destroy');
-            }
-            $sel.next('.select2-container').remove();
-
-            var newOpt = new Option(data.object.name, String(data.object.id), true, true);
-            $sel[0].appendChild(newOpt);
-
-            $sel.select2({
-              width: '100%',
-              multiple: $sel[0].multiple,
-              dropdownParent: $modal
-            });
-
-            $sel.val(String(data.object.id)).trigger('change');
-          }
-
-          self.closeInlineModal();
-          showToast(cfg.label + ' criado(a) com sucesso!');
-        } else {
-          showToast(data.error || 'Erro ao criar', 'error');
-        }
-      } catch (error) {
-        showToast('Erro de conexao', 'error');
-      } finally {
-        this.saving = false;
-      }
-    }
-  };
-}
-</script>
+<div class="sub-dialog" x-show="kind" x-cloak @keydown.escape.stop="close()" @keydown.enter.prevent>
+  <div class="modal-scrim" @click="close()"></div>
+  <div class="modal-panel is-sm" role="dialog" aria-modal="true" aria-labelledby="sub-title">
+    <div class="modal-head">
+      <h2 id="sub-title" x-text="{category: 'Nova categoria', paymentMethod: 'Nova forma de pagamento', entity: 'Nova entidade', tag: 'Nova tag'}[kind]"></h2>
+      <button type="button" class="icon-btn" @click="close()" aria-label="Fechar">{% icon "x" 20 %}</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fld span-2"><label class="fld-label" for="inline-name">Nome</label><input id="inline-name" class="field" type="text" x-model="form.name" data-inline-first @keydown.enter.prevent="$refs.inlineSave.click()"></div>
+        <template x-if="kind === 'category'">
+          <div class="fld span-2"><label class="fld-label" for="inline-ctype">Tipo</label>
+            <select id="inline-ctype" class="field" x-model="form.type" data-native><option value="EXPENSE">Despesa</option><option value="INCOME">Receita</option><option value="BOTH">Os dois</option></select></div>
+        </template>
+        <template x-if="kind === 'paymentMethod'">
+          <div class="fld span-2"><label class="fld-label" for="inline-ptype">Tipo</label>
+            <select id="inline-ptype" class="field" x-model="form.type" data-native><option value="PIX">Pix</option><option value="DEBIT">Débito</option><option value="CREDIT">Crédito</option><option value="CASH">Dinheiro</option><option value="TRANSFER">Transferência</option><option value="BOLETO">Boleto</option></select></div>
+        </template>
+        <template x-if="kind === 'entity'">
+          <div class="fld span-2"><label class="fld-label" for="inline-etype">Tipo</label>
+            <select id="inline-etype" class="field" x-model="form.type" data-native><option value="SUPPLIER">Fornecedor</option><option value="EMPLOYER">Empregador</option><option value="CLIENT">Cliente</option><option value="PERSON">Pessoa de fora da família</option><option value="OTHER">Outro</option></select></div>
+        </template>
+        <template x-if="kind === 'category' || kind === 'tag'">
+          <div class="fld span-2"><label class="fld-label" for="inline-color">Cor</label><input id="inline-color" class="field" type="color" x-model="form.color"></div>
+        </template>
+      </div>
+      <p class="fld-error" x-show="error" x-text="error" role="alert"></p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" @click="close()">Cancelar</button>
+      <button type="button" class="btn btn-primary" x-ref="inlineSave" :disabled="saving"
+        @click="save({category: '{% url 'core:category_create' %}', paymentMethod: '{% url 'accounts:paymentmethod_create' %}', entity: '{% url 'core:entity_create' %}', tag: '{% url 'core:tag_create' %}'}[kind], {category: 'id_category', paymentMethod: 'id_payment_method', entity: 'id_entity', tag: 'id_tags'}[kind], {category: 'Categoria', paymentMethod: 'Forma de pagamento', entity: 'Entidade', tag: 'Tag'}[kind])">
+        <span class="spinner" x-show="saving" aria-hidden="true"></span>Criar
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}

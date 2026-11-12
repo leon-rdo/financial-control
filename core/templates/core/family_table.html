@@ -1,0 +1,20 @@
+{% load ui %}<section class="card" id="family-table" aria-label="Pessoas da família">
+  <div class="table-wrap">
+    <table class="table rtable">
+      <thead><tr><th>Pessoa</th><th>Nomes nos documentos</th><th>Contas e cartões</th><th>Telegram</th><th><span class="sr-only">Ações</span></th></tr></thead>
+      <tbody>
+        {% for p in object_list %}
+        <tr class="{% if not p.active %}is-muted{% endif %}">
+          <td class="c-main"><p class="cell-title">{{ p.name }}</p>{% if not p.active %}<p class="cell-meta">inativa</p>{% endif %}</td>
+          <td class="c-meta" data-label="Nos documentos">{% for alias in p.alias_list %}<span class="badge">{{ alias }}</span> {% empty %}<span class="muted">—</span>{% endfor %}</td>
+          <td class="c-meta" data-label="Titular de">{% for a in p.bank_accounts.all %}{{ a.name }}{% if not forloop.last or p.payment_methods.all %}, {% endif %}{% endfor %}{% for m in p.payment_methods.all %}{{ m.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not p.accounts and not p.methods %}<span class="muted">nada ainda</span>{% endif %}</td>
+          <td class="c-meta" data-label="Telegram">{% if p.telegram_chat_id %}<span class="status status-ok">ligado</span>{% else %}<span class="status status-off">não ligado</span>{% endif %}</td>
+          <td class="c-actions">{% url 'core:family_update' p.pk as edit_url %}{% url 'core:family_delete' p.pk as delete_url %}{% include "partials/row_actions.html" with edit_url=edit_url delete_url=delete_url target="#family-table" what=p.name %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5"><div class="empty"><strong>Ninguém cadastrado</strong>Cadastre cada pessoa para o bot tratar Pix entre vocês como transferência e mostrar gastos por pessoa.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

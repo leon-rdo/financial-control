@@ -1,0 +1,57 @@
+{% extends "layouts/list.html" %}{% load ui %}
+
+{% block title %}Cartões e fechamentos · Confin{% endblock %}
+{% block band_title %}Cartões e fechamentos{% endblock %}
+{% block band_sub %}Cada cartão principal tem uma fatura só. Adicionais e virtuais são cobrados nela. As datas reais de fechamento vêm das faturas importadas.{% endblock %}
+{% block band_actions %}<button class="band-btn" hx-get="{% url 'accounts:paymentmethod_create' %}?tipo=CREDIT&depois=recarregar" hx-target="#modal-container">{% icon "plus" 16 %}Novo cartão</button>{% endblock %}
+{% block band_extra %}
+<div class="band-nums">
+  <div><span class="stat-label">Cartões principais</span><strong class="stat-value is-md">{{ main_count }}</strong><p class="stat-note">ativos, cada um com sua fatura</p></div>
+  <div><span class="stat-label">Ligados a eles</span><strong class="stat-value is-md">{{ linked_count }}</strong><p class="stat-note">adicionais e virtuais</p></div>
+  <div><span class="stat-label">Fechamentos reais</span><strong class="stat-value is-md">{{ closings_count }}</strong><p class="stat-note">guardados das faturas importadas</p></div>
+</div>
+{% if missing_days %}<p class="band-alert">{% icon "alert" 16 %}{{ missing_days }} cartão{{ missing_days|pluralize:"ões" }} sem dia de fechamento ou de vencimento. Sem isso a previsão não sabe em que fatura cada compra cai.</p>{% endif %}
+{% endblock %}
+
+{% block table %}
+<div class="grid-2 cards-grid">
+  {% for c in cards %}
+  <section class="card{% if not c.card.active %} is-off{% endif %}" aria-labelledby="card-{{ c.card.pk }}">
+    <div class="card-head">
+      <h2 id="card-{{ c.card.pk }}">{{ c.card.name }}{% if not c.card.active %} <span class="badge">inativo</span>{% endif %}</h2>
+      <button class="icon-btn" hx-get="{% url 'accounts:paymentmethod_update' c.card.pk %}?depois=recarregar" hx-target="#modal-container" aria-label="Editar {{ c.card.name }}" title="Editar">{% icon "pencil" 16 %}</button>
+    </div>
+    <div class="card-sub">{% with h=c.card.effective_holder %}{% if h %}De {{ h.name }}{% else %}Sem titular{% endif %}{% endwith %}{% if c.card.credit_limit %}, limite {{ c.card.credit_limit|rs }}{% endif %}{% if c.card.lent_to %}, fica com {{ c.card.lent_to.name }}{% endif %}</div>
+    <div class="card-body">
+      <dl class="facts">
+        <div><dt>Fecha</dt><dd>{% if c.card.closing_day %}dia {{ c.card.closing_day }}{% else %}<span class="warn">não informado</span>{% endif %}</dd></div>
+        <div><dt>Vence</dt><dd>{% if c.card.due_day %}dia {{ c.card.due_day }}{% else %}<span class="warn">não informado</span>{% endif %}</dd></div>
+        <div><dt>Compra de hoje cai em</dt><dd>{% if c.next %}fatura de {{ c.next.month|month_name }}, vence {{ c.next.due_date|date:"d/m" }}{% else %}—{% endif %}</dd></div>
+      </dl>
+
+      <h3 class="sub-title">Cobrados nesta fatura</h3>
+      {% if c.linked %}
+      <ul class="lines">
+        {% for l in c.linked %}<li><div class="line-main"><p class="line-title">{{ l.name }}</p><p class="line-meta">{% if l.holder %}De {{ l.holder.name }}{% else %}Titular herdado do principal{% endif %}{% if not l.active %}, inativo{% endif %}</p></div><button class="icon-btn" hx-get="{% url 'accounts:paymentmethod_update' l.pk %}?depois=recarregar" hx-target="#modal-container" aria-label="Editar {{ l.name }}">{% icon "pencil" 16 %}</button></li>{% endfor %}
+      </ul>
+      {% else %}<p class="muted small">Só o próprio cartão. Adicionais entram aqui pelo campo "Cobrado na fatura de".</p>{% endif %}
+
+      <h3 class="sub-title">Fechamentos reais</h3>
+      {% if c.closings %}
+      <table class="table compact">
+        <thead><tr><th>Fatura</th><th>Fechou</th><th>Venceu</th><th>Pagamento</th></tr></thead>
+        <tbody>
+          {% for r in c.closings %}
+          <tr><td>{{ r.month|month_short }}/{{ r.year|stringformat:'d' }}</td><td>{{ r.closing_date|date:"d/m" }}</td><td>{% if r.due_date %}{{ r.due_date|date:"d/m" }}{% else %}—{% endif %}</td><td>{% if r.is_paid %}<span class="status status-ok">registrado</span>{% else %}<span class="status status-off">não registrado</span>{% endif %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if c.known > 6 %}<p class="card-note">Mostrando os 6 mais recentes de {{ c.known }}.</p>{% endif %}
+      {% else %}<p class="muted small">Nenhuma fatura importada ainda. Até lá, a previsão usa o dia de fechamento cadastrado.</p>{% endif %}
+    </div>
+  </section>
+  {% empty %}
+  <section class="card"><div class="empty"><strong>Nenhum cartão de crédito</strong>Cadastre os cartões para a previsão de faturas funcionar.</div></section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "partials/form_modal.html" %}{% load ui %}
+
+{% block title %}{% if object.pk %}Editar transferência{% else %}Nova transferência{% endif %}{% endblock %}
+
+{% block fields %}
+<div class="form-grid">
+  {% include "partials/field.html" with field=form.description label="Descrição" optional=True span=True %}
+  {% include "partials/field.html" with field=form.amount label="Valor (R$)" %}
+  {% include "partials/field.html" with field=form.date label="Data" %}
+  {% include "partials/field.html" with field=form.from_account label="Sai de" span=True %}
+  <p class="fieldset-title">Vai para: uma conta ou caixinha, ou o pagamento de uma fatura</p>
+  {% include "partials/field.html" with field=form.to_account label="Conta ou caixinha" %}
+  {% include "partials/field.html" with field=form.to_card label="Cartão (pagamento de fatura)" %}
+  {% include "partials/field.html" with field=form.invoice label="Fatura paga" help="Mês do vencimento. Ao salvar, as parcelas daquele cartão e mês ficam pagas." span=True %}
+  {% include "partials/field.html" with field=form.notes label="Observações" optional=True span=True %}
+</div>
+{% endblock %}

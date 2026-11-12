@@ -1,0 +1,9 @@
+{% load ui %}{% if is_paginated %}
+<div class="pager">
+  <span>{{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }}</span>
+  <div class="pager-btns">
+    {% if page_obj.has_previous %}<button type="button" class="btn btn-secondary btn-sm" hx-get="?{% query_with page=page_obj.previous_page_number %}" hx-target="{{ target }}" hx-swap="outerHTML">{% icon "chevron-left" 16 %}Anterior</button>{% endif %}
+    {% if page_obj.has_next %}<button type="button" class="btn btn-secondary btn-sm" hx-get="?{% query_with page=page_obj.next_page_number %}" hx-target="{{ target }}" hx-swap="outerHTML">Próxima{% icon "chevron-right" 16 %}</button>{% endif %}
+  </div>
+</div>
+{% endif %}

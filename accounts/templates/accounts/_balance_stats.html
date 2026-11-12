@@ -1,0 +1,12 @@
+{% load ui %}<div id="band-balances"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="band-nums">
+    <div><span class="stat-label">Disponível</span><strong class="stat-value">{{ balances.available|rs }}</strong><p class="stat-note">nas contas do dia a dia{% if balances.by_holder %}, por pessoa abaixo{% endif %}</p></div>
+    <div><span class="stat-label">Guardado</span><strong class="stat-value">{{ balances.reserved|rs }}</strong><p class="stat-note">caixinhas e investimentos{% if balances.reserved_unknown %}, sem {{ balances.reserved_unknown|length }} sem saldo{% endif %}</p></div>
+    <div><span class="stat-label">Total</span><strong class="stat-value">{{ balances.total|rs }}</strong><p class="stat-note">{% for name, v in balances.by_holder.items %}{{ name }}: {{ v.available|rs }}{% if not forloop.last %}; {% endif %}{% empty %}contas e caixinhas{% endfor %}</p></div>
+  </div>
+  {% if balances.total > 0 %}
+  <div class="prop" role="img" aria-label="{{ balances.available|pct:balances.total }}% disponível"><i class="prop-a" style="width: {{ balances.available|pct:balances.total }}%"></i><i class="prop-b" style="width: {{ balances.reserved|pct:balances.total }}%"></i></div>
+  <div class="prop-legend"><span><b>{{ balances.available|pct:balances.total }}%</b> disponível</span><span><b>{{ balances.reserved|pct:balances.total }}%</b> guardado</span></div>
+  {% endif %}
+  {% if not balances.available_anchored %}<p class="band-alert">{% icon "alert" 16 %}Há contas sem saldo informado. Informe o saldo de hoje para as projeções começarem do valor certo.</p>{% endif %}
+</div>

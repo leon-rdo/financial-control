@@ -1,151 +1,41 @@
-{% extends "base.html" %}
+{% extends "layouts/list.html" %}{% load ui %}
 
-{% block title %}Transações - Controle Financeiro{% endblock %}
+{% block title %}Transações · Confin{% endblock %}
+{% block band_title %}Transações{% endblock %}
+{% block band_sub %}Receitas e despesas lançadas pelo bot ou à mão. Compras no cartão entram aqui na data da compra.{% endblock %}
+{% block band_actions %}
+<button class="band-btn" hx-get="{% url 'financial:transaction_create' %}?tipo=EXPENSE" hx-target="#modal-container">{% icon "plus" 16 %}Nova despesa</button>
+<button class="band-btn is-quiet" hx-get="{% url 'financial:transaction_create' %}?tipo=INCOME" hx-target="#modal-container">{% icon "plus" 16 %}Nova receita</button>
+{% endblock %}
+{% block band_extra %}{% include "financial/_transaction_stats.html" %}{% endblock %}
+{% block new_tx_query %}{% endblock %}
+{% block new_tx_query_sm %}{% endblock %}
 
-{% block content %}
-<div x-data="{ showModal: false, deleteUrl: '' }">
-    <div class="flex justify-between items-center mb-4">
-        <h1 class="text-xl font-semibold">Transações</h1>
-        <button
-            hx-get="{% url 'financial:transaction_create' %}"
-            hx-target="#modal-container"
-            hx-swap="innerHTML"
-            class="btn btn-neutral btn-sm gap-1.5">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-            Nova Transação
-        </button>
-    </div>
-
-    <!-- Quick Filters -->
-    <div class="flex flex-wrap gap-2 mb-3">
-        <button
-            hx-get="{% url 'financial:transaction_list' %}?date_from={{ this_month_start }}&date_to={{ this_month_end }}"
-            hx-target="#transaction-table"
-            hx-swap="outerHTML"
-            class="btn btn-outline btn-xs">
-            Este mês
-        </button>
-        <button
-            hx-get="{% url 'financial:transaction_list' %}?date_from={{ last_month_start }}&date_to={{ last_month_end }}"
-            hx-target="#transaction-table"
-            hx-swap="outerHTML"
-            class="btn btn-outline btn-xs">
-            Mês passado
-        </button>
-        <button
-            hx-get="{% url 'financial:transaction_list' %}?confirmed=false"
-            hx-target="#transaction-table"
-            hx-swap="outerHTML"
-            class="btn btn-outline btn-xs">
-            Pendentes
-        </button>
-        <button
-            hx-get="{% url 'financial:transaction_list' %}?type=EXPENSE&date_from={{ this_month_start }}&date_to={{ this_month_end }}"
-            hx-target="#transaction-table"
-            hx-swap="outerHTML"
-            class="btn btn-outline btn-xs">
-            Despesas do mês
-        </button>
-    </div>
-
-    <!-- Filters -->
-    <div class="bg-base-100 rounded-xl border border-base-300/40 p-4 mb-4">
-        <form hx-get="{% url 'financial:transaction_list' %}" hx-target="#transaction-table" hx-trigger="change, submit">
-            <div class="flex flex-wrap items-end gap-3">
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Buscar</label>
-                    {{ filter.form.description }}
-                </div>
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Tipo</label>
-                    {{ filter.form.type }}
-                </div>
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Categoria</label>
-                    {{ filter.form.category }}
-                </div>
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Método</label>
-                    {{ filter.form.payment_method }}
-                </div>
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Status</label>
-                    {{ filter.form.confirmed }}
-                </div>
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Data De</label>
-                    {{ filter.form.date_from }}
-                </div>
-                <div class="min-w-40 flex-1">
-                    <label class="text-[11px] font-medium text-base-content/40 uppercase tracking-wider mb-1 block">Data Até</label>
-                    {{ filter.form.date_to }}
-                </div>
-                <div class="flex gap-2">
-                    <button type="submit" class="btn btn-neutral btn-sm">Filtrar</button>
-                    <a href="{% url 'financial:transaction_list' %}" class="btn btn-ghost btn-sm">Limpar</a>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Table -->
-    {% include "financial/transaction_table.html" %}
-
-    <!-- Modal Container -->
-    <div id="modal-container"></div>
-
-    <!-- Delete Confirmation Modal -->
-    <div class="modal" :class="{ 'modal-open': showModal }">
-        <div class="modal-box">
-            <h3 class="text-base font-semibold mb-4">Confirmar Exclusão</h3>
-            <p class="text-sm text-base-content/50">Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.</p>
-            <div class="modal-action">
-                <button @click="showModal = false" class="btn btn-ghost btn-sm">Cancelar</button>
-                <button
-                    @click="htmx.ajax('DELETE', deleteUrl, {target: '#transaction-table', swap: 'outerHTML'}); showModal = false"
-                    class="btn btn-error btn-sm">
-                    Excluir
-                </button>
-            </div>
-        </div>
-        <div class="modal-backdrop" @click="showModal = false"></div>
-    </div>
+{% block before_table %}
+<div class="toolbar">
+  <nav class="seg" aria-label="Atalhos de filtro">
+    <a href="?date_from={{ this_month_start }}&date_to={{ this_month_end }}" class="{% if request.GET.date_from == this_month_start and not request.GET.type %}is-on{% endif %}">Este mês</a>
+    <a href="?date_from={{ last_month_start }}&date_to={{ last_month_end }}" class="{% if request.GET.date_from == last_month_start %}is-on{% endif %}">Mês passado</a>
+    <a href="?confirmed=0" class="{% if request.GET.confirmed == '0' %}is-on{% endif %}">Pendentes{% if pending_count %} ({{ pending_count }}){% endif %}</a>
+    <a href="?type=EXPENSE&date_from={{ this_month_start }}&date_to={{ this_month_end }}" class="{% if request.GET.type == 'EXPENSE' and request.GET.date_from == this_month_start %}is-on{% endif %}">Despesas do mês</a>
+    <a href="?third_party=only" class="{% if request.GET.third_party == 'only' %}is-on{% endif %}">De terceiros</a>
+  </nav>
 </div>
 
-<script>
-    document.body.addEventListener('openDeleteModal', function(event) {
-        const modal = document.querySelector('[x-data]').__x.$data;
-        modal.deleteUrl = event.detail.url;
-        modal.showModal = true;
-    });
-
-    function getCsrfToken() {
-        var match = document.cookie.match(/csrftoken=([^;]+)/);
-        return match ? match[1] : '';
-    }
-
-    async function toggleConfirmed(pk, btn) {
-        try {
-            var res = await fetch('/transacoes/' + pk + '/toggle-confirmed/', {
-                method: 'POST',
-                headers: {'X-CSRFToken': getCsrfToken()}
-            });
-            var data = await res.json();
-            if (data.success) {
-                var dot = btn.querySelector('div');
-                var label = btn.querySelector('span');
-                if (data.confirmed) {
-                    dot.className = 'w-1.5 h-1.5 rounded-full bg-success';
-                    label.textContent = 'Confirmada';
-                } else {
-                    dot.className = 'w-1.5 h-1.5 rounded-full bg-warning';
-                    label.textContent = 'Pendente';
-                }
-                btn.dataset.confirmed = data.confirmed;
-            }
-        } catch (e) {
-            showToast('Erro ao atualizar status', 'error');
-        }
-    }
-</script>
+<details class="filters" open data-active="{{ filter.form|active_count }}">
+  <summary>Filtros{% if filter.form|active_count %} ({{ filter.form|active_count }} em uso){% endif %}{% icon "chevron-down" 16 %}</summary>
+  <form class="filters-body" hx-get="{% url 'financial:transaction_list' %}" hx-target="#transaction-table" hx-swap="outerHTML" hx-push-url="true" hx-trigger="change, submit, keyup changed delay:400ms from:find input[type=search]">
+    {% include "partials/field.html" with field=filter.form.description label="Buscar" extra="fld-search" %}
+    {% include "partials/field.html" with field=filter.form.type label="Tipo" %}
+    {% include "partials/field.html" with field=filter.form.category label="Categoria" %}
+    {% include "partials/field.html" with field=filter.form.payment_method label="Forma de pagamento" %}
+    {% include "partials/field.html" with field=filter.form.confirmed label="Status" %}
+    {% include "partials/field.html" with field=filter.form.third_party label="De quem" %}
+    {% include "partials/field.html" with field=filter.form.date_from label="De" %}
+    {% include "partials/field.html" with field=filter.form.date_to label="Até" %}
+    <div class="filters-actions"><a class="btn btn-ghost btn-sm" href="{% url 'financial:transaction_list' %}">Limpar filtros</a></div>
+  </form>
+</details>
 {% endblock %}
+
+{% block table %}{% include "financial/transaction_table.html" %}{% endblock %}

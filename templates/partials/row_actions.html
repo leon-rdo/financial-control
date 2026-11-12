@@ -1,0 +1,5 @@
+{% load ui %}{% comment %}Botões de linha. edit_url, delete_url, target, what (texto da confirmação), dup_url (opcional).{% endcomment %}<div class="actions">
+  {% if dup_url %}<button type="button" class="icon-btn" hx-get="{{ dup_url }}" hx-target="#modal-container" title="Duplicar" aria-label="Duplicar {{ what }}">{% icon "copy" 16 %}</button>{% endif %}
+  {% if edit_url %}<button type="button" class="icon-btn" hx-get="{{ edit_url }}" hx-target="#modal-container" title="Editar" aria-label="Editar {{ what }}">{% icon "pencil" 16 %}</button>{% endif %}
+  {% if delete_url %}<button type="button" class="icon-btn is-danger" data-delete="{{ delete_url }}" data-target="{{ target }}" data-what="{{ what }}" title="Excluir" aria-label="Excluir {{ what }}">{% icon "trash" 16 %}</button>{% endif %}
+</div>

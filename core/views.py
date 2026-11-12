@@ -1,450 +1,291 @@
 import json
 import re
-from django.http import HttpResponse, JsonResponse
+
 import requests
+from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, UpdateView
 from django.views.decorators.http import require_http_methods
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 from django_filters.views import FilterView
-from django.template.loader import render_to_string
 
-from .models import Category, Tag, Entity
-from .forms import CategoryForm, TagForm, EntityForm
-from .filters import CategoryFilter, TagFilter, EntityFilter
+from .filters import CategoryFilter, EntityFilter, TagFilter
+from .forms import CategoryForm, EntityForm, FamilyMemberForm, TagForm
+from .mixins import HtmxDeleteMixin, HtmxModalFormMixin
+from .models import Category, Entity, FamilyMember, Tag
 
 
-# Category Views
-class CategoryListView(FilterView):
+class InlineCreateMixin:
+    """POST ?inline=1 com JSON: cria o registro a partir de outro formulário e
+    devolve id e nome (usado no formulário de transação)."""
+
+    inline_fields = ("name",)
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.GET.get("inline") and request.method == "POST":
+            return self.create_inline(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def create_inline(self, request):
+        try:
+            form = self.form_class(json.loads(request.body))
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "error": "Dados inválidos"}, status=400)
+        if form.is_valid():
+            obj = form.save()
+            return JsonResponse({"success": True, "object": {"id": obj.pk, "name": obj.name}})
+        first = next(iter(form.errors.values()), ["Confira os campos."])[0]
+        return JsonResponse({"success": False, "error": first, "errors": form.errors}, status=400)
+
+
+class TableListView(FilterView):
+    table_template = None
+    paginate_by = 20
+    context_object_name = "object_list"
+
+    def get_template_names(self):
+        if self.request.htmx:
+            return [self.table_template]
+        return [self.template_name]
+
+
+# ---------------------------------------------------------------------------
+# Categorias
+# ---------------------------------------------------------------------------
+
+def categories_qs():
+    return Category.objects.annotate(
+        uses=Count("transactions", distinct=True) + Count("purchases", distinct=True)
+    ).order_by("-active", "type", "name")
+
+
+class CategoryListView(TableListView):
     model = Category
     template_name = "core/category_list.html"
-    context_object_name = "object_list"
+    table_template = "core/category_table.html"
     filterset_class = CategoryFilter
-    paginate_by = 20
 
-    def get_template_names(self):
-        if self.request.htmx:
-            return ["core/category_table.html"]
-        return [self.template_name]
+    def get_queryset(self):
+        return categories_qs()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        active = Category.objects.filter(active=True)
+        context["counts"] = {"expense": active.exclude(type="INCOME").count(),
+                             "income": active.exclude(type="EXPENSE").count(),
+                             "inactive": Category.objects.filter(active=False).count()}
+        return context
 
 
-class CategoryCreateView(CreateView):
+class CategoryTableMixin(HtmxModalFormMixin):
     model = Category
     form_class = CategoryForm
     template_name = "core/category_form.html"
+    table_template = "core/category_table.html"
+    table_target = "#category-table"
     success_url = reverse_lazy("core:category_list")
+    success_message = "Categoria salva."
 
-    def dispatch(self, request, *args, **kwargs):
-        # Suporte para criação inline via JSON
-        if request.GET.get("inline") and request.method == "POST":
-            return self.create_inline(request)
-        return super().dispatch(request, *args, **kwargs)
-
-    def create_inline(self, request):
-        try:
-            data = json.loads(request.body)
-            form = self.form_class(data)
-
-            if form.is_valid():
-                obj = form.save()
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "object": {
-                            "id": obj.pk,
-                            "name": obj.name,
-                            "type": obj.type,
-                            "color": obj.color,
-                            "icon": obj.icon,
-                        },
-                    }
-                )
-            else:
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "error": "Dados inválidos",
-                        "errors": form.errors,
-                    },
-                    status=400,
-                )
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-    def form_valid(self, form):
-        self.object = form.save()
-        if self.request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "categoryCreated"
-            context = {
-                "object_list": Category.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/category_table.html", context, request=self.request
-            )
-            response.content = html
-            return response
-        return super().form_valid(form)
+    def get_table_queryset(self):
+        return categories_qs()
 
 
-class CategoryUpdateView(UpdateView):
-    model = Category
-    form_class = CategoryForm
-    template_name = "core/category_form.html"
-    success_url = reverse_lazy("category_list")
-
-    def form_valid(self, form):
-        self.object = form.save()
-        if self.request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "categoryUpdated"
-            context = {
-                "object_list": Category.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/category_table.html", context, request=self.request
-            )
-            response.content = html
-            return response
-        return super().form_valid(form)
+class CategoryCreateView(InlineCreateMixin, CategoryTableMixin, CreateView):
+    def get_initial(self):
+        return {"active": True, "type": "EXPENSE", "color": "#1B3F8F"}
 
 
-class CategoryDeleteView(DeleteView):
-    model = Category
-    success_url = reverse_lazy("category_list")
-
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        self.object.delete()
-
-        if request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "categoryDeleted"
-            context = {
-                "object_list": Category.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/category_table.html", context, request=request
-            )
-            response.content = html
-            return response
-
-        return super().delete(request, *args, **kwargs)
+class CategoryUpdateView(CategoryTableMixin, UpdateView):
+    pass
 
 
-# Tag Views
-class TagListView(FilterView):
+class CategoryDeleteView(HtmxDeleteMixin, CategoryTableMixin, DeleteView):
+    success_message = "Categoria excluída."
+
+
+# ---------------------------------------------------------------------------
+# Tags
+# ---------------------------------------------------------------------------
+
+def tags_qs():
+    return Tag.objects.annotate(uses=Count("transactions")).order_by("name")
+
+
+class TagListView(TableListView):
     model = Tag
     template_name = "core/tag_list.html"
-    context_object_name = "object_list"
+    table_template = "core/tag_table.html"
     filterset_class = TagFilter
-    paginate_by = 20
 
-    def get_template_names(self):
-        if self.request.htmx:
-            return ["core/tag_table.html"]
-        return [self.template_name]
+    def get_queryset(self):
+        return tags_qs()
 
 
-class TagCreateView(CreateView):
+class TagTableMixin(HtmxModalFormMixin):
     model = Tag
     form_class = TagForm
     template_name = "core/tag_form.html"
+    table_template = "core/tag_table.html"
+    table_target = "#tag-table"
     success_url = reverse_lazy("core:tag_list")
+    success_message = "Tag salva."
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.GET.get("inline") and request.method == "POST":
-            return self.create_inline(request)
-        return super().dispatch(request, *args, **kwargs)
-
-    def create_inline(self, request):
-        try:
-            data = json.loads(request.body)
-            form = self.form_class(data)
-
-            if form.is_valid():
-                obj = form.save()
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "object": {"id": obj.pk, "name": obj.name, "color": obj.color},
-                    }
-                )
-            else:
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "error": "Dados inválidos",
-                        "errors": form.errors,
-                    },
-                    status=400,
-                )
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-    def form_valid(self, form):
-        self.object = form.save()
-        if self.request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "tagCreated"
-            context = {
-                "object_list": Tag.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/tag_table.html", context, request=self.request
-            )
-            response.content = html
-            return response
-        return super().form_valid(form)
+    def get_table_queryset(self):
+        return tags_qs()
 
 
-class TagUpdateView(UpdateView):
-    model = Tag
-    form_class = TagForm
-    template_name = "core/tag_form.html"
-    success_url = reverse_lazy("tag_list")
-
-    def form_valid(self, form):
-        self.object = form.save()
-        if self.request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "tagUpdated"
-            context = {
-                "object_list": Tag.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/tag_table.html", context, request=self.request
-            )
-            response.content = html
-            return response
-        return super().form_valid(form)
+class TagCreateView(InlineCreateMixin, TagTableMixin, CreateView):
+    def get_initial(self):
+        return {"color": "#1B3F8F"}
 
 
-class TagDeleteView(DeleteView):
-    model = Tag
-    success_url = reverse_lazy("tag_list")
-
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        self.object.delete()
-
-        if request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "tagDeleted"
-            context = {
-                "object_list": Tag.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string("core/tag_table.html", context, request=request)
-            response.content = html
-            return response
-
-        return super().delete(request, *args, **kwargs)
+class TagUpdateView(TagTableMixin, UpdateView):
+    pass
 
 
-# Entity Views
-class EntityListView(FilterView):
+class TagDeleteView(HtmxDeleteMixin, TagTableMixin, DeleteView):
+    success_message = "Tag excluída."
+
+
+# ---------------------------------------------------------------------------
+# Entidades
+# ---------------------------------------------------------------------------
+
+def entities_qs():
+    return Entity.objects.annotate(uses=Count("transactions", distinct=True)).order_by("-active", "name")
+
+
+class EntityListView(TableListView):
     model = Entity
     template_name = "core/entity_list.html"
-    context_object_name = "object_list"
+    table_template = "core/entity_table.html"
     filterset_class = EntityFilter
-    paginate_by = 20
 
-    def get_template_names(self):
-        if self.request.htmx:
-            return ["core/entity_table.html"]
-        return [self.template_name]
+    def get_queryset(self):
+        return entities_qs()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        active = Entity.objects.filter(active=True)
+        context["counts"] = {"total": active.count(), "people": active.filter(type="PERSON").count(),
+                             "suppliers": active.filter(type="SUPPLIER").count()}
+        return context
 
 
-class EntityCreateView(CreateView):
+class EntityTableMixin(HtmxModalFormMixin):
     model = Entity
     form_class = EntityForm
     template_name = "core/entity_form.html"
+    table_template = "core/entity_table.html"
+    table_target = "#entity-table"
     success_url = reverse_lazy("core:entity_list")
+    success_message = "Entidade salva."
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.GET.get("inline") and request.method == "POST":
-            return self.create_inline(request)
-        return super().dispatch(request, *args, **kwargs)
-
-    def create_inline(self, request):
-        try:
-            data = json.loads(request.body)
-            form = self.form_class(data)
-
-            if form.is_valid():
-                obj = form.save()
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "object": {
-                            "id": obj.pk,
-                            "name": obj.name,
-                            "type": obj.type,
-                            "email": obj.email or "",
-                            "phone": obj.phone or "",
-                        },
-                    }
-                )
-            else:
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "error": "Dados inválidos",
-                        "errors": form.errors,
-                    },
-                    status=400,
-                )
-        except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-    def form_valid(self, form):
-        self.object = form.save()
-        if self.request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "entityCreated"
-            context = {
-                "object_list": Entity.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/entity_table.html", context, request=self.request
-            )
-            response.content = html
-            return response
-        return super().form_valid(form)
+    def get_table_queryset(self):
+        return entities_qs()
 
 
-class EntityUpdateView(UpdateView):
-    model = Entity
-    form_class = EntityForm
-    template_name = "core/entity_form.html"
-    success_url = reverse_lazy("entity_list")
-
-    def form_valid(self, form):
-        self.object = form.save()
-        if self.request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "entityUpdated"
-            context = {
-                "object_list": Entity.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string(
-                "core/entity_table.html", context, request=self.request
-            )
-            response.content = html
-            return response
-        return super().form_valid(form)
+class EntityCreateView(InlineCreateMixin, EntityTableMixin, CreateView):
+    def get_initial(self):
+        return {"active": True, "type": self.request.GET.get("tipo", "SUPPLIER")}
 
 
-class EntityDeleteView(DeleteView):
-    model = Entity
-    success_url = reverse_lazy("entity_list")
-
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        self.object.delete()
-
-        if request.htmx:
-            response = HttpResponse()
-            response["HX-Trigger"] = "entityDeleted"
-            context = {
-                "object_list": Entity.objects.all()[:20],
-                "page_obj": None,
-                "is_paginated": False,
-            }
-            html = render_to_string("core/entity_table.html", context, request=request)
-            response.content = html
-            return response
-
-        return super().delete(request, *args, **kwargs)
+class EntityUpdateView(EntityTableMixin, UpdateView):
+    pass
 
 
-# CNPJ Fetch API
+class EntityDeleteView(HtmxDeleteMixin, EntityTableMixin, DeleteView):
+    success_message = "Entidade excluída."
+
+
+# ---------------------------------------------------------------------------
+# Família
+# ---------------------------------------------------------------------------
+
+def family_qs():
+    return FamilyMember.objects.annotate(
+        accounts=Count("bank_accounts", distinct=True), methods=Count("payment_methods", distinct=True)
+    ).prefetch_related("bank_accounts", "payment_methods").order_by("-active", "name")
+
+
+class FamilyListView(ListView):
+    model = FamilyMember
+    template_name = "core/family_list.html"
+    context_object_name = "object_list"
+
+    def get_queryset(self):
+        return family_qs()
+
+    def get_context_data(self, **kwargs):
+        from accounts.models import BankAccount, PaymentMethod
+
+        context = super().get_context_data(**kwargs)
+        no_holder = {
+            "accounts": BankAccount.objects.filter(active=True, holder__isnull=True, parent__isnull=True).count(),
+            "methods": PaymentMethod.objects.filter(active=True, holder__isnull=True).filter(
+                Q(bank_account__isnull=True) | Q(bank_account__holder__isnull=True),
+                billing_card__isnull=True).count(),
+        }
+        no_holder["total"] = no_holder["accounts"] + no_holder["methods"]
+        context["no_holder"] = no_holder
+        context["with_telegram"] = FamilyMember.objects.filter(active=True, telegram_chat_id__isnull=False).count()
+        return context
+
+
+class FamilyTableMixin(HtmxModalFormMixin):
+    model = FamilyMember
+    form_class = FamilyMemberForm
+    template_name = "core/family_form.html"
+    table_template = "core/family_table.html"
+    table_target = "#family-table"
+    success_url = reverse_lazy("core:family_list")
+    success_message = "Pessoa salva."
+
+    def get_table_queryset(self):
+        return family_qs()
+
+
+class FamilyCreateView(FamilyTableMixin, CreateView):
+    def get_initial(self):
+        return {"active": True}
+
+
+class FamilyUpdateView(FamilyTableMixin, UpdateView):
+    pass
+
+
+class FamilyDeleteView(HtmxDeleteMixin, FamilyTableMixin, DeleteView):
+    success_message = "Pessoa removida."
+
+
+# ---------------------------------------------------------------------------
+# CNPJ
+# ---------------------------------------------------------------------------
+
 @require_http_methods(["GET"])
 def fetch_cnpj_data(request):
-    """Busca dados de CNPJ na API CNPJA"""
-    cnpj = request.GET.get("cnpj", "")
-
-    # Remove formatação do CNPJ
-    cnpj_clean = re.sub(r"\D", "", cnpj)
-
-    if not cnpj_clean or len(cnpj_clean) != 14:
-        return JsonResponse(
-            {"error": "CNPJ inválido. Digite um CNPJ válido com 14 dígitos."},
-            status=400,
-        )
-
+    """Dados de um CNPJ na API aberta da CNPJá."""
+    cnpj = re.sub(r"\D", "", request.GET.get("cnpj", ""))
+    if len(cnpj) != 14:
+        return JsonResponse({"error": "CNPJ inválido: digite os 14 números."}, status=400)
     try:
-        # Chama a API CNPJA
-        response = requests.get(
-            f"https://open.cnpja.com/office/{cnpj_clean}", timeout=10
-        )
-
-        if response.status_code == 404:
-            return JsonResponse(
-                {"error": "CNPJ não encontrado na base de dados."}, status=404
-            )
-
-        if response.status_code != 200:
-            return JsonResponse(
-                {"error": "Erro ao consultar CNPJ. Tente novamente."}, status=500
-            )
-
-        data = response.json()
-
-        # Extrai informações relevantes
-        company_name = data.get("company", {}).get("name", "")
-        alias = data.get("alias", "")
-
-        # Nome: usa alias se existir, senão usa o nome da empresa
-        name = alias if alias else company_name
-
-        # Email: pega o primeiro email corporativo
-        emails = data.get("emails", [])
-        email = ""
-        if emails:
-            email = emails[0].get("address", "")
-
-        # Telefone: pega o primeiro telefone
-        phones = data.get("phones", [])
-        phone = ""
-        if phones:
-            area = phones[0].get("area", "")
-            number = phones[0].get("number", "")
-            if area and number:
-                phone = f"({area}) {number}"
-
-        return JsonResponse(
-            {
-                "success": True,
-                "data": {
-                    "name": name,
-                    "email": email,
-                    "phone": phone,
-                    "document": cnpj_clean,
-                },
-            }
-        )
-
+        response = requests.get(f"https://open.cnpja.com/office/{cnpj}", timeout=10)
     except requests.Timeout:
-        return JsonResponse(
-            {"error": "Tempo esgotado ao consultar CNPJ. Tente novamente."}, status=500
-        )
-    except requests.RequestException as e:
-        return JsonResponse({"error": f"Erro ao consultar CNPJ: {str(e)}"}, status=500)
-    except Exception as e:
-        return JsonResponse({"error": f"Erro inesperado: {str(e)}"}, status=500)
+        return JsonResponse({"error": "A consulta do CNPJ demorou demais. Tente de novo."}, status=500)
+    except requests.RequestException:
+        return JsonResponse({"error": "Não deu para consultar o CNPJ agora."}, status=500)
+    if response.status_code == 404:
+        return JsonResponse({"error": "CNPJ não encontrado."}, status=404)
+    if response.status_code != 200:
+        return JsonResponse({"error": "Não deu para consultar o CNPJ. Tente de novo."}, status=500)
+    data = response.json()
+    emails, phones = data.get("emails", []), data.get("phones", [])
+    phone = ""
+    if phones and phones[0].get("area") and phones[0].get("number"):
+        phone = f"({phones[0]['area']}) {phones[0]['number']}"
+    return JsonResponse({"success": True, "data": {
+        "name": data.get("alias") or data.get("company", {}).get("name", ""),
+        "email": emails[0].get("address", "") if emails else "",
+        "phone": phone,
+        "document": cnpj,
+    }})
